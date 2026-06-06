@@ -1,0 +1,1 @@
+export { journeyService } from './JourneyService';

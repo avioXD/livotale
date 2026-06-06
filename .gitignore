@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 .env
+pnpm-debug.log*
+
+# Lock files (pnpm only)
+package-lock.json
+yarn.lock
 
 # Editor
 .vscode/*

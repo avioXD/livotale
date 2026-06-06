@@ -9,7 +9,7 @@ function AppBootstrap() {
   const hydrate = useAuthStore((state) => state.hydrate);
 
   useEffect(() => {
-    hydrate();
+    void hydrate();
   }, [hydrate]);
 
   return <AppRoutes />;

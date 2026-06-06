@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getNavItemsForRole } from '@/app/config/navigation';
 import { useAuthStore, useUserRole } from '@/store';
-import { cn, getInitials } from '@/utils';
+import { cn, getInitialsFromFullName } from '@/utils';
 import { ROLE_LABELS } from '@/rbac';
 import { APP_NAME } from '@/utils/constants';
 
@@ -85,14 +85,12 @@ export function Sidebar() {
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-livotel-teal text-white text-xs">
-                  {getInitials(user.firstName, user.lastName)}
+                  {getInitialsFromFullName(user.fullName)}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {user.firstName} {user.lastName}
-                  </p>
+                  <p className="truncate text-sm font-medium">{user.fullName}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {ROLE_LABELS[user.role]}
                   </p>
@@ -145,7 +143,9 @@ export function TopBar() {
           <FiMenu className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold">Welcome back{user ? `, ${user.firstName}` : ''}</h1>
+          <h1 className="text-lg font-semibold">
+            Welcome back{user ? `, ${user.fullName.split(' ')[0]}` : ''}
+          </h1>
           <p className="text-xs text-muted-foreground hidden sm:block">
             Liver care ecosystem — FibroScan, AI plans & home delivery
           </p>

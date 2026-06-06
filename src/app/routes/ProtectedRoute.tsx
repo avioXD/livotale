@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { canAccessRoute } from '@/rbac';
 import { useAuthStore, useUserRole } from '@/store';
+import { PostAuthRedirect } from '@/app/routes/PostAuthRedirect';
 import { AppRole } from '@/types';
 
 interface ProtectedRouteProps {
@@ -26,7 +27,7 @@ export function PublicRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <PostAuthRedirect />;
   }
 
   return <Outlet />;

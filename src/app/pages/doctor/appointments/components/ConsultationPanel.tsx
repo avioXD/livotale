@@ -1,0 +1,86 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { DoctorAppointmentDetail } from '@/types';
+
+interface ConsultationPanelProps {
+  appointment: DoctorAppointmentDetail;
+  isSaving: boolean;
+  onStart: () => Promise<void>;
+  onComplete: (summary: string) => Promise<void>;
+  onNoShow: (reason: string) => Promise<void>;
+  onRequestReschedule: (reason: string) => Promise<void>;
+}
+
+export function ConsultationPanel({
+  appointment,
+  isSaving,
+  onStart,
+  onComplete,
+  onNoShow,
+  onRequestReschedule,
+}: ConsultationPanelProps) {
+  const [summary, setSummary] = useState('');
+  const [reason, setReason] = useState('');
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Consultation actions</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {appointment.canStartConsultation && (
+          <Button disabled={isSaving} onClick={() => void onStart()}>
+            Start consultation
+          </Button>
+        )}
+
+        {appointment.canComplete && (
+          <div className="space-y-2">
+            <Label htmlFor="consult-summary">Completion summary</Label>
+            <Textarea
+              id="consult-summary"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              rows={3}
+              placeholder="Brief consultation summary for internal records"
+            />
+            <Button disabled={isSaving || summary.trim().length < 3} onClick={() => void onComplete(summary.trim())}>
+              Mark completed
+            </Button>
+          </div>
+        )}
+
+        {appointment.canMarkNoShow && (
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="no-show-reason">No-show reason</Label>
+            <Textarea
+              id="no-show-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={2}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                disabled={isSaving || reason.trim().length < 3}
+                onClick={() => void onNoShow(reason.trim())}
+              >
+                Mark no-show
+              </Button>
+              <Button
+                variant="outline"
+                disabled={isSaving || reason.trim().length < 3}
+                onClick={() => void onRequestReschedule(reason.trim())}
+              >
+                Request reschedule
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

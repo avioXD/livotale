@@ -1,50 +1,53 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version: 1.0.0 (initial ratification)
+- Modified principles: N/A (first fill from template)
+- Added sections: Core Principles, Architecture, Quality Gates, Governance
+- Templates: plan-template.md (Constitution Check gates aligned)
+- Follow-up: specs/001-auth-api-integration
+-->
+
+# Livotel UI Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Spec-Driven Development
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Non-trivial features MUST have a spec, plan, and tasks under `specs/` before implementation. Bug fixes under five lines may skip spec creation. Spec and code MUST stay aligned at merge time.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. API Contract Fidelity
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+The UI MUST consume `livotale_app/api` endpoints as documented. Do not invent routes, request shapes, or response envelopes. Map API `{ data: ... }` wrappers in service layers, not in page components.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Layered Architecture (NON-NEGOTIABLE)
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Pages → Zustand stores → class-based services → API. Pages MUST NOT call axios directly for domain data. Types live in `src/types/`. RBAC logic lives in `src/rbac/`.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Test Before Merge
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Run `pnpm test`, `pnpm build`, and `pnpm snyk:test` before merging. Auth and RBAC changes MUST include unit tests for mappers and access helpers.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Simplicity & Scope Control
+
+Prefer the smallest diff that satisfies the spec. Reuse existing stores, services, and shadcn components. No speculative abstractions.
+
+## Architecture Constraints
+
+- Package manager: **pnpm** only.
+- Page folderization: `src/app/pages/<name>/` with local `components/`.
+- List data: Zustand `createListStore`; debounced search/pagination via `DEBOUNCE`.
+- Auth: JWT bearer from `POST /auth/login`; profile from `GET /auth/me`; patient self-registration via `POST /patient/register`.
+- API base URL: `VITE_API_BASE_URL` (default `http://localhost:4000`).
+
+## Quality Gates
+
+1. Constitution Check in every plan MUST pass before implementation.
+2. Role-based route guards MUST use mapped `AppRole` from API role codes.
+3. No secrets in source control; use `.env.example` for documented variables.
+4. Linter clean on touched files.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes ad-hoc practices. Amendments require updating this file, bumping the version, and noting impact in the Sync Impact Report comment. Development standards in `.cursor/rules/livotel-development-standards.mdc` supplement but do not override these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-06-06 | **Last Amended**: 2026-06-06

@@ -1,0 +1,55 @@
+---
+description: Livotel UI architecture — folderization, Zustand, types, lists, debounce
+alwaysApply: true
+---
+
+# Livotel Development Standards
+
+## Folder Layout
+
+```
+src/
+├── app/pages/<page>/           # Route pages + page-local components/
+├── app/layouts/                # Shell layouts
+├── app/routes/                 # Route guards & AppRoutes
+├── components/ui/              # shadcn primitives
+├── components/common/          # Shared app components (DataTable, Pagination)
+├── types/                      # All TypeScript types (@/types)
+├── store/                      # Zustand stores (@/store)
+├── services/                   # Class-based API services
+├── utils/                      # Global utilities (@/utils)
+├── hooks/                      # Global hooks
+└── rbac/                       # JWT + role access
+```
+
+## Page Folderization
+
+Each route page under `src/app/pages/<name>/`:
+
+```
+<page>/
+├── <Name>Page.tsx      # Page entry (route component)
+└── components/         # Page-only UI pieces & small sub-features
+```
+
+- Keep page-specific UI in `components/` — not in global `components/`.
+- Shared across multiple pages → `src/components/common/` or `src/app/pages/shared/components/`.
+- Types → `src/types/<domain>.ts`. Store → `src/store/<domain>/`. Service → `src/services/<domain>/`.
+
+## State Management
+
+- **Zustand** for all shared/async state.
+- **Auth, layout**: `src/store/auth/`.
+- **Lists/tables**: `createListStore` in `src/store/createListStore.ts`.
+- List API calls go through the store — pages never call services directly for list data.
+
+## List / Table Pattern
+
+- **Search**: debounced via `DEBOUNCE.searchMs` (auto-applies in store).
+- **Filters**: draft in page components; **Apply Filters** refetches (page resets to 1).
+- **Pagination**: debounced via `DEBOUNCE.paginationMs`.
+- Use `ListToolbar`, `DataTable`, `PaginationControls` from `@/components/common`.
+
+## Package Manager
+
+Use **pnpm** only.

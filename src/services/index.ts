@@ -1,2 +1,11 @@
 export { BaseApiService, apiClient } from './base';
 export { authService } from './auth';
+export { patientsService, dashboardService } from './patients';
+export { journeyService } from './journey';
+export { appointmentsService } from './appointments';
+export { doctorAppointmentsService } from './appointments';
+export { technicianAppointmentsService } from './appointments';
+export { adminAppointmentsService } from './appointments';
+export { careAppointmentsService } from './appointments';
+export { reportsService } from './reports';
+export { profileService } from './profile';

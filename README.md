@@ -1,67 +1,49 @@
 # Livotel UI
 
-Tech-enabled liver care admin panel built with React, Vite, TypeScript, Zustand, Axios, shadcn/ui, and JWT-based RBAC.
+Tech-enabled liver care admin panel — React, Vite, TypeScript, Zustand, pnpm, Snyk, Spec Kit.
 
-## Stack
-
-- **React 19** + **Vite 7** + **TypeScript**
-- **Zustand** — global state management
-- **Axios** — HTTP client with JWT interceptors
-- **shadcn/ui** — UI components (Radix + Tailwind)
-- **React Icons** — navigation & auth icons
-- **React Router** — routing with protected/open routes
-- **Jest** — unit tests
-- **uuid** — unique ID generation
-
-## Brand
-
-- Primary: `#D7316C`
-- Secondary: `#1EABB3`
-- Logo: `/public/assets/livotale-logo.png`
-
-## Project Structure
-
-```
-src/
-├── app/                  # Core UI (layouts, pages, routes, config)
-├── components/ui/        # shadcn UI components
-├── lib/                  # shadcn utilities
-├── rbac/                 # JWT + role-based access control
-├── services/             # Class-based API services
-│   ├── base/             # BaseApiService (GET/POST/PUT/PATCH/DELETE)
-│   └── auth/             # AuthService
-├── store/                # Zustand stores
-├── types/                # Shared TypeScript types
-└── utils/                # Global utilities
-```
-
-## Roles
-
-| Role | Description |
-|------|-------------|
-| `PATIENT` | End user receiving liver care at home |
-| `TECHNICIAN` | Collects FibroScan + blood samples |
-| `DOCTOR` | Verifies AI plans & approves prescriptions |
-| `ADMIN` | Backend control panel access |
-
-## Open Routes
-
-- `/login`
-- `/register`
-- `/reset-password`
-
-All other routes require a valid JWT token.
-
-## Getting Started
+## Commands (pnpm only)
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
-npm test
-npm run build
+pnpm dev
+pnpm test
+pnpm build
+pnpm snyk:test      # requires SNYK_TOKEN
+pnpm snyk:monitor
 ```
+
+## Architecture
+
+| Layer | Path | Purpose |
+|-------|------|---------|
+| Pages | `src/app/pages/<name>/` | Page + local `components/` |
+| Global components | `src/components/common/` | DataTable, ListToolbar, Pagination |
+| Types | `src/types/` | All domain TypeScript types |
+| Store | `src/store/` | Zustand (auth + `createListStore`) |
+| Services | `src/services/` | Class-based API layer |
+| Utils | `src/utils/` | Debounce, constants, helpers |
+
+## List / Table Pattern
+
+- **Search**: debounced (`DEBOUNCE.searchMs` = 400ms) via store
+- **Filters**: draft → **Apply Filters** → refetch
+- **Pagination**: debounced (`DEBOUNCE.paginationMs` = 250ms)
+- API calls for lists go through Zustand stores, not components
+
+## Cursor Rules
+
+- `.cursor/rules/spec-driven-development.mdc` — Spec Kit workflow
+- `.cursor/rules/livotel-development-standards.mdc` — folderization & patterns
 
 ## Spec Kit
 
-Initialized with [GitHub Spec Kit](https://github.com/github/spec-kit) for spec-driven development with GitHub Copilot integration.
+Use `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement` before feature work.
+
+Active feature specs:
+
+| Spec | Path | Scope |
+|------|------|--------|
+| **007 RBAC appointment scheduling** | [`specs/007-rbac-appointment-scheduling/`](specs/007-rbac-appointment-scheduling/spec.md) | Unified appointments, RBAC, calendar, tele, prescription PDF, admin ops |
+| 005 Appointments (deprecated) | [`specs/005-appointments-module/`](specs/005-appointments-module/spec.md) | Home-visit MVP — superseded by 007 |
