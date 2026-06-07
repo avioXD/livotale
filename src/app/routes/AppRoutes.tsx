@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminShell } from '@/app/layouts/AdminShell';
 import { OnboardingShell } from '@/app/layouts/OnboardingShell';
 import { ProtectedRoute, PublicRoute } from '@/app/routes/ProtectedRoute';
 import { PatientOnboardingRoute } from '@/app/routes/PatientOnboardingRoute';
+import { StaffOnboardingRoute } from '@/app/routes/StaffOnboardingRoute';
 import { PostAuthRedirect } from '@/app/routes/PostAuthRedirect';
 import { LoginPage } from '@/app/pages/auth/LoginPage';
 import { RegisterPage } from '@/app/pages/auth/RegisterPage';
@@ -16,19 +17,30 @@ import { BookAppointmentWizardPage } from '@/app/pages/appointments/BookAppointm
 import { TechnicianTrackingPage } from '@/app/pages/appointments/TechnicianTrackingPage';
 import { TechnicianSchedulePage } from '@/app/pages/technician/schedule/TechnicianSchedulePage';
 import { TechnicianVisitDetailPage } from '@/app/pages/technician/schedule/TechnicianVisitDetailPage';
+import { TechnicianSampleCollectionsPage } from '@/app/pages/technician/sample-collections/TechnicianSampleCollectionsPage';
 import { DoctorAppointmentsPage } from '@/app/pages/doctor/appointments/DoctorAppointmentsPage';
-import { AdminAppointmentsDashboardPage } from '@/app/pages/admin/appointments/AdminAppointmentsDashboardPage';
-import { RouteMonitoringPage } from '@/app/pages/admin/appointments/RouteMonitoringPage';
-import { MissedAppointmentsPage } from '@/app/pages/admin/appointments/MissedAppointmentsPage';
+import { AdminOperationsHubPage } from '@/app/pages/admin/operations/AdminOperationsHubPage';
 import { NotificationLogPage } from '@/app/pages/admin/appointments/NotificationLogPage';
 import { AdminAnalyticsPage } from '@/app/pages/admin/appointments/AdminAnalyticsPage';
 import { AdminBookAppointmentPage } from '@/app/pages/admin/appointments/AdminBookAppointmentPage';
+import { AdminAppointmentDetailPage } from '@/app/pages/admin/appointments/AdminAppointmentDetailPage';
 import { TeleconsultationJoinPage } from '@/app/pages/appointments/TeleconsultationJoinPage';
 import { FibroScanPage } from '@/app/pages/fibroscan/FibroScanPage';
+import { FibroScanVisitDetailPage } from '@/app/pages/fibroscan/FibroScanVisitDetailPage';
 import { ReportsPage } from '@/app/pages/reports/ReportsPage';
 import { ReportDetailPage } from '@/app/pages/reports/ReportDetailPage';
 import { TreatmentPlansPage } from '@/app/pages/treatment-plans/TreatmentPlansPage';
 import { LabSamplesPage } from '@/app/pages/lab-samples/LabSamplesPage';
+import { LabDashboardPage } from '@/app/pages/lab-samples/LabDashboardPage';
+import { AdminStaffHubPage, AdminStaffHubRedirect } from '@/app/pages/admin/staff/AdminStaffHubPage';
+import { AdminStaffPerformancePage } from '@/app/pages/admin/staff/AdminStaffPerformancePage';
+import { AdminStaffMemberDetailPage } from '@/app/pages/admin/staff/AdminStaffMemberDetailPage';
+import { AdminStaffOnboardPage } from '@/app/pages/admin/staff/AdminStaffOnboardPage';
+import { StaffOnboardInvitePage } from '@/app/pages/staff/onboarding/StaffOnboardInvitePage';
+import { StaffRegisterPage } from '@/app/pages/staff/onboarding/StaffRegisterPage';
+import { StaffOnboardingPage } from '@/app/pages/staff/onboarding/StaffOnboardingPage';
+import { TechnicianProfilePage } from '@/app/pages/technician/profile/TechnicianProfilePage';
+import { StaffSelfProfilePage } from '@/app/pages/staff/profile/StaffSelfProfilePage';
 import { PrescriptionsPage } from '@/app/pages/prescriptions/PrescriptionsPage';
 import { DeliveryPage } from '@/app/pages/delivery/DeliveryPage';
 import { CoachingPage } from '@/app/pages/coaching/CoachingPage';
@@ -56,6 +68,9 @@ export function AppRoutes() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
+      <Route path="/staff/onboard/:token" element={<StaffOnboardInvitePage />} />
+      <Route path="/staff/register" element={<StaffRegisterPage />} />
+
       <Route element={<ProtectedRoute />}>
         <Route element={<PatientOnboardingRoute requireComplete={false} />}>
           <Route element={<OnboardingShell />}>
@@ -64,17 +79,46 @@ export function AppRoutes() {
         </Route>
 
         <Route element={<PatientOnboardingRoute requireComplete />}>
-          <Route element={<AdminShell />}>
-            <Route index element={<PostAuthRedirect />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+          <Route element={<StaffOnboardingRoute />}>
+            <Route element={<AdminShell />}>
+              <Route index element={<PostAuthRedirect />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/staff/onboarding" element={<StaffOnboardingPage />} />
+
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    AppRole.DOCTOR,
+                    AppRole.LAB_PARTNER,
+                    AppRole.DIETICIAN,
+                    AppRole.HEALTH_COACH,
+                    AppRole.PHARMACY,
+                    AppRole.OPERATIONS,
+                    AppRole.CITY_MANAGER,
+                  ]}
+                />
+              }
+            >
+              <Route path="/staff/profile" element={<StaffSelfProfilePage />} />
+            </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[...CLINICAL_STAFF]} />}>
               <Route path="/patients" element={<PatientsPage />} />
               <Route path="/patients/:id" element={<PatientDetailPage />} />
             </Route>
 
-            <Route path="/appointments" element={<AppointmentsPage />} />
-            <Route path="/appointments/book" element={<BookAppointmentWizardPage />} />
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[AppRole.PATIENT, AppRole.DIETICIAN, AppRole.HEALTH_COACH]} />
+              }
+            >
+              <Route path="/appointments" element={<AppointmentsPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[AppRole.PATIENT]} />}>
+              <Route path="/appointments/book" element={<BookAppointmentWizardPage />} />
+            </Route>
             <Route path="/appointments/:id/tracking" element={<TechnicianTrackingPage />} />
             <Route path="/appointments/:id/tele" element={<TeleconsultationJoinPage />} />
             <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
@@ -89,17 +133,27 @@ export function AppRoutes() {
                 <ProtectedRoute allowedRoles={[AppRole.OPERATIONS, AppRole.CITY_MANAGER, AppRole.SUPER_ADMIN]} />
               }
             >
-              <Route path="/admin/appointments" element={<AdminAppointmentsDashboardPage />} />
+              <Route path="/admin/operations" element={<AdminOperationsHubPage />} />
+              <Route path="/admin/appointments" element={<Navigate to="/admin/operations?tab=appointments" replace />} />
+              <Route path="/admin/sample-collections" element={<Navigate to="/admin/operations?tab=samples" replace />} />
               <Route path="/admin/appointments/book" element={<AdminBookAppointmentPage />} />
-              <Route path="/admin/appointments/routes" element={<RouteMonitoringPage />} />
-              <Route path="/admin/appointments/missed" element={<MissedAppointmentsPage />} />
+              <Route path="/admin/appointments/routes" element={<Navigate to="/admin/operations?tab=appointments" replace />} />
+              <Route path="/admin/appointments/missed" element={<Navigate to="/admin/operations?tab=appointments&status=missed" replace />} />
               <Route path="/admin/appointments/notifications" element={<NotificationLogPage />} />
               <Route path="/admin/appointments/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/staff" element={<AdminStaffHubRedirect />} />
+              <Route path="/admin/staff-performance" element={<AdminStaffPerformancePage />} />
+              <Route path="/admin/staff/:roleSlug/onboard" element={<AdminStaffOnboardPage />} />
+              <Route path="/admin/staff/:roleSlug/:memberId" element={<AdminStaffMemberDetailPage />} />
+              <Route path="/admin/staff/:roleSlug" element={<AdminStaffHubPage />} />
+              <Route path="/admin/appointments/:id" element={<AdminAppointmentDetailPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[AppRole.TECHNICIAN]} />}>
               <Route path="/technician/schedule" element={<TechnicianSchedulePage />} />
               <Route path="/technician/schedule/:id" element={<TechnicianVisitDetailPage />} />
+              <Route path="/technician/profile" element={<TechnicianProfilePage />} />
+              <Route path="/technician/sample-collections" element={<TechnicianSampleCollectionsPage />} />
             </Route>
 
             <Route
@@ -108,7 +162,6 @@ export function AppRoutes() {
                   allowedRoles={[
                     AppRole.TECHNICIAN,
                     AppRole.DOCTOR,
-                    AppRole.LAB_PARTNER,
                     AppRole.SUPER_ADMIN,
                     AppRole.CITY_MANAGER,
                   ]}
@@ -116,6 +169,25 @@ export function AppRoutes() {
               }
             >
               <Route path="/fibroscan" element={<FibroScanPage />} />
+              <Route path="/fibroscan/:id" element={<FibroScanVisitDetailPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[AppRole.LAB_PARTNER]} />}>
+              <Route path="/lab/dashboard" element={<LabDashboardPage />} />
+              <Route path="/lab-samples" element={<LabSamplesPage />} />
+            </Route>
+
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    AppRole.DOCTOR,
+                    AppRole.SUPER_ADMIN,
+                    AppRole.CITY_MANAGER,
+                  ]}
+                />
+              }
+            >
               <Route path="/lab-samples" element={<LabSamplesPage />} />
             </Route>
 
@@ -151,6 +223,7 @@ export function AppRoutes() {
             </Route>
 
             <Route path="/settings" element={<SettingsPage />} />
+            </Route>
           </Route>
         </Route>
       </Route>

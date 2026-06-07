@@ -68,6 +68,11 @@ export interface AppointmentDetail extends AppointmentSummary {
   unifiedTimeline?: UnifiedTimelineEntry[];
   chiefComplaint?: string | null;
   symptoms?: string | null;
+  sampleCollection?: {
+    id: string;
+    sampleCode: string;
+    status: string;
+  } | null;
 }
 
 export interface TimeSlotOption {
@@ -469,6 +474,14 @@ export interface AdminAppointmentSummary {
   pincode?: string | null;
   cityName?: string | null;
   teleMeetingUrl?: string | null;
+  chiefComplaint?: string | null;
+  symptoms?: string | null;
+  patientNotes?: string | null;
+}
+
+export interface AdminAppointmentDetail extends AdminAppointmentSummary {
+  internalNotes?: string | null;
+  timeline: UnifiedTimelineEntry[];
 }
 
 export interface AdminAppointmentsDashboard {

@@ -150,6 +150,16 @@ export function AppointmentDetailPage() {
                 </div>
               )}
 
+              {selected.sampleCollection && (
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sample collection</p>
+                  <p className="mt-1 font-mono text-sm">{selected.sampleCollection.sampleCode}</p>
+                  <Badge variant="outline" className="mt-2 capitalize">
+                    {selected.sampleCollection.status.replace(/_/g, ' ')}
+                  </Badge>
+                </div>
+              )}
+
               {(selected.canCancel || selected.canReschedule || showTracking) && (
                 <div className="flex flex-wrap gap-2 border-t pt-4">
                   {showTracking && (

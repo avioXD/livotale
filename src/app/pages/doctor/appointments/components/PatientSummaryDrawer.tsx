@@ -10,21 +10,30 @@ interface PatientSummaryDrawerProps {
 
 export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps) {
   const summary = appointment.patientSummary;
-  const profileUrl = `/patients/${appointment.patientId}?tab=dashboard`;
-  const reportsUrl = `/patients/${appointment.patientId}?tab=reports`;
+  const pid = appointment.patientId;
+  const links = [
+    { label: 'Profile', path: `/patients/${pid}?tab=demographics` },
+    { label: 'History', path: `/patients/${pid}?tab=timeline` },
+    { label: 'Reports', path: `/patients/${pid}?tab=reports` },
+    { label: 'Visits', path: `/patients/${pid}?tab=visits` },
+    { label: 'FibroScan', path: `/patients/${pid}?tab=liver` },
+    { label: 'Medications', path: `/patients/${pid}?tab=medications` },
+  ];
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="gap-2" asChild>
-          <Link to={profileUrl}>
+          <Link to={`/patients/${pid}?tab=dashboard`}>
             <FiExternalLink className="h-4 w-4" />
-            Full profile
+            Patient dashboard
           </Link>
         </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link to={reportsUrl}>View reports</Link>
-        </Button>
+        {links.map((l) => (
+          <Button key={l.label} variant="outline" size="sm" asChild>
+            <Link to={l.path}>{l.label}</Link>
+          </Button>
+        ))}
       </div>
 
       <Card>

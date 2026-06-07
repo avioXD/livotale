@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common';
+import { StaffSelfProfileContent } from '@/app/pages/staff/profile/components/StaffSelfProfileContent';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,11 +12,23 @@ import { authService } from '@/services';
 import { ROLE_LABELS } from '@/rbac';
 import { AppRole, type LoginLogEntry, type UserSession } from '@/types';
 
+const STAFF_ROLES = new Set<AppRole>([
+  AppRole.TECHNICIAN,
+  AppRole.DOCTOR,
+  AppRole.LAB_PARTNER,
+  AppRole.DIETICIAN,
+  AppRole.HEALTH_COACH,
+  AppRole.PHARMACY,
+  AppRole.OPERATIONS,
+  AppRole.CITY_MANAGER,
+  AppRole.SUPER_ADMIN,
+]);
+
 export function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const userRole = useUserRole();
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') ?? 'profile';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') ?? 'profile';
 
   const profile = useProfileStore((state) => state.profile);
   const consents = useProfileStore((state) => state.consents);
@@ -35,6 +48,9 @@ export function SettingsPage() {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loginLogs, setLoginLogs] = useState<LoginLogEntry[]>([]);
 
+  const isPatient = userRole === AppRole.PATIENT;
+  const isStaff = userRole != null && STAFF_ROLES.has(userRole);
+
   useEffect(() => {
     void loadProfile();
     void loadConsents();
@@ -49,6 +65,12 @@ export function SettingsPage() {
     setEmergencyMobile(profile.emergencyContact?.mobile ?? '');
   }, [profile]);
 
+  useEffect(() => {
+    if (activeTab === 'security') {
+      void loadSecurity();
+    }
+  }, [activeTab]);
+
   const loadSecurity = async () => {
     const [sessionList, logs] = await Promise.all([
       authService.listSessions(),
@@ -56,6 +78,14 @@ export function SettingsPage() {
     ]);
     setSessions(sessionList);
     setLoginLogs(logs);
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab === 'profile') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
   };
 
   const handleBasicSave = async (e: FormEvent) => {
@@ -67,8 +97,6 @@ export function SettingsPage() {
     e.preventDefault();
     await saveEmergencyContact({ name: emergencyName, mobile: emergencyMobile });
   };
-
-  const isPatient = userRole === AppRole.PATIENT;
 
   return (
     <div className="space-y-6">
@@ -92,9 +120,10 @@ export function SettingsPage() {
         <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
       )}
 
-      <Tabs defaultValue={defaultTab} onValueChange={(tab) => tab === 'security' && void loadSecurity()}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="flex h-auto flex-wrap gap-1">
-          <TabsTrigger value="profile">Basic Info</TabsTrigger>
+          <TabsTrigger value="profile">Basic info</TabsTrigger>
+          {isStaff && <TabsTrigger value="my-profile">My profile</TabsTrigger>}
           {isPatient && <TabsTrigger value="emergency">Emergency</TabsTrigger>}
           <TabsTrigger value="consent">Consent</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -119,6 +148,12 @@ export function SettingsPage() {
             </Button>
           </form>
         </TabsContent>
+
+        {isStaff && (
+          <TabsContent value="my-profile" className="mt-4">
+            <StaffSelfProfileContent />
+          </TabsContent>
+        )}
 
         {isPatient && (
           <TabsContent value="emergency" className="mt-4 max-w-lg space-y-4">

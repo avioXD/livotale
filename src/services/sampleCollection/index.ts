@@ -1,0 +1,1 @@
+export { sampleCollectionService } from './SampleCollectionService';

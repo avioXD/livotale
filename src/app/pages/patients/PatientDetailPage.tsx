@@ -179,7 +179,10 @@ export function PatientDetailPage() {
           </TabsContent>
 
           <TabsContent value="appointments" className="mt-4">
-            <PatientAppointmentsPanel appointments={appointments} />
+            <PatientAppointmentsPanel
+              appointments={appointments}
+              detailLinkPrefix={canEdit ? '/admin/appointments' : '/appointments'}
+            />
           </TabsContent>
 
           <TabsContent value="visits" className="mt-4">

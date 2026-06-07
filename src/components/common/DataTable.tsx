@@ -7,6 +7,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   emptyMessage?: string;
   getRowKey: (item: T) => string;
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T>({
@@ -15,6 +16,7 @@ export function DataTable<T>({
   isLoading,
   emptyMessage = 'No records found.',
   getRowKey,
+  onRowClick,
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
@@ -46,7 +48,14 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {data.map((item) => (
-            <tr key={getRowKey(item)} className="border-b last:border-0 hover:bg-muted/20">
+            <tr
+              key={getRowKey(item)}
+              className={cn(
+                'border-b last:border-0 hover:bg-muted/20',
+                onRowClick && 'cursor-pointer',
+              )}
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+            >
               {columns.map((column) => (
                 <td key={column.key} className={cn('px-4 py-3', column.className)}>
                   {column.render(item)}

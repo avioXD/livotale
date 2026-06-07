@@ -32,8 +32,8 @@ export function HolidayForm({ holidays, isSaving, onCreate }: HolidayFormProps) 
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Add leave / holiday</CardTitle>
-          <CardDescription>Blocked dates prevent slot generation and show on your calendar.</CardDescription>
+          <CardTitle>Request leave</CardTitle>
+          <CardDescription>Blocked dates prevent new bookings and appear on your calendar.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
@@ -56,7 +56,7 @@ export function HolidayForm({ holidays, isSaving, onCreate }: HolidayFormProps) 
               <Textarea id="holiday-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} />
             </div>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving…' : 'Add holiday'}
+              {isSaving ? 'Saving…' : 'Submit leave request'}
             </Button>
           </form>
         </CardContent>
@@ -64,7 +64,7 @@ export function HolidayForm({ holidays, isSaving, onCreate }: HolidayFormProps) 
 
       <Card>
         <CardHeader>
-          <CardTitle>Upcoming holidays</CardTitle>
+          <CardTitle>Approved & pending leave</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {holidays.length === 0 ? (

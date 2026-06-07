@@ -9,3 +9,5 @@ export { adminAppointmentsService } from './appointments';
 export { careAppointmentsService } from './appointments';
 export { reportsService } from './reports';
 export { profileService } from './profile';
+export { sampleCollectionService } from './sampleCollection';
+export { opsAnalyticsService } from './opsAnalytics';

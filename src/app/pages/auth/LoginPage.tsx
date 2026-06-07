@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FiLock, FiMail, FiPhone, FiUser } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ const DEV_QUICK_USERS = [
   { label: 'Doctor', username: 'doctor.iyer', password: 'Doctor@123' },
   { label: 'Admin', username: 'admin.ops', password: 'Admin@123' },
   { label: 'Patient', username: 'patient.rohan', password: 'Patient@123' },
+  { label: 'Technician', username: 'tech.vinod', password: 'Tech@123' },
+  { label: 'Lab', username: 'lab.ops', password: 'Lab@123' },
 ] as const;
 
 function devLoginDefaults() {
@@ -23,6 +25,8 @@ function devLoginDefaults() {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get('next');
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
@@ -42,7 +46,7 @@ export function LoginPage() {
     clearError();
     try {
       await login({ identifier, password });
-      navigate('/', { replace: true });
+      navigate(nextPath && nextPath.startsWith('/') ? nextPath : '/', { replace: true });
     } catch {
       // Error handled in store
     }
@@ -77,7 +81,7 @@ export function LoginPage() {
         isAuthenticated: true,
         error: null,
       });
-      navigate('/', { replace: true });
+      navigate(nextPath && nextPath.startsWith('/') ? nextPath : '/', { replace: true });
     } catch (err) {
       useAuthStore.setState({
         error: err instanceof Error ? err.message : 'OTP verification failed',

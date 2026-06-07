@@ -213,7 +213,7 @@ export function AdminBookAppointmentPage() {
         description={`Step ${stepIndex + 1} of ${STEP_ORDER.length}: ${STEP_LABELS[currentStep]}`}
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/appointments">
+            <Link to="/admin/operations">
               <FiArrowLeft className="h-4 w-4" />
               Ops dashboard
             </Link>

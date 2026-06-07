@@ -42,6 +42,7 @@ interface DoctorAppointmentsStore {
   completeConsultation: (id: string, summary: string) => Promise<void>;
   markNoShow: (id: string, reason: string) => Promise<void>;
   requestReschedule: (id: string, reason: string) => Promise<void>;
+  updateClinicalData: (id: string, payload: Record<string, unknown>) => Promise<void>;
   clearSelected: () => void;
   clearError: () => void;
 }
@@ -251,6 +252,20 @@ export const useDoctorAppointmentsStore = create<DoctorAppointmentsStore>((set) 
       set({ selected, isSaving: false });
     } catch (err) {
       set({ isSaving: false, error: err instanceof Error ? err.message : 'Failed to request reschedule' });
+      throw err;
+    }
+  },
+
+  updateClinicalData: async (id, payload) => {
+    set({ isSaving: true, error: null });
+    try {
+      const selected = await doctorAppointmentsService.updateClinicalData(id, payload);
+      set({ selected, isSaving: false });
+    } catch (err) {
+      set({
+        isSaving: false,
+        error: err instanceof Error ? err.message : 'Failed to update patient data',
+      });
       throw err;
     }
   },

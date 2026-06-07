@@ -28,6 +28,10 @@ class DoctorAppointmentsService extends BaseApiService {
     return this.get<DoctorAppointmentDetail>(`/doctor/appointments/${id}`);
   }
 
+  async updateClinicalData(id: string, payload: Record<string, unknown>): Promise<DoctorAppointmentDetail> {
+    return this.patch<DoctorAppointmentDetail>(`/doctor/appointments/${id}`, payload);
+  }
+
   async getAvailability() {
     return this.get<{ rules: Array<Record<string, unknown>>; exceptions: Array<Record<string, unknown>> }>(
       '/doctor/availability',

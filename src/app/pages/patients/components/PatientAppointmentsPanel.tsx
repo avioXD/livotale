@@ -6,9 +6,13 @@ import type { PatientAppointmentRecord } from '@/types/patientProfile';
 
 interface PatientAppointmentsPanelProps {
   appointments: PatientAppointmentRecord[];
+  detailLinkPrefix?: string;
 }
 
-export function PatientAppointmentsPanel({ appointments }: PatientAppointmentsPanelProps) {
+export function PatientAppointmentsPanel({
+  appointments,
+  detailLinkPrefix = '/appointments',
+}: PatientAppointmentsPanelProps) {
   if (appointments.length === 0) {
     return <p className="text-sm text-muted-foreground">No appointments recorded for this patient.</p>;
   }
@@ -58,7 +62,7 @@ export function PatientAppointmentsPanel({ appointments }: PatientAppointmentsPa
               </p>
             )}
             <Button variant="link" className="h-auto p-0" asChild>
-              <Link to={`/appointments/${row.id}`}>View appointment</Link>
+              <Link to={`${detailLinkPrefix}/${row.id}`}>View appointment</Link>
             </Button>
           </CardContent>
         </Card>

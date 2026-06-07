@@ -9,6 +9,7 @@ import type { AppointmentPrescriptionBundle, PrescriptionItemInput } from '@/typ
 
 interface PrescriptionBuilderPanelProps {
   bundle: AppointmentPrescriptionBundle | null;
+  appointmentChiefComplaint?: string;
   isSaving: boolean;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onApprove: (payload: { doctorNotes: string }) => Promise<void>;
@@ -16,13 +17,16 @@ interface PrescriptionBuilderPanelProps {
 
 export function PrescriptionBuilderPanel({
   bundle,
+  appointmentChiefComplaint,
   isSaving,
   onSave,
   onApprove,
 }: PrescriptionBuilderPanelProps) {
   const rx = bundle?.prescription;
   const [diagnosis, setDiagnosis] = useState(rx?.diagnosis ?? '');
-  const [chiefComplaint, setChiefComplaint] = useState(rx?.chiefComplaint ?? '');
+  const [chiefComplaint, setChiefComplaint] = useState(
+    rx?.chiefComplaint ?? appointmentChiefComplaint ?? '',
+  );
   const [dietPlan, setDietPlan] = useState(rx?.dietPlan ?? '');
   const [exercisePlan, setExercisePlan] = useState(rx?.exercisePlan ?? '');
   const [monitoringPlan, setMonitoringPlan] = useState(rx?.monitoringPlan ?? '');

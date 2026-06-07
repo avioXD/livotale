@@ -1,5 +1,6 @@
 import { BaseApiService } from '@/services/base';
 import type {
+  AdminAppointmentDetail,
   AdminAppointmentSummary,
   AdminAppointmentsDashboard,
   AdminRouteLiveItem,
@@ -21,6 +22,18 @@ export class AdminAppointmentsService extends BaseApiService {
 
   async list(params: Record<string, string | undefined> = {}): Promise<AdminAppointmentSummary[]> {
     return this.get<AdminAppointmentSummary[]>('/admin/appointments', { params });
+  }
+
+  async getById(id: string): Promise<AdminAppointmentDetail> {
+    return this.get<AdminAppointmentDetail>(`/admin/appointments/${id}`);
+  }
+
+  async update(id: string, payload: Record<string, unknown>): Promise<AdminAppointmentDetail> {
+    return this.patch<AdminAppointmentDetail>(`/admin/appointments/${id}`, payload);
+  }
+
+  async cancelAppointment(id: string, payload: { reason?: string; notes?: string } = {}): Promise<{ deleted: boolean; id: string }> {
+    return this.delete<{ deleted: boolean; id: string }>(`/admin/appointments/${id}`, { data: payload });
   }
 
   async assign(id: string, payload: { doctorId?: string; technicianId?: string; notify?: boolean }) {

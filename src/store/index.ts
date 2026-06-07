@@ -10,3 +10,4 @@ export { useAdminAppointmentsStore } from './appointments/adminAppointmentsStore
 export { useCareAppointmentsStore } from './appointments/careAppointmentsStore';
 export { useReportsStore } from './reports/reportsStore';
 export { useJourneyStore, JOURNEY_STEPS } from './journey/journeyStore';
+export { useStaffOnboardingStore } from './staff/staffOnboardingStore';

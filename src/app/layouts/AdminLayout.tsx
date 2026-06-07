@@ -3,11 +3,98 @@ import { FiChevronLeft, FiChevronRight, FiLogOut, FiMenu } from 'react-icons/fi'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { getNavItemsForRole } from '@/app/config/navigation';
+import { getNavGroupsForRole } from '@/app/config/navigation';
 import { useAuthStore, useUserRole } from '@/store';
 import { cn, getInitialsFromFullName } from '@/utils';
 import { ROLE_LABELS } from '@/rbac';
 import { APP_NAME } from '@/utils/constants';
+import type { NavChildItem, NavItem } from '@/types';
+
+function isNavPathActive(pathname: string, search: string, path: string): boolean {
+  const [basePath, query = ''] = path.split('?');
+
+  if (query) {
+    const expected = new URLSearchParams(query);
+    const actual = new URLSearchParams(search);
+    for (const [key, value] of expected) {
+      if (actual.get(key) !== value) return false;
+    }
+    return pathname === basePath;
+  }
+
+  if (basePath === '/admin/operations') {
+    return pathname === '/admin/operations' && !search.includes('tab=');
+  }
+
+  if (basePath === '/doctor/appointments') {
+    return pathname === '/doctor/appointments' && !search.includes('section=');
+  }
+
+  if (basePath === '/technician/schedule') {
+    return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
+  }
+
+  if (basePath === '/lab/dashboard') {
+    return pathname === '/lab/dashboard';
+  }
+
+  if (basePath === '/settings') {
+    return pathname === '/settings';
+  }
+
+  if (basePath.startsWith('/admin/staff/')) {
+    return pathname === basePath || pathname.startsWith(`${basePath}/`);
+  }
+
+  return pathname === basePath || (pathname.startsWith(`${basePath}/`) && basePath !== '/admin/operations');
+}
+
+function isNavItemActive(pathname: string, search: string, item: NavItem): boolean {
+  if (item.children?.length) {
+    const childActive = item.children.some((child) => isChildActive(pathname, search, child));
+    if (item.childrenOnly) return childActive;
+    return childActive || isNavPathActive(pathname, search, item.path);
+  }
+  return isNavPathActive(pathname, search, item.path);
+}
+
+function isChildActive(pathname: string, search: string, child: NavChildItem): boolean {
+  if (isNavPathActive(pathname, search, child.path)) return true;
+  if (child.id === 'ops-appointments') {
+    return pathname.startsWith('/admin/appointments/');
+  }
+  if (child.id === 'ops-samples' && pathname === '/admin/sample-collections') {
+    return true;
+  }
+  if (child.id === 'care-appointments') {
+    return pathname === '/appointments' || (pathname.startsWith('/appointments/') && !pathname.includes('/book'));
+  }
+  if (child.id === 'doc-appointments') {
+    return pathname === '/doctor/appointments' && !search.includes('section=');
+  }
+  if (child.id === 'doc-patients' || child.id === 'care-patients') {
+    return pathname === '/patients' || pathname.startsWith('/patients/');
+  }
+  if (child.id === 'doc-availability') {
+    return pathname === '/doctor/appointments' && search.includes('section=availability');
+  }
+  if (child.id === 'doc-leave') {
+    return pathname === '/doctor/appointments' && search.includes('section=leave');
+  }
+  if (child.id === 'tech-schedule') {
+    return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
+  }
+  if (child.id === 'lab-overview') {
+    return pathname === '/lab/dashboard';
+  }
+  if (child.id === 'lab-queue') {
+    return pathname === '/lab-samples' || pathname.startsWith('/lab-samples/');
+  }
+  if (child.id === 'lab-reports-child') {
+    return pathname === '/reports' || pathname.startsWith('/reports/');
+  }
+  return false;
+}
 
 export function Sidebar() {
   const location = useLocation();
@@ -17,7 +104,126 @@ export function Sidebar() {
   const toggleSidebar = useAuthStore((state) => state.toggleSidebar);
   const logout = useAuthStore((state) => state.logout);
 
-  const navItems = getNavItemsForRole(userRole);
+  const navGroups = getNavGroupsForRole(userRole);
+
+  const renderChildLink = (child: NavChildItem) => {
+    const ChildIcon = child.icon;
+    const isActive = isChildActive(location.pathname, location.search, child);
+    return (
+      <Link
+        key={child.id}
+        to={child.path}
+        className={cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          isActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+        )}
+      >
+        <ChildIcon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+        <span className="truncate">{child.label}</span>
+      </Link>
+    );
+  };
+
+  const renderNavLink = (item: NavItem) => {
+    const Icon = item.icon;
+    const isActive = isNavItemActive(location.pathname, location.search, item);
+    const hasChildren = Boolean(item.children?.length);
+
+    if (hasChildren && item.childrenOnly && !collapsed) {
+      return (
+        <div key={item.id} className="space-y-0.5">
+          {item.children!.map((child) => renderChildLink(child))}
+        </div>
+      );
+    }
+
+    if (hasChildren && !collapsed) {
+      return (
+        <div key={item.id} className="space-y-0.5">
+          <Link
+            to={item.path}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            )}
+          >
+            <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+            <span className="truncate">{item.label}</span>
+          </Link>
+          <div className="ml-3 border-l border-border/60 pl-1">
+            {item.children!.map((child) => renderChildLink(child))}
+          </div>
+        </div>
+      );
+    }
+
+    const linkContent = (
+      <Link
+        to={item.path}
+        className={cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          isActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          collapsed && 'justify-center px-2',
+        )}
+      >
+        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+        {!collapsed && <span className="truncate">{item.label}</span>}
+      </Link>
+    );
+
+    if (collapsed && hasChildren) {
+      const tooltipLabel = item.childrenOnly
+        ? navGroups.find((g) => g.items.includes(item))?.label ?? item.label
+        : item.label;
+      return (
+        <Tooltip key={item.id}>
+          <TooltipTrigger asChild>
+            {item.childrenOnly ? (
+              <div
+                className={cn(
+                  'flex items-center justify-center rounded-lg px-2 py-2.5',
+                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+                )}
+              >
+                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+              </div>
+            ) : (
+              linkContent
+            )}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="space-y-1 p-2">
+            <p className="px-2 pb-1 text-xs font-semibold">{tooltipLabel}</p>
+            {item.children!.map((child) => (
+              <Link
+                key={child.id}
+                to={child.path}
+                className="block rounded px-2 py-1 text-sm hover:bg-accent"
+              >
+                {child.label}
+              </Link>
+            ))}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    if (collapsed) {
+      return (
+        <Tooltip key={item.id}>
+          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+          <TooltipContent side="right">{item.label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return <div key={item.id}>{linkContent}</div>;
+  };
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -41,38 +247,17 @@ export function Sidebar() {
           )}
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
-
-            const linkContent = (
-              <Link
-                to={item.path}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                  collapsed && 'justify-center px-2',
-                )}
-              >
-                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-
-            if (collapsed) {
-              return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return <div key={item.id}>{linkContent}</div>;
-          })}
+        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+          {navGroups.map((group) => (
+            <div key={group.id} className="space-y-1">
+              {!collapsed && navGroups.length > 1 && (
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => renderNavLink(item))}
+            </div>
+          ))}
         </nav>
 
         <div className="border-t p-3">

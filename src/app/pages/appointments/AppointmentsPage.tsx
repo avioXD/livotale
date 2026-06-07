@@ -1,20 +1,29 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { AppointmentCard } from '@/app/pages/appointments/components/AppointmentCard';
 import { CancelAppointmentDialog } from '@/app/pages/appointments/components/CancelAppointmentDialog';
 import { RescheduleAppointmentDialog } from '@/app/pages/appointments/components/RescheduleAppointmentDialog';
+import { StaffAppointmentsTablePanel } from '@/app/pages/appointments/components/StaffAppointmentsTablePanel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAppointmentsStore, useUserRole } from '@/store';
 import { AppRole } from '@/types';
+
+const ADMIN_OPS_ROLES = new Set<AppRole>([
+  AppRole.OPERATIONS,
+  AppRole.CITY_MANAGER,
+  AppRole.SUPER_ADMIN,
+]);
+
+const CARE_TEAM_ROLES = new Set<AppRole>([AppRole.DIETICIAN, AppRole.HEALTH_COACH]);
 
 export function AppointmentsPage() {
   const navigate = useNavigate();
   const userRole = useUserRole();
   const isPatient = userRole === AppRole.PATIENT;
-  const isStaff = !isPatient;
+  const isCareTeam = userRole != null && CARE_TEAM_ROLES.has(userRole);
 
   const appointments = useAppointmentsStore((s) => s.appointments);
   const isLoading = useAppointmentsStore((s) => s.isLoading);
@@ -26,8 +35,40 @@ export function AppointmentsPage() {
   const [rescheduleAppt, setRescheduleAppt] = useState<(typeof appointments)[number] | null>(null);
 
   useEffect(() => {
-    void loadAppointments(isStaff);
-  }, [loadAppointments, isStaff]);
+    if (!isPatient && !isCareTeam) return;
+    void loadAppointments(isCareTeam);
+  }, [loadAppointments, isCareTeam, isPatient]);
+
+  if (userRole === AppRole.DOCTOR) {
+    return <Navigate to="/doctor/appointments" replace />;
+  }
+
+  if (userRole && ADMIN_OPS_ROLES.has(userRole)) {
+    return <Navigate to="/admin/operations?tab=appointments" replace />;
+  }
+
+  if (userRole && !isPatient && !isCareTeam) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (isCareTeam) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Appointments"
+          description="Caseload appointments — search, filter, and open records from the table."
+        />
+
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <StaffAppointmentsTablePanel appointments={appointments} isLoading={isLoading} />
+      </div>
+    );
+  }
 
   const upcoming = appointments.filter((a) => !['completed', 'cancelled'].includes(a.status));
   const past = appointments.filter((a) => ['completed', 'cancelled'].includes(a.status));
@@ -36,19 +77,13 @@ export function AppointmentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={isPatient ? 'My Appointments' : 'Clinic Appointments'}
-        description={
-          isPatient
-            ? 'Book home visits, clinic appointments, or teleconsultations and track progress.'
-            : 'Upcoming and recent appointments for your patients.'
-        }
+        title="My Appointments"
+        description="Book home visits, clinic appointments, or teleconsultations and track progress."
         actions={
-          isPatient ? (
-            <Button onClick={() => navigate('/appointments/book')} className="gap-2">
-              <FiPlus className="h-4 w-4" />
-              Book now
-            </Button>
-          ) : undefined
+          <Button onClick={() => navigate('/appointments/book')} className="gap-2">
+            <FiPlus className="h-4 w-4" />
+            Book now
+          </Button>
         }
       />
 
@@ -64,16 +99,12 @@ export function AppointmentsPage() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
             <p className="max-w-sm text-sm text-muted-foreground">
-              {isPatient
-                ? 'No appointments yet. Book a home visit, clinic slot, or online consultation.'
-                : 'No appointments in the last 7 days.'}
+              No appointments yet. Book a home visit, clinic slot, or online consultation.
             </p>
-            {isPatient && (
-              <Button onClick={() => navigate('/appointments/book')} className="gap-2">
-                <FiPlus className="h-4 w-4" />
-                Book your first appointment
-              </Button>
-            )}
+            <Button onClick={() => navigate('/appointments/book')} className="gap-2">
+              <FiPlus className="h-4 w-4" />
+              Book your first appointment
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -88,10 +119,10 @@ export function AppointmentsPage() {
                   <AppointmentCard
                     key={appt.id}
                     appointment={appt}
-                    showPatient={isStaff}
+                    showPatient={false}
                     onOpen={() => navigate(`/appointments/${appt.id}`)}
-                    onReschedule={isPatient ? () => setRescheduleAppt(appt) : undefined}
-                    onCancel={isPatient ? () => setCancelId(appt.id) : undefined}
+                    onReschedule={() => setRescheduleAppt(appt)}
+                    onCancel={() => setCancelId(appt.id)}
                   />
                 ))}
               </div>
@@ -108,7 +139,7 @@ export function AppointmentsPage() {
                   <AppointmentCard
                     key={appt.id}
                     appointment={appt}
-                    showPatient={isStaff}
+                    showPatient={false}
                     onOpen={() => navigate(`/appointments/${appt.id}`)}
                   />
                 ))}
@@ -123,7 +154,7 @@ export function AppointmentsPage() {
           open={Boolean(cancelId)}
           appointmentId={cancelTarget.id}
           onClose={() => setCancelId(null)}
-          onDone={() => void loadAppointments(isStaff)}
+          onDone={() => void loadAppointments(false)}
         />
       )}
 
@@ -132,7 +163,7 @@ export function AppointmentsPage() {
           open={Boolean(rescheduleAppt)}
           appointment={rescheduleAppt}
           onClose={() => setRescheduleAppt(null)}
-          onDone={() => void loadAppointments(isStaff)}
+          onDone={() => void loadAppointments(false)}
         />
       )}
 

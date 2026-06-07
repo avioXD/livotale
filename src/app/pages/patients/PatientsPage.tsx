@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DataTable,
@@ -9,9 +9,13 @@ import {
 } from '@/components/common';
 import { PatientFiltersPanel } from '@/app/pages/patients/components/PatientFiltersPanel';
 import { patientColumns } from '@/app/pages/patients/components/patientColumns';
-import { usePatientsStore } from '@/store';
+import { usePatientsStore, useUserRole } from '@/store';
+import { AppRole } from '@/types';
 
 export function PatientsPage() {
+  const navigate = useNavigate();
+  const userRole = useUserRole();
+  const isDoctor = userRole === AppRole.DOCTOR;
   const {
     items,
     total,
@@ -39,11 +43,17 @@ export function PatientsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Patients"
-        description="Manage patient records, home visit schedules, and care journeys."
+        description={
+          isDoctor
+            ? 'Search and open patient records — reports, scans, history, and care journey.'
+            : 'Manage patient records, home visit schedules, and care journeys.'
+        }
         actions={
-          <Button size="sm" asChild>
-            <Link to="/admin/appointments/book">Book appointment</Link>
-          </Button>
+          !isDoctor ? (
+            <Button size="sm" asChild>
+              <Link to="/admin/appointments/book">Book appointment</Link>
+            </Button>
+          ) : undefined
         }
       />
 
@@ -73,6 +83,7 @@ export function PatientsPage() {
         isLoading={isLoading}
         emptyMessage="No patients found. Adjust filters or connect the API."
         getRowKey={(p) => p.id}
+        onRowClick={(p) => navigate(`/patients/${p.id}?tab=dashboard`)}
       />
 
       <PaginationControls

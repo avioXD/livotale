@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { adminAppointmentsService } from '@/services';
 import type {
+  AdminAppointmentDetail,
   AdminAppointmentSummary,
   AdminAppointmentsDashboard,
   AdminRouteLiveItem,
@@ -10,6 +11,7 @@ import type {
 interface AdminAppointmentsStore {
   dashboard: AdminAppointmentsDashboard | null;
   appointments: AdminAppointmentSummary[];
+  selected: AdminAppointmentDetail | null;
   missed: AdminAppointmentSummary[];
   routeLive: AdminRouteLiveItem[];
   reminderLogs: AppointmentReminderLog[];
@@ -18,18 +20,23 @@ interface AdminAppointmentsStore {
   error: string | null;
   loadDashboard: () => Promise<void>;
   loadAppointments: (params?: Record<string, string | undefined>) => Promise<void>;
+  loadDetail: (id: string) => Promise<void>;
+  updateAppointment: (id: string, payload: Record<string, unknown>) => Promise<void>;
+  cancelAppointment: (id: string, reason?: string) => Promise<void>;
   assignStaff: (id: string, payload: { doctorId?: string; technicianId?: string }) => Promise<void>;
   sendReminder: (id: string) => Promise<void>;
   loadMissed: () => Promise<void>;
   handleMissed: (id: string, action: 'follow_up' | 'closed') => Promise<void>;
   loadRouteLive: (date?: string) => Promise<void>;
   loadReminderLogs: () => Promise<void>;
+  clearSelected: () => void;
   clearError: () => void;
 }
 
 export const useAdminAppointmentsStore = create<AdminAppointmentsStore>((set) => ({
   dashboard: null,
   appointments: [],
+  selected: null,
   missed: [],
   routeLive: [],
   reminderLogs: [],
@@ -54,6 +61,40 @@ export const useAdminAppointmentsStore = create<AdminAppointmentsStore>((set) =>
       set({ appointments, isLoading: false });
     } catch (err) {
       set({ isLoading: false, error: err instanceof Error ? err.message : 'Failed to load appointments' });
+    }
+  },
+
+  loadDetail: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const selected = await adminAppointmentsService.getById(id);
+      set({ selected, isLoading: false });
+    } catch (err) {
+      set({ isLoading: false, error: err instanceof Error ? err.message : 'Failed to load appointment' });
+    }
+  },
+
+  updateAppointment: async (id, payload) => {
+    set({ isSaving: true, error: null });
+    try {
+      const selected = await adminAppointmentsService.update(id, payload);
+      const appointments = await adminAppointmentsService.list();
+      set({ selected, appointments, isSaving: false });
+    } catch (err) {
+      set({ isSaving: false, error: err instanceof Error ? err.message : 'Failed to update appointment' });
+      throw err;
+    }
+  },
+
+  cancelAppointment: async (id, reason) => {
+    set({ isSaving: true, error: null });
+    try {
+      await adminAppointmentsService.cancelAppointment(id, { reason: reason ?? 'cancelled_by_admin' });
+      const appointments = await adminAppointmentsService.list();
+      set({ selected: null, appointments, isSaving: false });
+    } catch (err) {
+      set({ isSaving: false, error: err instanceof Error ? err.message : 'Failed to cancel appointment' });
+      throw err;
     }
   },
 
@@ -123,5 +164,6 @@ export const useAdminAppointmentsStore = create<AdminAppointmentsStore>((set) =>
     }
   },
 
+  clearSelected: () => set({ selected: null }),
   clearError: () => set({ error: null }),
 }));

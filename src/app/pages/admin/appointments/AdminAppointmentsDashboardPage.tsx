@@ -150,6 +150,9 @@ export function AdminAppointmentsDashboardPage() {
                       </td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="secondary" asChild>
+                            <Link to={`/admin/appointments/${row.id}`}>View</Link>
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => setAssignId(row.id)}>
                             Assign
                           </Button>

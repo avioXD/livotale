@@ -8,3 +8,4 @@ export * from './reports';
 export * from './journey';
 export * from './profile';
 export * from './patientProfile';
+export * from './sampleCollection';
