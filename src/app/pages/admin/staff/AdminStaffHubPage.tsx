@@ -7,9 +7,10 @@ import { STAFF_ROLE_CONFIGS, staffRoleFromSlug } from '@/app/pages/admin/staff/s
 import { Button } from '@/components/ui/button';
 import { adminAppointmentsService } from '@/services/appointments';
 import { opsAnalyticsService, type AnalyticsPeriod } from '@/services/opsAnalytics';
+import { staffDirectoryService } from '@/services/staff/StaffDirectoryService';
 import type { SampleCollectionAnalytics, StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
 import type { DoctorOption } from '@/types/appointments';
-import type { StaffSectionTab } from '@/types/staffHub';
+import type { StaffMemberRow, StaffRoleDashboard, StaffSectionTab } from '@/types/staffHub';
 
 const PERIODS: { value: AnalyticsPeriod; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -34,6 +35,8 @@ export function AdminStaffHubPage() {
   const [technicians, setTechnicians] = useState<StaffTechnicianProfile[]>([]);
   const [labPartners, setLabPartners] = useState<StaffLabPartnerProfile[]>([]);
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [staffMembers, setStaffMembers] = useState<StaffMemberRow[]>([]);
+  const [staffDashboard, setStaffDashboard] = useState<StaffRoleDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const setSection = (section: StaffSectionTab) => {
@@ -43,16 +46,20 @@ export function AdminStaffHubPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [a, t, l, d] = await Promise.all([
+      const [a, t, l, d, staffRows, staffSummary] = await Promise.all([
         opsAnalyticsService.getAdminSampleAnalytics(period),
         opsAnalyticsService.listTechnicians(),
         opsAnalyticsService.listLabPartners(),
         adminAppointmentsService.listDoctors(),
+        staffDirectoryService.listUsers(activeRole),
+        staffDirectoryService.getDashboard(activeRole),
       ]);
       setAnalytics(a);
       setTechnicians(t);
       setLabPartners(l);
       setDoctors(d);
+      setStaffMembers(staffRows);
+      setStaffDashboard(staffSummary);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staff data');
       try {
@@ -61,7 +68,7 @@ export function AdminStaffHubPage() {
         // ignore
       }
     }
-  }, [period]);
+  }, [activeRole, period]);
 
   useEffect(() => {
     void load();
@@ -112,6 +119,8 @@ export function AdminStaffHubPage() {
         technicians={technicians}
         labPartners={labPartners}
         doctors={doctors}
+        staffMembers={staffMembers}
+        staffDashboard={staffDashboard}
       />
     </div>
   );

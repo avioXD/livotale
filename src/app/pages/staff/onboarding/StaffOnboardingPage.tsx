@@ -92,10 +92,6 @@ export function StaffOnboardingPage() {
     const profile = roleKey === 'technician' ? null : staffProfile;
     const tech = roleKey === 'technician' ? techProfile : null;
     const docs = tech?.documents ?? profile?.documents ?? [];
-    const mappedProfile = profile ?? {
-      ...buildDemoStaffProfile(roleKey, { id: 'x', fullName: '', subtitle: '', status: 'inactive', metrics: [] }),
-      documents: docs.map((d) => ({ ...d, documentType: d.documentType as StaffFullProfile['documents'][0]['documentType'] })),
-    };
 
     const profileComplete = tech
       ? Boolean(tech.employee?.homeLine1 && tech.employee?.homePincode)

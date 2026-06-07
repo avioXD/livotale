@@ -5,7 +5,7 @@ import { staffProfileService } from '@/services/staff/StaffProfileService';
 import { technicianProfileService } from '@/services/technician/TechnicianProfileService';
 import type { StaffLabPartnerProfile } from '@/types/sampleCollection';
 import type { StaffMemberRow, StaffRoleKey } from '@/types/staffHub';
-import type { StaffDocumentType, StaffFullProfile } from '@/types/staffProfile';
+import type { StaffFullProfile } from '@/types/staffProfile';
 import type { TechnicianFullProfile } from '@/types/technicianProfile';
 
 interface StaffMemberDetailPanelProps {

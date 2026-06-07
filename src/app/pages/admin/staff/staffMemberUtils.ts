@@ -60,8 +60,10 @@ export function listStaffMembersForRole(
     technicians: StaffTechnicianProfile[];
     labPartners: StaffLabPartnerProfile[];
     doctors: DoctorOption[];
+    directoryRows?: StaffMemberRow[];
   },
 ): StaffMemberRow[] {
+  if (data.directoryRows?.length) return data.directoryRows;
   if (roleKey === 'technician') return mapTechniciansToRows(data.technicians);
   if (roleKey === 'lab_partner') return mapLabPartnersToRows(data.labPartners);
   if (roleKey === 'doctor') return mapDoctorsToRows(data.doctors);

@@ -2,12 +2,9 @@ import { staffProfileConfig } from '@/app/pages/staff/profile/staffProfileConfig
 import type { StaffRoleKey } from '@/types/staffHub';
 import type { StaffComplianceDocument, StaffFullProfile } from '@/types/staffProfile';
 
-export function isStaffProfileComplete(role: StaffRoleKey, profile: StaffFullProfile): boolean {
+export function isStaffProfileComplete(_role: StaffRoleKey, profile: StaffFullProfile): boolean {
   const emp = profile.employee;
   if (!emp) return false;
-  const requiredFieldKeys = staffProfileConfig(role).fields
-    .filter((f) => f.section === 'address' || (f.selfEditable && f.section !== 'employment'))
-    .map((f) => f.key);
 
   const values: Record<string, string | null | undefined> = {
     fullName: profile.fullName,

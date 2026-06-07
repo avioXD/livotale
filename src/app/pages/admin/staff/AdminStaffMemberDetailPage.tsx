@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { adminAppointmentsService } from '@/services/appointments';
 import { opsAnalyticsService } from '@/services/opsAnalytics';
+import { staffDirectoryService } from '@/services/staff/StaffDirectoryService';
 import type { SampleCollectionAnalytics, StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
 import type { DoctorOption } from '@/types/appointments';
 
@@ -29,6 +30,7 @@ export function AdminStaffMemberDetailPage() {
   const [technicians, setTechnicians] = useState<StaffTechnicianProfile[]>([]);
   const [labPartners, setLabPartners] = useState<StaffLabPartnerProfile[]>([]);
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [staffMembers, setStaffMembers] = useState<StaffMemberRow[]>([]);
   const [analytics, setAnalytics] = useState<SampleCollectionAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,22 +39,24 @@ export function AdminStaffMemberDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [t, l, d, a] = await Promise.all([
+      const [t, l, d, a, staffRows] = await Promise.all([
         opsAnalyticsService.listTechnicians(),
         opsAnalyticsService.listLabPartners(),
         adminAppointmentsService.listDoctors(),
         opsAnalyticsService.getAdminSampleAnalytics('monthly'),
+        staffDirectoryService.listUsers(roleKey),
       ]);
       setTechnicians(t);
       setLabPartners(l);
       setDoctors(d);
       setAnalytics(a);
+      setStaffMembers(staffRows);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staff member');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [roleKey]);
 
   useEffect(() => {
     void load();
@@ -60,7 +64,12 @@ export function AdminStaffMemberDetailPage() {
 
   const member = useMemo((): StaffMemberRow | null => {
     if (!memberId) return null;
-    const rows = listStaffMembersForRole(roleKey, { technicians, labPartners, doctors });
+    const rows = listStaffMembersForRole(roleKey, {
+      technicians,
+      labPartners,
+      doctors,
+      directoryRows: staffMembers,
+    });
     const found = rows.find((r) => r.id === memberId);
     if (found) return found;
 
@@ -84,7 +93,7 @@ export function AdminStaffMemberDetailPage() {
       status: 'active',
       metrics: [],
     };
-  }, [memberId, roleKey, technicians, labPartners, doctors, roleConfig.label]);
+  }, [memberId, roleKey, technicians, labPartners, doctors, staffMembers, roleConfig.label]);
 
   const selectedTechnician = technicians.find((t) => t.id === memberId);
   const selectedLab = labPartners.find((l) => l.id === memberId);

@@ -1,5 +1,4 @@
 export { cn } from '@/lib/utils';
-export { BRAND, APP_NAME, APP_TAGLINE, DEBOUNCE, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from './constants';
 export { debounce, debounceAsync } from './debounce';
 
 export function formatFullName(firstName: string, lastName: string): string {

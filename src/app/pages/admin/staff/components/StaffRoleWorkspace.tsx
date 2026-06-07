@@ -20,7 +20,7 @@ import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
 import { paginateList } from '@/utils/pagination';
 import type { SampleCollectionAnalytics, StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
 import type { DoctorOption } from '@/types/appointments';
-import type { StaffRoleConfig, StaffSectionTab } from '@/types/staffHub';
+import type { StaffMemberRow, StaffRoleConfig, StaffRoleDashboard, StaffSectionTab } from '@/types/staffHub';
 
 interface StaffRoleWorkspaceProps {
   role: StaffRoleConfig;
@@ -31,6 +31,8 @@ interface StaffRoleWorkspaceProps {
   technicians: StaffTechnicianProfile[];
   labPartners: StaffLabPartnerProfile[];
   doctors: DoctorOption[];
+  staffMembers?: StaffMemberRow[];
+  staffDashboard?: StaffRoleDashboard | null;
 }
 
 export function StaffRoleWorkspace({
@@ -42,6 +44,8 @@ export function StaffRoleWorkspace({
   technicians,
   labPartners,
   doctors,
+  staffMembers = [],
+  staffDashboard = null,
 }: StaffRoleWorkspaceProps) {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
@@ -68,20 +72,26 @@ export function StaffRoleWorkspace({
   }, [role.key]);
 
   const allMembers = useMemo(() => {
-    const rows = listStaffMembersForRole(role.key, { technicians, labPartners, doctors });
+    const rows = listStaffMembersForRole(role.key, {
+      technicians,
+      labPartners,
+      doctors,
+      directoryRows: staffMembers,
+    });
     const existingIds = new Set(rows.map((r) => r.id));
-    const fromInvites = pendingInvites
+    const fromInvites: StaffMemberRow[] = pendingInvites
       .filter((i) => !existingIds.has(i.id))
       .map((i) => ({
         id: i.id,
         fullName: i.fullName,
         subtitle: `${i.mobile} · onboarding`,
         status: i.status || 'inactive',
+        email: null,
         mobile: i.mobile,
         metrics: [{ label: 'Onboarding', value: 'Pending' }],
       }));
     return [...fromInvites, ...rows];
-  }, [role.key, technicians, labPartners, doctors, pendingInvites]);
+  }, [role.key, technicians, labPartners, doctors, staffMembers, pendingInvites]);
 
   const filteredMembers = useMemo(() => {
     return allMembers.filter((m) => {
@@ -132,9 +142,9 @@ export function StaffRoleWorkspace({
         ],
       };
     }
-    const demo = getDemoStaffDashboard(role.key);
+    const demo = staffDashboard ?? getDemoStaffDashboard(role.key);
     return { kpis: demo?.kpis ?? [{ label: 'Team members', value: allMembers.length }] };
-  }, [role.key, analytics, technicians.length, labPartners.length, doctors, allMembers.length]);
+  }, [role.key, analytics, technicians.length, labPartners.length, doctors, allMembers.length, staffDashboard]);
 
   const applyFilters = () => {
     setAppliedSearch(searchInput.trim().toLowerCase());
