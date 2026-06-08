@@ -16,6 +16,15 @@ interface DoctorMedicalSummaryPanelProps {
   orderId: string;
 }
 
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-dashed py-1.5 last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
 export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanelProps) {
   const [scan, setScan] = useState<FibrosisScanRecord | null>(null);
   const [labReport, setLabReport] = useState<LabReportUpload | null>(null);
@@ -42,17 +51,39 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Liver Fibrosis Scan</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-1 text-sm">
           {!scan ? (
             <p className="text-muted-foreground">No scan data yet.</p>
           ) : (
             <>
-              <p><span className="text-muted-foreground">LSM:</span> {scan.liverStiffnessKpa} kPa</p>
-              <p><span className="text-muted-foreground">CAP:</span> {scan.capDbm} dB/m</p>
-              <p><span className="text-muted-foreground">IQR/Med:</span> {scan.iqrMedianPercent}%</p>
-              <p><span className="text-muted-foreground">Fibrosis stage:</span> {scan.fibrosisStage}</p>
-              <p><span className="text-muted-foreground">Steatosis grade:</span> {scan.steatosisGrade}</p>
-              {scan.locked && <Badge variant="outline">Locked</Badge>}
+              <DetailRow label="LSM (stiffness)" value={`${scan.liverStiffnessKpa} kPa`} />
+              <DetailRow label="CAP (steatosis)" value={`${scan.capDbm} dB/m`} />
+              <DetailRow label="IQR" value={scan.iqr} />
+              <DetailRow label="IQR/Med" value={`${scan.iqrMedianPercent}%`} />
+              <DetailRow label="Valid / total measurements" value={`${scan.validMeasurements} / ${scan.totalMeasurements}`} />
+              <DetailRow label="Success rate" value={`${scan.successRatePercent}%`} />
+              <DetailRow label="Probe type" value={scan.probeType} />
+              <DetailRow label="Scan date" value={new Date(scan.scanAt).toLocaleString()} />
+              <DetailRow label="Operator" value={scan.operatorName} />
+              <DetailRow label="Device serial" value={scan.deviceSerial} />
+              <DetailRow label="Fasting" value={scan.fastingStatus ? 'Yes' : 'No'} />
+              <DetailRow label="BMI" value={scan.bmi} />
+              <DetailRow label="Fibrosis stage" value={scan.fibrosisStage} />
+              <DetailRow label="Steatosis grade" value={scan.steatosisGrade} />
+              <DetailRow label="Interpretation" value={scan.interpretation} />
+              {scan.remarks && <DetailRow label="Remarks" value={scan.remarks} />}
+              {scan.rescanCount != null && scan.rescanCount > 0 && (
+                <DetailRow label="Rescan count" value={scan.rescanCount} />
+              )}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {scan.locked && <Badge variant="outline">Locked</Badge>}
+                <Badge variant="secondary" className="capitalize">{scan.source}</Badge>
+                {scan.scanFileUrl && (
+                  <a href={scan.scanFileUrl} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                    Scan file
+                  </a>
+                )}
+              </div>
             </>
           )}
         </CardContent>
@@ -60,28 +91,45 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Pathology</CardTitle>
+          <CardTitle className="text-base">Pathology report</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm">
+        <CardContent className="space-y-1 text-sm">
           {!labReport ? (
             <p className="text-muted-foreground">No lab report uploaded.</p>
           ) : (
-            <div className="space-y-2">
-              <p><span className="text-muted-foreground">Lab:</span> {labReport.partnerLabName}</p>
-              <p><span className="text-muted-foreground">Uploaded:</span> {new Date(labReport.uploadedAt).toLocaleDateString()}</p>
+            <>
+              <DetailRow label="Partner lab" value={labReport.partnerLabName} />
+              <DetailRow label="File" value={labReport.fileName} />
+              <DetailRow label="Uploaded" value={new Date(labReport.uploadedAt).toLocaleString()} />
+              <DetailRow label="Uploaded by" value={labReport.uploadedBy} />
+              <DetailRow label="Extraction" value={
+                <Badge variant="outline" className="capitalize">{labReport.extractionStatus}</Badge>
+              } />
+              <DetailRow label="Final status" value={
+                <Badge variant="outline" className="capitalize">{labReport.finalStatus}</Badge>
+              } />
+              {labReport.emailFrom && (
+                <DetailRow label="Email from" value={labReport.emailFrom} />
+              )}
+              {labReport.emailSubject && (
+                <DetailRow label="Email subject" value={labReport.emailSubject} />
+              )}
+              {labReport.verifiedAt && (
+                <DetailRow label="Verified" value={new Date(labReport.verifiedAt).toLocaleString()} />
+              )}
               {labReport.fileUrl && (
-                <a href={labReport.fileUrl} target="_blank" rel="noreferrer" className="text-primary underline">
-                  View PDF
+                <a href={labReport.fileUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-primary underline">
+                  View pathology PDF
                 </a>
               )}
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">AI extraction</CardTitle>
+          <CardTitle className="text-base">AI extraction (pathology)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm">
           {!aiJob ? (
@@ -94,8 +142,14 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
               )}
               {aiJob.fields?.length ? (
                 <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="py-1">Parameter</th>
+                      <th className="py-1">Value</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {aiJob.fields.slice(0, 6).map((f) => (
+                    {aiJob.fields.map((f) => (
                       <tr key={f.id} className="border-t">
                         <td className="py-1 text-muted-foreground">{f.fieldName}</td>
                         <td className="py-1 font-medium">{f.editableValue}{f.unit ? ` ${f.unit}` : ''}</td>
@@ -118,8 +172,13 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
             <p className="text-muted-foreground">Report not generated yet.</p>
           ) : (
             <div className="space-y-2">
-              <p><span className="text-muted-foreground">Report #:</span> {report.reportNumber}</p>
-              <Badge className="capitalize">{report.status}</Badge>
+              <DetailRow label="Report #" value={report.reportNumber} />
+              <DetailRow label="Status" value={
+                <Badge className="capitalize">{report.status}</Badge>
+              } />
+              {report.publishedAt && (
+                <DetailRow label="Published" value={new Date(report.publishedAt).toLocaleString()} />
+              )}
               {report.pdfUrl && (
                 <a href={report.pdfUrl} target="_blank" rel="noreferrer" className="block text-primary underline">
                   Download report PDF
@@ -131,5 +190,4 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
       </Card>
     </div>
   );
-
 }

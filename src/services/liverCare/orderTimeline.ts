@@ -20,6 +20,7 @@ const EVENT_CATALOG: Record<string, { label: string; category: OrderTimelineCate
   payment_failed: { label: 'Payment failed', category: 'payment' },
   assign_technician: { label: 'Technician assigned', category: 'scan' },
   technician_reassigned: { label: 'Technician reassigned', category: 'scan' },
+  scan_date_requested: { label: 'Patient selected scan date', category: 'scan' },
   schedule_scan: { label: 'Scan scheduled', category: 'scan' },
   start_scan: { label: 'Scan started', category: 'scan' },
   visit_started: { label: 'Technician visit started', category: 'scan' },
@@ -30,9 +31,10 @@ const EVENT_CATALOG: Record<string, { label: string; category: OrderTimelineCate
   complete_scan: { label: 'Scan marked complete', category: 'scan' },
   scan_completed: { label: 'Fibrosis scan completed', category: 'scan' },
   scan_failed: { label: 'Scan could not be completed', category: 'scan' },
-  assign_lab: { label: 'Partner lab assigned', category: 'pathology' },
-  lab_assigned: { label: 'Partner lab assigned', category: 'pathology' },
-  sample_dispatched: { label: 'Blood sample dispatched', category: 'pathology' },
+  assign_lab: { label: 'Lab partner assigned', category: 'pathology' },
+  lab_assigned: { label: 'Lab partner assigned', category: 'pathology' },
+  sample_collected: { label: 'Blood sample collected', category: 'pathology' },
+  sample_dispatched: { label: 'Blood sample submitted to lab', category: 'pathology' },
   sample_received_at_lab: { label: 'Sample received at lab', category: 'pathology' },
   awaiting_lab_report: { label: 'Awaiting lab report PDF', category: 'pathology' },
   upload_lab_report: { label: 'Lab report uploaded', category: 'pathology' },
@@ -127,6 +129,10 @@ export function formatTransitionDetail(event: string, meta?: Record<string, stri
   }
   if (event === 'schedule_consultation' && meta?.scheduledAt) {
     return `Video consult · ${new Date(meta.scheduledAt).toLocaleString()}`;
+  }
+  if (event === 'schedule_scan' && meta?.scheduledAt) {
+    const mode = meta.visitMode === 'home' ? 'Home visit' : meta.visitMode === 'clinic' ? 'Clinic visit' : 'Scan';
+    return `${mode}${meta.timeSlot ? ` · ${meta.timeSlot}` : ''} · ${new Date(meta.scheduledAt).toLocaleString()}`;
   }
   if (event === 'assign_lab' && meta?.partnerLabName) {
     return `Lab: ${meta.partnerLabName}`;

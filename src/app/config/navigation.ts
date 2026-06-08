@@ -29,7 +29,7 @@ export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
   overview: 'Overview',
   'patient-care': 'My Care',
   'technician-ops': 'Field work',
-  'lab-ops': 'Partner lab',
+  'lab-ops': 'Lab partner',
   clinical: 'Clinical',
   fulfillment: 'Fulfillment',
   'admin-ops': 'Day-to-day ops',
@@ -146,39 +146,28 @@ export const navigationItems: NavItem[] = [
     label: 'Patients',
     path: '/patients',
     icon: FiUsers,
-    roles: [AppRole.DOCTOR, ...OPS_ROLES],
+    roles: [...OPS_ROLES],
     group: 'overview',
-  },
-
-  // ── Technician ──
-  {
-    id: 'technician-workspace',
-    label: 'Field work',
-    path: '/technician/orders',
-    icon: FiActivity,
-    roles: [AppRole.TECHNICIAN],
-    group: 'technician-ops',
-    childrenOnly: true,
-    children: [
-      { id: 'tech-orders', label: 'Liver Fibrosis Scan', path: '/technician/orders', icon: FiActivity },
-      { id: 'tech-schedule', label: 'Sample collection', path: '/technician/schedule', icon: MdOutlineScience },
-    ],
   },
 
   // ── Doctor ──
   {
-    id: 'doctor-workspace',
-    label: 'Clinical',
+    id: 'doc-consultations',
+    label: 'Consultations',
     path: '/doctor/consultations',
     icon: FiActivity,
     roles: [AppRole.DOCTOR],
     group: 'clinical',
-    childrenOnly: true,
-    children: [
-      { id: 'doc-consultations', label: 'Liver care Rx', path: '/doctor/consultations', icon: FiActivity },
-      { id: 'doc-appointments', label: 'Appointments', path: '/doctor/appointments', icon: FiCalendar },
-      { id: 'doc-patients', label: 'Patients', path: '/patients', icon: FiUsers },
-    ],
+  },
+
+  // ── Technician — field visits & sample collection on order detail ──
+  {
+    id: 'technician-orders',
+    label: 'Field orders',
+    path: '/technician/orders',
+    icon: FiActivity,
+    roles: [AppRole.TECHNICIAN],
+    group: 'technician-ops',
   },
 
   // ── Operations hub (Operations + Admin) ──
@@ -193,7 +182,7 @@ export const navigationItems: NavItem[] = [
     children: [
       { id: 'ops-overview', label: 'Overview', path: '/admin/operations', icon: FiHome },
       { id: 'ops-enquiries', label: 'Enquiries', path: '/admin/operations?tab=enquiries', icon: FiClipboard },
-      { id: 'ops-orders', label: 'Orders & payments', path: '/admin/operations?tab=orders', icon: FiCreditCard },
+      { id: 'ops-orders', label: 'Orders', path: '/admin/operations?tab=orders', icon: FiCreditCard },
       { id: 'ops-partner-lab', label: 'Lab reports', path: '/admin/operations?tab=partner-lab', icon: MdOutlineScience },
       { id: 'ops-appointments', label: 'Appointments', path: '/admin/operations?tab=appointments', icon: FiCalendar },
       { id: 'ops-ai-review', label: 'AI review', path: '/admin/operations?tab=ai-review', icon: FiActivity },
@@ -226,16 +215,8 @@ export const navigationItems: NavItem[] = [
     group: 'staff-management',
   },
   {
-    id: 'admin-partner-labs',
-    label: 'Partner lab profiles',
-    path: '/admin/lab-partners',
-    icon: MdOutlineScience,
-    roles: [...OPS_ROLES],
-    group: 'staff-management',
-  },
-  {
     id: 'admin-staff-lab-partners',
-    label: 'Lab partner users',
+    label: 'Lab partners',
     path: '/admin/staff/lab-partners',
     icon: MdOutlineScience,
     roles: [...OPS_ROLES],
@@ -266,6 +247,24 @@ export const navigationItems: NavItem[] = [
     icon: FiSettings,
     roles: [...ALL_PRODUCT_ROLES, AppRole.DIETICIAN, AppRole.HEALTH_COACH, AppRole.PHARMACY, AppRole.LAB_PARTNER],
     group: 'account',
+    childrenOnly: true,
+    children: [
+      { id: 'settings-profile', label: 'Account', path: '/settings', icon: FiSettings },
+      {
+        id: 'doc-availability',
+        label: 'Availability',
+        path: '/settings?tab=availability',
+        icon: FiCalendar,
+        roles: [AppRole.DOCTOR],
+      },
+      {
+        id: 'doc-leave',
+        label: 'Leave',
+        path: '/settings?tab=leave',
+        icon: FiCalendar,
+        roles: [AppRole.DOCTOR],
+      },
+    ],
   },
 ];
 

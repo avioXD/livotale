@@ -18,6 +18,8 @@ export interface PackageHighlight {
   value: string;
 }
 
+export type BloodCollectionTiming = 'before_scan' | 'after_scan';
+
 export interface PackageFaq {
   question: string;
   answer: string;
@@ -50,6 +52,8 @@ export interface LiverCarePackage {
   fibrosisScanIncluded: boolean;
   pathologyIncluded: boolean;
   consultationIncluded: boolean;
+  /** When technician should collect blood relative to fibrosis scan on the same visit. */
+  bloodCollectionTiming?: BloodCollectionTiming | null;
   visibilityWeb: boolean;
   active: boolean;
   sortOrder: number;

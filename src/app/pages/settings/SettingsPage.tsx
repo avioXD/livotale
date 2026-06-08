@@ -2,12 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common';
 import { StaffSelfProfileContent } from '@/app/pages/staff/profile/components/StaffSelfProfileContent';
+import { AvailabilityEditor } from '@/app/pages/doctor/appointments/components/AvailabilityEditor';
+import { HolidayForm } from '@/app/pages/doctor/appointments/components/HolidayForm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useAuthStore, useProfileStore, useUserRole } from '@/store';
+import { useAuthStore, useDoctorAppointmentsStore, useProfileStore, useUserRole } from '@/store';
 import { authService } from '@/services';
 import { ROLE_LABELS } from '@/rbac';
 import { AppRole, type LoginLogEntry, type UserSession } from '@/types';
@@ -50,6 +52,15 @@ export function SettingsPage() {
 
   const isPatient = userRole === AppRole.PATIENT;
   const isStaff = userRole != null && STAFF_ROLES.has(userRole);
+  const isDoctor = userRole === AppRole.DOCTOR;
+
+  const availabilityRules = useDoctorAppointmentsStore((s) => s.availabilityRules);
+  const holidays = useDoctorAppointmentsStore((s) => s.holidays);
+  const doctorSaving = useDoctorAppointmentsStore((s) => s.isSaving);
+  const loadAvailability = useDoctorAppointmentsStore((s) => s.loadAvailability);
+  const saveAvailability = useDoctorAppointmentsStore((s) => s.saveAvailability);
+  const loadHolidays = useDoctorAppointmentsStore((s) => s.loadHolidays);
+  const createHoliday = useDoctorAppointmentsStore((s) => s.createHoliday);
 
   useEffect(() => {
     void loadProfile();
@@ -69,7 +80,13 @@ export function SettingsPage() {
     if (activeTab === 'security') {
       void loadSecurity();
     }
-  }, [activeTab]);
+    if (isDoctor && activeTab === 'availability') {
+      void loadAvailability();
+    }
+    if (isDoctor && activeTab === 'leave') {
+      void loadHolidays();
+    }
+  }, [activeTab, isDoctor, loadAvailability, loadHolidays]);
 
   const loadSecurity = async () => {
     const [sessionList, logs] = await Promise.all([
@@ -124,6 +141,8 @@ export function SettingsPage() {
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="profile">Basic info</TabsTrigger>
           {isStaff && <TabsTrigger value="my-profile">My profile</TabsTrigger>}
+          {isDoctor && <TabsTrigger value="availability">Availability</TabsTrigger>}
+          {isDoctor && <TabsTrigger value="leave">Leave</TabsTrigger>}
           {isPatient && <TabsTrigger value="emergency">Emergency</TabsTrigger>}
           <TabsTrigger value="consent">Consent</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -152,6 +171,26 @@ export function SettingsPage() {
         {isStaff && (
           <TabsContent value="my-profile" className="mt-4">
             <StaffSelfProfileContent />
+          </TabsContent>
+        )}
+
+        {isDoctor && (
+          <TabsContent value="availability" className="mt-4">
+            <AvailabilityEditor
+              rules={availabilityRules}
+              isSaving={doctorSaving}
+              onSave={(rules) => saveAvailability({ rules })}
+            />
+          </TabsContent>
+        )}
+
+        {isDoctor && (
+          <TabsContent value="leave" className="mt-4">
+            <HolidayForm
+              holidays={holidays}
+              isSaving={doctorSaving}
+              onCreate={createHoliday}
+            />
           </TabsContent>
         )}
 

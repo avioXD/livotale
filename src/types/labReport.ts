@@ -1,4 +1,5 @@
 import type { AIExtractionStatus } from '@/types/aiExtraction';
+import type { SampleDispatchStatus } from '@/types/sampleDispatch';
 
 export type LabReportFinalStatus = 'pending' | 'verified' | 'rejected';
 
@@ -23,6 +24,23 @@ export interface LabReportUpload {
   emailSubject?: string | null;
   emailReceivedAt?: string | null;
   fileSizeBytes?: number | null;
+}
+
+export interface LabReportQueueRow {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  patientId: string;
+  patientName: string;
+  packageCode: string;
+  partnerLabId: string | null;
+  partnerLabName: string | null;
+  dispatchStatus: SampleDispatchStatus | 'not_started';
+  extractionStatus: AIExtractionStatus | null;
+  reportFileName: string | null;
+  reportUploadedAt: string | null;
+  courierRef: string | null;
+  updatedAt: string;
 }
 
 /** Ops uploads the PDF attachment received from partner lab email */

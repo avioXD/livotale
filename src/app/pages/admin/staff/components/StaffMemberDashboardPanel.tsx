@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DoctorDashboardPanel } from '@/app/pages/doctor/dashboard/DoctorDashboardPanel';
+import { KpiCard, kpiAccentAt } from '@/components/common';
 import { DashboardCharts } from '@/app/pages/dashboard/components/DashboardCharts';
 import { DashboardStats } from '@/app/pages/dashboard/components/DashboardStats';
 import { EcosystemOverview } from '@/app/pages/dashboard/components/EcosystemOverview';
@@ -176,12 +177,15 @@ export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMe
               <CardHeader>
                 <CardTitle className="text-base">{demoDashboard.headline}</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {demoDashboard.kpis.map((kpi) => (
-                  <div key={kpi.label} className="rounded-md border px-3 py-3">
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                    <p className="text-2xl font-semibold">{kpi.value}</p>
-                  </div>
+              <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {demoDashboard.kpis.map((kpi, i) => (
+                  <KpiCard
+                    key={kpi.label}
+                    label={kpi.label}
+                    value={kpi.value}
+                    hint={kpi.hint}
+                    accent={kpiAccentAt(i)}
+                  />
                 ))}
               </CardContent>
             </Card>

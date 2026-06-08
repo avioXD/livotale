@@ -22,6 +22,10 @@ export function AdminStaffOnboardPage() {
     return <Navigate to="/admin/staff/technicians" replace />;
   }
 
+  if (roleKey === 'lab_partner') {
+    return <Navigate to="/admin/staff/lab-partners" replace />;
+  }
+
   const [form, setForm] = useState({ fullName: '', mobile: '', email: '', username: '' });
   const [invite, setInvite] = useState<StaffOnboardingInvite | null>(null);
   const [isSaving, setIsSaving] = useState(false);

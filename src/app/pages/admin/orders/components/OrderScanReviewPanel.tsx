@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { liverCareOrderService, technicianOrderService } from '@/services/liverCare';
 import type { AssignableTechnician } from '@/services/liverCare/technicianOrder.mock';
 import type { FibrosisScanRecord, TechnicianOrderVisit, TechnicianVisitStep } from '@/types/fibrosisScan';
+import { OrderScanScheduleSection } from '@/app/pages/admin/orders/components/OrderScanScheduleSection';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 
 const VISIT_STEP_LABELS: Record<TechnicianVisitStep, string> = {
@@ -93,11 +94,14 @@ export function OrderScanReviewPanel({ order, onUpdated, readOnly = false }: Ord
 
   return (
     <div className="space-y-4">
+      <OrderScanScheduleSection order={order} onUpdated={onUpdated} readOnly={readOnly} />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Technician assignment</CardTitle>
           <CardDescription>
-            Operations assigns or reassigns the field technician. Scan capture is done on the device by the technician.
+            Operations assigns or reassigns the field technician. Patients choose the date; technician assignment
+            stays with operations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -113,12 +117,6 @@ export function OrderScanReviewPanel({ order, onUpdated, readOnly = false }: Ord
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No technician assigned yet.</p>
-          )}
-
-          {order.scanScheduledAt && (
-            <p className="text-xs text-muted-foreground">
-              Scheduled visit: {formatDateTime(order.scanScheduledAt)}
-            </p>
           )}
 
           {canAssign && (

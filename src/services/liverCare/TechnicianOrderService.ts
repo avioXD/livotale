@@ -96,10 +96,12 @@ class TechnicianOrderService extends BaseApiService {
         visit.visitStep = 'scan_in_progress';
         MOCK_TECH_VISITS[orderId] = visit;
 
+        const visitForRescan = ensureVisit(orderId);
         const record: FibrosisScanRecord = {
           id: `scan-${orderId}-${Date.now()}`,
           orderId,
           patientId: order.patientId,
+          rescanCount: visitForRescan.rescanCount ?? 0,
           liverStiffnessKpa: data.lsmKpa,
           capDbm: data.capDbm,
           iqr: data.iqr,
@@ -142,11 +144,13 @@ class TechnicianOrderService extends BaseApiService {
         const existing = MOCK_FIBROSIS_SCANS[orderId];
         if (existing?.locked) throw new Error('Scan record is locked');
 
+        const visitForRescan = ensureVisit(orderId);
         const record: FibrosisScanRecord = {
           id: existing?.id ?? `scan-${orderId}-${Date.now()}`,
           orderId,
           patientId: order.patientId,
           ...input,
+          rescanCount: existing?.rescanCount ?? visitForRescan.rescanCount ?? 0,
           locked: false,
           createdAt: existing?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -237,6 +241,28 @@ class TechnicianOrderService extends BaseApiService {
         return { visit, order };
       },
       () => this.post(`/technician/orders/${orderId}/complete`),
+    );
+  }
+
+  async requestRescan(orderId: string): Promise<{ visit: TechnicianOrderVisit; scan: null }> {
+    return mockOrApi(
+      () => {
+        const existing = MOCK_FIBROSIS_SCANS[orderId];
+        if (existing?.locked) throw new Error('Scan is locked — contact operations for a rescan');
+        delete MOCK_FIBROSIS_SCANS[orderId];
+        const visit = ensureVisit(orderId);
+        visit.visitStep = 'reached_location';
+        visit.rescanCount = (visit.rescanCount ?? existing?.rescanCount ?? 0) + 1;
+        MOCK_TECH_VISITS[orderId] = visit;
+        appendOrderTimeline(orderId, 'scan_rescan_requested', {
+          performedBy: 'technician',
+          detail: existing
+            ? `Rescan #${visit.rescanCount} — previous LSM ${existing.liverStiffnessKpa} kPa cleared`
+            : 'Rescan requested — capture new scan data',
+        });
+        return { visit, scan: null };
+      },
+      () => this.post(`/technician/orders/${orderId}/fibrosis-scan/rescan`),
     );
   }
 

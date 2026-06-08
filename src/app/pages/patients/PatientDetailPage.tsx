@@ -4,13 +4,9 @@ import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PatientAppointmentsPanel } from '@/app/pages/patients/components/PatientAppointmentsPanel';
 import {
   PatientOrdersPanel,
   PatientPaymentsPanel,
-  PatientScansPanel,
-  PatientTestsPanel,
-  PatientVisitsSection,
 } from '@/app/pages/patients/components/PatientClinicalPanels';
 import { PatientProfilePanel } from '@/app/pages/patients/components/PatientProfilePanel';
 import { usePatientDetailStore, useAuthStore, useUserRole } from '@/store';
@@ -32,8 +28,6 @@ export function PatientDetailPage() {
 
   const detail = usePatientDetailStore((s) => s.detail);
   const history = usePatientDetailStore((s) => s.history);
-  const appointments = usePatientDetailStore((s) => s.appointments);
-  const visits = usePatientDetailStore((s) => s.visits);
   const clinical = usePatientDetailStore((s) => s.clinical);
   const isLoading = usePatientDetailStore((s) => s.isLoading);
   const isSaving = usePatientDetailStore((s) => s.isSaving);
@@ -118,24 +112,8 @@ export function PatientDetailPage() {
             />
           </TabsContent>
 
-          <TabsContent value="appointments" className="mt-4">
-            <PatientAppointmentsPanel
-              appointments={appointments}
-              detailLinkPrefix={canEdit ? '/admin/appointments' : '/appointments'}
-            />
-            <PatientVisitsSection visits={visits} />
-          </TabsContent>
-
           <TabsContent value="orders" className="mt-4">
             <PatientOrdersPanel orders={clinical?.orders ?? []} />
-          </TabsContent>
-
-          <TabsContent value="tests" className="mt-4">
-            <PatientTestsPanel pathologyReports={clinical?.pathologyReports ?? []} />
-          </TabsContent>
-
-          <TabsContent value="scans" className="mt-4">
-            <PatientScansPanel scans={clinical?.scans ?? []} />
           </TabsContent>
 
           <TabsContent value="payments" className="mt-4">

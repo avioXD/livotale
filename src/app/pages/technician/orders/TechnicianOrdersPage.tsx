@@ -91,8 +91,8 @@ export function TechnicianOrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Liver Fibrosis Scan orders"
-        description="Assigned home visits — capture scan data and update visit status."
+        title="Field orders"
+        description="Assigned visits — scan capture, blood sample collection, and lab submission per order."
       />
 
       <ListToolbar

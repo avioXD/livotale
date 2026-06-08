@@ -72,16 +72,8 @@ export function FinalReportSection({
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Livotale letterhead report PDF</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Generate the branded PDF on Livotale letterhead — fibrosis scan
-          {pathologyRequired ? ' plus verified lab parameters from the database' : ''}. Publish to patient portal when ready.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+  const content = (
+    <div className="space-y-4">
         {error && (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
@@ -90,9 +82,7 @@ export function FinalReportSection({
 
         {!readOnly && pathologyRequired && !aiVerified && (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            {embeddedInLab
-              ? 'Confirm AI-extracted lab parameters above before generating the letterhead PDF.'
-              : 'Confirm AI-extracted lab parameters before generating the letterhead PDF.'}
+            Confirm AI parameters above before generating the letterhead PDF.
           </p>
         )}
 
@@ -166,7 +156,27 @@ export function FinalReportSection({
             <Button size="sm" variant="ghost" onClick={() => setShowPreview(false)}>Hide preview</Button>
           </div>
         )}
-      </CardContent>
+    </div>
+  );
+
+  if (embeddedInLab) {
+    return (
+      <section className="rounded-md border p-4">
+        <h3 className="mb-3 text-sm font-semibold">Livotale letterhead PDF</h3>
+        {content}
+      </section>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Letterhead PDF</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Generate the branded PDF and publish to the patient portal when ready.
+        </p>
+      </CardHeader>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 }

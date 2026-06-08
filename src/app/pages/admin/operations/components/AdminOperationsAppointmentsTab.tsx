@@ -1,159 +1,151 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   DataTable,
   FilterField,
   ListToolbar,
   PaginationControls,
 } from '@/components/common';
-import { APPOINTMENT_STATUS_PRESETS } from '@/app/pages/admin/operations/adminOperationsConfig';
-import { RouteMonitoringPanel } from '@/app/pages/admin/operations/components/RouteMonitoringPanel';
+import { CONSULTATION_QUEUE_STAGE_PRESETS } from '@/app/pages/admin/operations/adminOperationsConfig';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useAdminAppointmentsStore } from '@/store';
-import type { AdminAppointmentSummary } from '@/types';
+import { consultationOpsService } from '@/services/liverCare';
+import { CONSULTATION_STAGE_LABELS } from '@/services/liverCare/consultation.queue';
+import type { ConsultationQueueRow, ConsultationQueueStage } from '@/types/consultationQueue';
 import type { TableColumn } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
 import { paginateList } from '@/utils/pagination';
 
+function readFilterParam(params: URLSearchParams, key: string): string {
+  return params.get(key) ?? '';
+}
+
+function formatDateTime(iso?: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function stageBadgeVariant(stage: ConsultationQueueStage): 'default' | 'secondary' | 'outline' | 'destructive' {
+  if (stage === 'prescription_ready' || stage === 'completed') return 'secondary';
+  if (stage === 'awaiting_doctor' || stage === 'doctor_assigned') return 'default';
+  return 'outline';
+}
+
 export function AdminOperationsAppointmentsTab() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const appointments = useAdminAppointmentsStore((s) => s.appointments);
-  const isLoading = useAdminAppointmentsStore((s) => s.isLoading);
-  const isSaving = useAdminAppointmentsStore((s) => s.isSaving);
-  const error = useAdminAppointmentsStore((s) => s.error);
-  const loadAppointments = useAdminAppointmentsStore((s) => s.loadAppointments);
-  const assignStaff = useAdminAppointmentsStore((s) => s.assignStaff);
-  const sendReminder = useAdminAppointmentsStore((s) => s.sendReminder);
 
+  const [queue, setQueue] = useState<ConsultationQueueRow[]>([]);
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [draftStatus, setDraftStatus] = useState(searchParams.get('status') ?? '');
-  const [appliedStatus, setAppliedStatus] = useState(searchParams.get('status') ?? '');
-  const [draftType, setDraftType] = useState('');
-  const [appliedType, setAppliedType] = useState('');
+  const [draftStage, setDraftStage] = useState(readFilterParam(searchParams, 'stage'));
+  const [appliedStage, setAppliedStage] = useState(readFilterParam(searchParams, 'stage'));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [assignId, setAssignId] = useState<string | null>(null);
-  const [doctorId, setDoctorId] = useState('');
-  const [technicianId, setTechnicianId] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void loadAppointments(appliedStatus ? { status: appliedStatus } : {});
-  }, [loadAppointments, appliedStatus]);
-
-  const typeOptions = useMemo(
-    () => [...new Set(appointments.map((a) => a.typeName))].sort(),
-    [appointments],
+  const openOrderConsultStep = useCallback(
+    (orderId: string) => navigate(`/admin/orders/${orderId}?step=consultation`),
+    [navigate],
   );
 
-  const filtered = useMemo(() => {
-    return appointments.filter((row) => {
-      if (appliedType && row.typeName !== appliedType) return false;
-      if (!appliedSearch) return true;
-      const hay = [row.appointmentCode, row.patientName, row.typeName, row.status, row.doctorName]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(appliedSearch);
-    });
-  }, [appointments, appliedSearch, appliedType]);
+  const load = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      setQueue(
+        await consultationOpsService.listConsultationQueue({
+          search: appliedSearch || undefined,
+          stage: appliedStage || undefined,
+        }),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load consultations');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const paged = paginateList(filtered, page, pageSize);
+  useEffect(() => {
+    void load();
+  }, [appliedSearch, appliedStage]);
 
-  const columns: TableColumn<AdminAppointmentSummary>[] = useMemo(
+  const paged = paginateList(queue, page, pageSize);
+
+  const columns: TableColumn<ConsultationQueueRow>[] = useMemo(
     () => [
-      { key: 'code', header: 'Code', render: (r) => <span className="font-medium">{r.appointmentCode}</span> },
       {
-        key: 'patient',
-        header: 'Patient',
+        key: 'order',
+        header: 'Order',
         render: (r) => (
-          <Link to={`/patients/${r.patientId}`} className="text-livotale-pink hover:underline" onClick={(e) => e.stopPropagation()}>
-            {r.patientName}
-          </Link>
-        ),
-      },
-      { key: 'type', header: 'Type', render: (r) => r.typeName },
-      { key: 'doctor', header: 'Doctor', render: (r) => r.doctorName ?? '—' },
-      {
-        key: 'when',
-        header: 'When',
-        render: (r) =>
-          new Date(r.scheduledStart).toLocaleString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          }),
-      },
-      {
-        key: 'status',
-        header: 'Status',
-        render: (r) => (
-          <Badge variant="outline" className="capitalize">
-            {r.status.replace(/_/g, ' ')}
-          </Badge>
-        ),
-      },
-      {
-        key: 'payment',
-        header: 'Payment',
-        render: (r) => (
-          <span className="text-xs capitalize">
-            {r.paymentStatus ?? '—'}
-            {r.paymentAmount ? ` · ₹${r.paymentAmount}` : ''}
-          </span>
-        ),
-      },
-      {
-        key: 'actions',
-        header: '',
-        render: (r) => (
-          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-            <Button size="sm" variant="ghost" onClick={() => setAssignId(r.id)}>Assign</Button>
-            <Button size="sm" variant="ghost" disabled={isSaving} onClick={() => void sendReminder(r.id)}>Remind</Button>
+          <div>
+            <p className="font-medium">{r.orderNumber}</p>
+            <p className="text-xs text-muted-foreground">{r.packageCode}</p>
           </div>
         ),
       },
+      {
+        key: 'patient',
+        header: 'Patient',
+        render: (r) => <span>{r.patientName}</span>,
+      },
+      {
+        key: 'doctor',
+        header: 'Doctor',
+        render: (r) => r.doctorName ?? <span className="text-muted-foreground">Not assigned</span>,
+      },
+      {
+        key: 'when',
+        header: 'Consultation',
+        render: (r) => formatDateTime(r.consultationScheduledAt),
+      },
+      {
+        key: 'stage',
+        header: 'Stage',
+        render: (r) => (
+          <Badge variant={stageBadgeVariant(r.stage)}>{CONSULTATION_STAGE_LABELS[r.stage]}</Badge>
+        ),
+      },
     ],
-    [isSaving, sendReminder],
+    [],
   );
 
   const applyFilters = () => {
     setAppliedSearch(searchInput.trim().toLowerCase());
-    setAppliedStatus(draftStatus);
-    setAppliedType(draftType);
+    setAppliedStage(draftStage);
     setPage(1);
     const next = new URLSearchParams(searchParams);
-    if (draftStatus) next.set('status', draftStatus);
-    else next.delete('status');
+    next.set('tab', 'appointments');
+    if (draftStage) next.set('stage', draftStage);
+    else next.delete('stage');
+    next.delete('status');
     setSearchParams(next, { replace: true });
   };
 
   const resetFilters = () => {
     setSearchInput('');
-    setDraftStatus('');
-    setDraftType('');
+    setDraftStage('');
     setAppliedSearch('');
-    setAppliedStatus('');
-    setAppliedType('');
+    setAppliedStage('');
     setPage(1);
     const next = new URLSearchParams(searchParams);
+    next.set('tab', 'appointments');
+    next.delete('stage');
     next.delete('status');
     setSearchParams(next, { replace: true });
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          All clinic appointments. Use status filter for missed/no-show — no separate queue needed.
-        </p>
-        <Button size="sm" asChild>
-          <Link to="/admin/appointments/book">Book walk-in</Link>
-        </Button>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        PKG-3 consultation orders. Click a row to open the order consultation step — assign a doctor, pick a
+        date and slot, and view the doctor&apos;s prescription when published.
+      </p>
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -161,37 +153,24 @@ export function AdminOperationsAppointmentsTab() {
         </div>
       )}
 
-      <RouteMonitoringPanel />
-
       <ListToolbar
         searchValue={searchInput}
         onSearchChange={setSearchInput}
-        searchPlaceholder="Search code, patient, doctor…"
+        searchPlaceholder="Search order #, patient, or doctor…"
         onApplyFilters={applyFilters}
         onResetFilters={resetFilters}
       >
-        <FilterField label="Status" htmlFor="ops-appt-status">
+        <FilterField label="Stage" htmlFor="ops-consult-stage">
           <select
-            id="ops-appt-status"
+            id="ops-consult-stage"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={draftStatus}
-            onChange={(e) => setDraftStatus(e.target.value)}
+            value={draftStage}
+            onChange={(e) => setDraftStage(e.target.value)}
           >
-            {APPOINTMENT_STATUS_PRESETS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Type" htmlFor="ops-appt-type">
-          <select
-            id="ops-appt-type"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={draftType}
-            onChange={(e) => setDraftType(e.target.value)}
-          >
-            <option value="">All types</option>
-            {typeOptions.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            {CONSULTATION_QUEUE_STAGE_PRESETS.map((o) => (
+              <option key={o.value || 'all'} value={o.value}>
+                {o.label}
+              </option>
             ))}
           </select>
         </FilterField>
@@ -201,9 +180,9 @@ export function AdminOperationsAppointmentsTab() {
         columns={columns}
         data={paged.items}
         isLoading={isLoading}
-        emptyMessage="No appointments match filters."
+        emptyMessage="No consultation orders match filters."
         getRowKey={(r) => r.id}
-        onRowClick={(r) => navigate(`/admin/appointments/${r.id}`)}
+        onRowClick={(r) => openOrderConsultStep(r.orderId)}
       />
 
       <PaginationControls
@@ -217,36 +196,6 @@ export function AdminOperationsAppointmentsTab() {
           setPage(1);
         }}
       />
-
-      {assignId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg border bg-card p-4 shadow-lg">
-            <h3 className="font-medium">Assign staff</h3>
-            <div className="mt-3 space-y-2">
-              <input className="flex h-10 w-full rounded-md border px-3 text-sm" placeholder="Doctor ID" value={doctorId} onChange={(e) => setDoctorId(e.target.value)} />
-              <input className="flex h-10 w-full rounded-md border px-3 text-sm" placeholder="Technician ID" value={technicianId} onChange={(e) => setTechnicianId(e.target.value)} />
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setAssignId(null)}>Cancel</Button>
-              <Button
-                disabled={isSaving || (!doctorId.trim() && !technicianId.trim())}
-                onClick={() =>
-                  void assignStaff(assignId, {
-                    doctorId: doctorId.trim() || undefined,
-                    technicianId: technicianId.trim() || undefined,
-                  }).then(() => {
-                    setAssignId(null);
-                    setDoctorId('');
-                    setTechnicianId('');
-                  })
-                }
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

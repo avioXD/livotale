@@ -32,7 +32,7 @@ export const STAFF_ROLE_CONFIGS: StaffRoleConfig[] = [
   {
     key: 'lab_partner',
     label: 'Lab partners',
-    description: 'Third-party labs — linked orders; Operations uploads report PDFs.',
+    description: 'Associated pathology labs — lab profiles, legal documents, report volume, and billing.',
     appRole: AppRole.LAB_PARTNER,
   },
   {

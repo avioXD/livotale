@@ -51,6 +51,8 @@ Default parameter set (seed): Hb, WBC, platelets, FBS, HbA1c, bilirubin panel, S
 
 - `GET/POST/PATCH /admin/lab-partners`
 - `GET /admin/pathology/sample-dispatch-queue`
+- `GET /admin/pathology/lab-report-queue` — query: `search`, `dispatchStatus`, `labId`, `extractionStatus`
+- `GET /admin/pathology/lab-report-queue/:orderId`
 - `POST /admin/orders/:id/assign-lab`
 - `POST /admin/orders/:id/sample-dispatch`
 - `POST /admin/orders/:id/sample-dispatch/received`

@@ -31,13 +31,13 @@ function isNavPathActive(pathname: string, search: string, path: string): boolea
     return pathname === '/doctor/appointments' && !search.includes('section=');
   }
 
-  if (basePath === '/technician/schedule') {
-    return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
-  }
-
-
   if (basePath === '/settings') {
-    return pathname === '/settings';
+    const tab = new URLSearchParams(search).get('tab');
+    if (query) {
+      const expectedTab = new URLSearchParams(query).get('tab');
+      return pathname === '/settings' && tab === expectedTab;
+    }
+    return pathname === '/settings' && (!tab || tab === 'profile');
   }
 
   if (basePath.startsWith('/admin/staff/')) {
@@ -67,10 +67,7 @@ function isChildActive(pathname: string, search: string, child: NavChildItem): b
   if (child.id === 'care-appointments') {
     return pathname === '/appointments' || (pathname.startsWith('/appointments/') && !pathname.includes('/book'));
   }
-  if (child.id === 'doc-appointments') {
-    return pathname === '/doctor/appointments' && !search.includes('section=');
-  }
-  if (child.id === 'doc-patients' || child.id === 'care-patients') {
+  if (child.id === 'care-patients') {
     return pathname === '/patients' || pathname.startsWith('/patients/');
   }
   if (child.id === 'ops-enquiries') {
@@ -81,16 +78,16 @@ function isChildActive(pathname: string, search: string, child: NavChildItem): b
     );
   }
   if (child.id === 'doc-availability') {
-    return pathname === '/doctor/appointments' && search.includes('section=availability');
+    return pathname === '/settings' && search.includes('tab=availability');
   }
   if (child.id === 'doc-leave') {
-    return pathname === '/doctor/appointments' && search.includes('section=leave');
+    return pathname === '/settings' && search.includes('tab=leave');
+  }
+  if (child.id === 'settings-profile') {
+    return pathname === '/settings' && !search.includes('tab=');
   }
   if (child.id === 'tech-orders') {
     return pathname === '/technician/orders' || pathname.startsWith('/technician/orders/');
-  }
-  if (child.id === 'tech-schedule') {
-    return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
   }
   return false;
 }

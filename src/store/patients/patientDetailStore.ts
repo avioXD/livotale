@@ -2,13 +2,10 @@ import { create } from 'zustand';
 import { patientsService } from '@/services';
 import type { PatientDetail, PatientHistory } from '@/types';
 import type { PatientClinicalContext } from '@/types/patientClinical';
-import type { PatientAppointmentRecord, PatientVisitRecord } from '@/types/patientProfile';
 
 interface PatientDetailStore {
   detail: PatientDetail | null;
   history: PatientHistory | null;
-  appointments: PatientAppointmentRecord[];
-  visits: PatientVisitRecord[];
   clinical: PatientClinicalContext | null;
   isLoading: boolean;
   isSaving: boolean;
@@ -22,8 +19,6 @@ interface PatientDetailStore {
 export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
   detail: null,
   history: null,
-  appointments: [],
-  visits: [],
   clinical: null,
   isLoading: false,
   isSaving: false,
@@ -32,18 +27,14 @@ export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
   loadPatient: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const [detail, history, appointments, visits, clinical] = await Promise.all([
+      const [detail, history, clinical] = await Promise.all([
         patientsService.getById(id),
         patientsService.getHistory(id),
-        patientsService.getAppointments(id),
-        patientsService.getVisits(id),
         patientsService.getClinicalContext(id),
       ]);
       set({
         detail,
         history,
-        appointments,
-        visits,
         clinical,
         isLoading: false,
       });
@@ -87,8 +78,6 @@ export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
     set({
       detail: null,
       history: null,
-      appointments: [],
-      visits: [],
       clinical: null,
       error: null,
     }),

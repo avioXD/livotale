@@ -12,19 +12,16 @@ import type {
   PatientTrendPoint,
   TimelineEvent,
 } from '@/types';
-import type { PatientAppointmentRecord, PatientVisitRecord } from '@/types/patientProfile';
 import { mapListItemToPatient } from '@/types/patients';
 import { mockGetDashboardOverview } from './dashboard.mock';
 import type { PatientClinicalContext } from '@/types/patientClinical';
 import { getMockPatientClinicalContext } from './patientsClinical.mock';
 import {
-  getMockPatientAppointments,
   getMockPatientDashboard,
   getMockPatientDetail,
   getMockPatientHistory,
   getMockPatientTimeline,
   getMockPatientTrends,
-  getMockPatientVisits,
   mergeMockPatientDetail,
   mockListPatients,
   mockUpdatePatientHistorySection,
@@ -110,20 +107,6 @@ class PatientsService extends BaseApiService {
     return mockOrApi(
       () => mockUpdatePatientHistorySection(id, section, payload),
       () => this.patch<PatientHistory>(`/patients/${id}/history/${section}`, payload),
-    );
-  }
-
-  async getAppointments(id: string): Promise<PatientAppointmentRecord[]> {
-    return mockOrApi(
-      () => getMockPatientAppointments(id),
-      () => this.get<PatientAppointmentRecord[]>(`/patients/${id}/appointments`),
-    );
-  }
-
-  async getVisits(id: string): Promise<PatientVisitRecord[]> {
-    return mockOrApi(
-      () => getMockPatientVisits(id),
-      () => this.get<PatientVisitRecord[]>(`/patients/${id}/visits`),
     );
   }
 

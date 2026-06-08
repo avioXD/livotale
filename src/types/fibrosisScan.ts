@@ -12,6 +12,8 @@ export interface FibrosisScanRecord {
   id: string;
   orderId: string;
   patientId: string;
+  /** Number of times scan was re-captured after initial session. */
+  rescanCount?: number;
   liverStiffnessKpa: number;
   capDbm: number;
   iqr: number;
@@ -45,6 +47,9 @@ export interface TechnicianOrderVisit {
   address?: string | null;
   city?: string | null;
   pincode?: string | null;
+  patientEmail?: string | null;
+  /** Incremented each time technician requests a rescan on this order. */
+  rescanCount?: number;
   visitStartedAt?: string | null;
   reachedAt?: string | null;
   completedAt?: string | null;

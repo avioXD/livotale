@@ -13,10 +13,7 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
   const pid = appointment.patientId;
   const links = [
     { label: 'Profile', path: `/patients/${pid}?tab=profile` },
-    { label: 'Appointments', path: `/patients/${pid}?tab=appointments` },
     { label: 'Orders', path: `/patients/${pid}?tab=orders` },
-    { label: 'Tests', path: `/patients/${pid}?tab=tests` },
-    { label: 'Scans', path: `/patients/${pid}?tab=scans` },
     { label: 'Payments', path: `/patients/${pid}?tab=payments` },
   ];
 

@@ -15,11 +15,8 @@ import { AppointmentsPage } from '@/app/pages/appointments/AppointmentsPage';
 import { AppointmentDetailPage } from '@/app/pages/appointments/AppointmentDetailPage';
 import { BookAppointmentWizardPage } from '@/app/pages/appointments/BookAppointmentWizardPage';
 import { TechnicianTrackingPage } from '@/app/pages/appointments/TechnicianTrackingPage';
-import { TechnicianSchedulePage } from '@/app/pages/technician/schedule/TechnicianSchedulePage';
-import { TechnicianVisitDetailPage } from '@/app/pages/technician/schedule/TechnicianVisitDetailPage';
 import { TechnicianOrdersPage } from '@/app/pages/technician/orders/TechnicianOrdersPage';
 import { TechnicianOrderDetailPage } from '@/app/pages/technician/orders/TechnicianOrderDetailPage';
-import { DoctorAppointmentsPage } from '@/app/pages/doctor/appointments/DoctorAppointmentsPage';
 import { DoctorConsultationsPage } from '@/app/pages/doctor/consultations/DoctorConsultationsPage';
 import { DoctorConsultationDetailPage } from '@/app/pages/doctor/consultations/DoctorConsultationDetailPage';
 import { AdminOperationsHubPage } from '@/app/pages/admin/operations/AdminOperationsHubPage';
@@ -53,7 +50,12 @@ import { EnquirePage } from '@/app/pages/public/EnquirePage';
 import { EnquireThanksPage } from '@/app/pages/public/EnquireThanksPage';
 import { EnquiryDetailPage } from '@/app/pages/admin/enquiries/EnquiryDetailPage';
 import { LiverCareOrderDetailPage } from '@/app/pages/admin/orders/LiverCareOrderDetailPage';
+import { AdminPartnerLabDetailPage } from '@/app/pages/admin/labs/AdminPartnerLabDetailPage';
 import { AdminPartnerLabsPage } from '@/app/pages/admin/labs/AdminPartnerLabsPage';
+import {
+  RedirectLegacyLabPartnerDetail,
+  RedirectLegacyLabPartnerList,
+} from '@/app/pages/admin/labs/redirectLabPartnerRoutes';
 import { AdminPackagesPage } from '@/app/pages/admin/packages/AdminPackagesPage';
 import { AdminPackageDetailPage } from '@/app/pages/admin/packages/AdminPackageDetailPage';
 import { AdminLiverCareNotificationsPage } from '@/app/pages/admin/notifications/AdminLiverCareNotificationsPage';
@@ -147,10 +149,11 @@ export function AppRoutes() {
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.doctorConsultations]} />}>
               <Route path="/doctor/consultations" element={<DoctorConsultationsPage />} />
               <Route path="/doctor/consultations/:id" element={<DoctorConsultationDetailPage />} />
+              <Route path="/doctor/patients" element={<Navigate to="/doctor/consultations" replace />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.doctorAppointments]} />}>
-              <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+              <Route path="/doctor/appointments" element={<Navigate to="/doctor/consultations" replace />} />
               <Route path="/doctor/appointments/:id/tele" element={<TeleconsultationJoinPage />} />
             </Route>
 
@@ -169,6 +172,10 @@ export function AppRoutes() {
               <Route path="/admin/appointments/analytics" element={<AdminAnalyticsPage />} />
               <Route path="/admin/staff" element={<AdminStaffHubRedirect />} />
               <Route path="/admin/staff-performance" element={<AdminStaffPerformancePage />} />
+              <Route path="/admin/staff/lab-partners/:id" element={<AdminPartnerLabDetailPage />} />
+              <Route path="/admin/staff/lab-partners" element={<AdminPartnerLabsPage />} />
+              <Route path="/admin/lab-partners/:id" element={<RedirectLegacyLabPartnerDetail />} />
+              <Route path="/admin/lab-partners" element={<RedirectLegacyLabPartnerList />} />
               <Route path="/admin/staff/:roleSlug/onboard" element={<AdminStaffOnboardPage />} />
               <Route path="/admin/staff/:roleSlug/:memberId" element={<AdminStaffMemberDetailPage />} />
               <Route path="/admin/staff/:roleSlug" element={<AdminStaffHubPage />} />
@@ -180,10 +187,6 @@ export function AppRoutes() {
               <Route path="/admin/packages/:id" element={<AdminPackageDetailPage />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.adminLabPartners]} />}>
-              <Route path="/admin/lab-partners" element={<AdminPartnerLabsPage />} />
-            </Route>
-
             <Route element={<ProtectedRoute allowedRoles={[...ADMIN_ROLES]} />}>
               <Route path="/admin/audit" element={<AdminAuditLogPage />} />
               <Route path="/admin/integrations" element={<AdminIntegrationsPage />} />
@@ -192,10 +195,10 @@ export function AppRoutes() {
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.technician]} />}>
               <Route path="/technician/orders" element={<TechnicianOrdersPage />} />
               <Route path="/technician/orders/:id" element={<TechnicianOrderDetailPage />} />
-              <Route path="/technician/schedule" element={<TechnicianSchedulePage />} />
-              <Route path="/technician/schedule/:id" element={<TechnicianVisitDetailPage />} />
+              <Route path="/technician/schedule" element={<Navigate to="/technician/orders" replace />} />
+              <Route path="/technician/schedule/:id" element={<Navigate to="/technician/orders" replace />} />
               <Route path="/technician/profile" element={<TechnicianProfilePage />} />
-              <Route path="/technician/sample-collections" element={<Navigate to="/technician/schedule" replace />} />
+              <Route path="/technician/sample-collections" element={<Navigate to="/technician/orders" replace />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.treatmentPlans]} />}>

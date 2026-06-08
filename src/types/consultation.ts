@@ -22,8 +22,50 @@ export interface Consultation {
   meetingLink?: string | null;
   status: ConsultationStatus;
   doctorNotes?: string | null;
+  /** Patient-reported symptoms recorded during the visit. */
+  symptoms?: string | null;
+  /** When the doctor marked the consultation complete. */
+  visitCompletedAt?: string | null;
   followUpAt?: string | null;
   createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DoctorAssignedPatient {
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  orderCount: number;
+  latestOrderId: string;
+  latestOrderNumber: string;
+  latestOrderStatus: string;
+  consultationScheduledAt?: string | null;
+}
+
+export type ConsultationVisitType = 'initial' | 'follow_up';
+
+export type ConsultationVisitStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'completed'
+  | 'prescription_draft'
+  | 'prescription_published';
+
+/** One consultation encounter — initial or follow-up — stored as an append-only log. */
+export interface ConsultationVisitLog {
+  id: string;
+  orderId: string;
+  consultationId: string;
+  visitType: ConsultationVisitType;
+  visitNumber: number;
+  scheduledAt?: string | null;
+  visitCompletedAt?: string | null;
+  followUpAt?: string | null;
+  symptoms?: string | null;
+  doctorNotes?: string | null;
+  status: ConsultationVisitStatus;
+  prescriptionId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +91,7 @@ export interface PrescriptionMedicine {
 export interface LiverCarePrescription {
   id: string;
   orderId: string;
+  visitLogId: string;
   patientId: string;
   consultationId: string;
   doctorId: string;
@@ -58,6 +101,9 @@ export interface LiverCarePrescription {
   status: PrescriptionStatus;
   diagnosis?: string | null;
   clinicalNotes?: string | null;
+  symptoms?: string | null;
+  visitDate?: string | null;
+  followUpDate?: string | null;
   medicines: PrescriptionMedicine[];
   dietAdvice?: string | null;
   lifestyleAdvice?: string | null;

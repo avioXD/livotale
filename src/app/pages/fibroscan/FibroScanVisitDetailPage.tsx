@@ -2,13 +2,13 @@ import { Navigate, useParams } from 'react-router-dom';
 import { useUserRole } from '@/store';
 import { AppRole } from '@/types';
 
-/** Technicians use unified detail at /technician/schedule/:id */
+/** Technicians use order detail at /technician/orders/:id */
 export function LiverFibrosisScanVisitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const role = useUserRole();
 
-  if (role === AppRole.TECHNICIAN && id) {
-    return <Navigate to={`/technician/schedule/${id}`} replace />;
+  if (role === AppRole.TECHNICIAN) {
+    return <Navigate to={id ? `/technician/orders/${id}` : '/technician/orders'} replace />;
   }
 
   if (id) {

@@ -21,6 +21,8 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled';
 
+export type ScanVisitMode = 'clinic' | 'home';
+
 export type PaymentMode = 'offline' | 'online_link' | 'patient_portal' | null;
 
 export type LiverCarePaymentStatus =
@@ -54,6 +56,11 @@ export interface LiverCareOrder {
   partnerLabName?: string | null;
   doctorId?: string | null;
   doctorName?: string | null;
+  scanVisitMode?: ScanVisitMode | null;
+  scanTimeSlot?: string | null;
+  scanClinicLocation?: string | null;
+  /** Patient-selected preferred date/time before operations confirms the schedule. */
+  scanPatientPreferredAt?: string | null;
   scanScheduledAt?: string | null;
   consultationScheduledAt?: string | null;
   createdBy?: string | null;
@@ -70,6 +77,20 @@ export interface CreateOrderInput {
   discount?: number;
   paymentMode?: PaymentMode;
   scanScheduledAt?: string;
+  scanVisitMode?: ScanVisitMode;
+}
+
+export interface ScheduleScanInput {
+  scheduledAt: string;
+  visitMode: ScanVisitMode;
+  timeSlot: string;
+  clinicLocation?: string;
+}
+
+export interface PatientScanDateRequest {
+  preferredAt: string;
+  visitMode: ScanVisitMode;
+  timeSlot: string;
 }
 
 export type OrderTimelineCategory =

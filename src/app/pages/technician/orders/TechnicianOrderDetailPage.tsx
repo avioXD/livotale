@@ -1,61 +1,86 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { FiAlertTriangle, FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { liverCareOrderService, packageService, technicianOrderService } from '@/services/liverCare';
+import { liverCareOrderService, packageService, pathologyService, technicianOrderService } from '@/services/liverCare';
+import { patientsService } from '@/services/patients';
 import { LiverFibrosisScanCapturePanel } from '@/app/pages/technician/orders/components/LiverFibrosisScanCapturePanel';
-import { SampleDispatchPanel } from '@/app/pages/technician/orders/components/SampleDispatchPanel';
+import { TechnicianBloodCollectionPanel } from '@/app/pages/technician/orders/components/TechnicianBloodCollectionPanel';
+import { TechnicianOrderIdBanner } from '@/app/pages/technician/orders/components/TechnicianOrderIdBanner';
+import { TechnicianPatientInfoCard } from '@/app/pages/technician/orders/components/TechnicianPatientInfoCard';
+import { TechnicianScanResultsPanel } from '@/app/pages/technician/orders/components/TechnicianScanResultsPanel';
+import { TechnicianVisitProgressCard } from '@/app/pages/technician/orders/components/TechnicianVisitProgressCard';
+import type { BloodCollectionTiming } from '@/types/package';
+import type { FibrosisScanRecord, TechnicianOrderVisit, TechnicianVisitStep } from '@/types/fibrosisScan';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
-import type { TechnicianOrderVisit, TechnicianVisitStep } from '@/types/fibrosisScan';
-import { cn } from '@/utils';
+import type { SampleDispatch } from '@/types/sampleDispatch';
 
-const STEP_ORDER: TechnicianVisitStep[] = [
-  'assigned',
-  'visit_started',
-  'reached_location',
-  'scan_in_progress',
-  'scan_completed',
-];
+const LIST_PATH = '/technician/orders';
 
 const STEP_LABELS: Record<TechnicianVisitStep, string> = {
   assigned: 'Assigned',
-  visit_started: 'Visit started',
-  reached_location: 'Reached location',
-  scan_in_progress: 'Scan in progress',
-  scan_completed: 'Scan completed',
-  unable_to_complete: 'Unable to complete',
+  visit_started: 'En route',
+  reached_location: 'At location',
+  scan_in_progress: 'Scanning',
+  scan_completed: 'Completed',
+  unable_to_complete: 'Unable',
 };
-
-function stepIndex(step: TechnicianVisitStep): number {
-  if (step === 'unable_to_complete') return -1;
-  return STEP_ORDER.indexOf(step);
-}
 
 export function TechnicianOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<LiverCareOrder | null>(null);
   const [visit, setVisit] = useState<TechnicianOrderVisit | null>(null);
-  const [unableReason, setUnableReason] = useState('');
+  const [scan, setScan] = useState<FibrosisScanRecord | null>(null);
+  const [dispatch, setDispatch] = useState<SampleDispatch | null>(null);
+  const [patientEmail, setPatientEmail] = useState<string | null>(null);
   const [pathologyRequired, setPathologyRequired] = useState(false);
+  const [fibrosisScanIncluded, setFibrosisScanIncluded] = useState(true);
+  const [bloodCollectionTiming, setBloodCollectionTiming] = useState<BloodCollectionTiming | null>(null);
+  const [showCapture, setShowCapture] = useState(false);
+  const [unableReason, setUnableReason] = useState('');
   const [acting, setActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [o, v] = await Promise.all([
+    const [o, v, s] = await Promise.all([
       liverCareOrderService.getById(id),
       technicianOrderService.getVisit(id),
+      technicianOrderService.getScan(id),
     ]);
     setOrder(o);
     setVisit(v);
+    setScan(s);
+    setShowCapture(false);
+
     if (o) {
       const pkgs = await packageService.listAdmin();
-      setPathologyRequired(pkgs.find((p) => p.id === o.packageId)?.pathologyIncluded ?? false);
+      const pkg = pkgs.find((p) => p.id === o.packageId);
+      const pathIncluded = pkg?.pathologyIncluded ?? false;
+      setPathologyRequired(pathIncluded);
+      setFibrosisScanIncluded(pkg?.fibrosisScanIncluded ?? true);
+      setBloodCollectionTiming(pkg?.bloodCollectionTiming ?? null);
+
+      if (pathIncluded) {
+        const d = await pathologyService.getSampleDispatch(id);
+        setDispatch(d);
+      } else {
+        setDispatch(null);
+      }
+
+      try {
+        const detail = await patientsService.getById(o.patientId);
+        const email = (detail.patient as { email?: string | null }).email;
+        setPatientEmail(email ?? null);
+      } catch {
+        setPatientEmail(v?.patientEmail ?? null);
+      }
     }
   }, [id]);
 
@@ -76,28 +101,84 @@ export function TechnicianOrderDetailPage() {
     }
   };
 
+  const canCompleteScan = useMemo(() => {
+    if (!fibrosisScanIncluded) {
+      if (!pathologyRequired) return true;
+      return dispatch != null && dispatch.status !== 'pending_dispatch';
+    }
+    if (!scan) return false;
+    if (!pathologyRequired) return true;
+    return dispatch != null && dispatch.status !== 'pending_dispatch';
+  }, [scan, pathologyRequired, fibrosisScanIncluded, dispatch]);
+
+  const handleBack = () => {
+    if (globalThis.history.length > 1) navigate(-1);
+    else navigate(LIST_PATH);
+  };
+
   if (!order) {
     return <p className="text-muted-foreground">Loading order…</p>;
   }
 
   const currentStep = visit?.visitStep ?? 'assigned';
-  const currentIdx = stepIndex(currentStep);
-  const address = [visit?.address, visit?.city, visit?.pincode].filter(Boolean).join(', ');
+  const visitReady = ['reached_location', 'scan_in_progress', 'scan_completed'].includes(currentStep);
+  const showScanWorkflow =
+    fibrosisScanIncluded && visitReady && currentStep !== 'unable_to_complete';
+  const hasScanData = Boolean(scan);
+  const bloodBeforeScan = bloodCollectionTiming === 'before_scan';
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={order.patientName}
-        description={`${order.orderNumber} · ${order.packageName}`}
-        actions={
-          <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/technician/orders">
-              <FiArrowLeft className="h-4 w-4" />
-              Assigned orders
-            </Link>
-          </Button>
+  const bloodPanel = (
+    <TechnicianBloodCollectionPanel
+      order={order}
+      pathologyRequired={pathologyRequired}
+      visitReady={visitReady}
+      bloodCollectionTiming={bloodCollectionTiming}
+      onUpdated={load}
+    />
+  );
+
+  const scanPanel =
+    showScanWorkflow &&
+    (hasScanData && !showCapture ? (
+      <TechnicianScanResultsPanel
+        scan={scan!}
+        orderNumber={order.orderNumber}
+        acting={acting}
+        onEdit={() => setShowCapture(true)}
+        onRescan={() =>
+          run(async () => {
+            await technicianOrderService.requestRescan(id!);
+            setShowCapture(true);
+          })
         }
       />
+    ) : (
+      <LiverFibrosisScanCapturePanel
+        orderId={id!}
+        orderNumber={order.orderNumber}
+        onUpdated={load}
+        onSaved={() => setShowCapture(false)}
+      />
+    ));
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-start gap-3">
+        <Button variant="ghost" size="icon" onClick={handleBack} aria-label="Back to field orders">
+          <FiArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title={order.orderNumber}
+            description={`${order.patientName} · ${order.packageCode} — ${order.packageName}`}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <Badge variant="outline">{ORDER_STATUS_LABELS[order.orderStatus]}</Badge>
+            <Badge variant="secondary">{STEP_LABELS[currentStep]}</Badge>
+            <span className="text-muted-foreground">{order.patientPhone}</span>
+          </div>
+        </div>
+      </div>
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -105,120 +186,87 @@ export function TechnicianOrderDetailPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <Badge>{order.packageCode}</Badge>
-        <Badge variant="outline">{ORDER_STATUS_LABELS[order.orderStatus]}</Badge>
-        <Badge variant="secondary">{STEP_LABELS[currentStep]}</Badge>
+      <div className="grid gap-4 md:grid-cols-2">
+        <TechnicianOrderIdBanner order={order} packageCode={order.packageCode} />
+        <TechnicianPatientInfoCard order={order} visit={visit} patientEmail={patientEmail} />
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Patient & location</CardTitle></CardHeader>
-        <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <p className="text-muted-foreground">Phone</p>
-            <p className="font-medium">{order.patientPhone}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Scan scheduled</p>
-            <p className="font-medium">
-              {order.scanScheduledAt
-                ? new Date(order.scanScheduledAt).toLocaleString()
-                : 'Not scheduled'}
-            </p>
-          </div>
-          <div className="sm:col-span-2">
-            <p className="text-muted-foreground">Address</p>
-            <p>{address || 'Address on file — contact operations'}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {currentStep !== 'unable_to_complete' && (
+          <TechnicianVisitProgressCard
+            currentStep={currentStep}
+            acting={acting}
+            canCompleteScan={canCompleteScan}
+            onStartVisit={() => run(() => technicianOrderService.markVisitStarted(id!))}
+            onMarkReached={() => run(() => technicianOrderService.markReached(id!))}
+            onCompleteScan={() => run(() => technicianOrderService.completeScan(id!))}
+          />
+        )}
 
-      {currentStep !== 'unable_to_complete' && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Visit progress</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {STEP_ORDER.map((step, i) => (
-                <div
-                  key={step}
-                  className={cn(
-                    'rounded-full px-3 py-1 text-xs',
-                    i < currentIdx ? 'bg-green-100 text-green-800' : i === currentIdx ? 'bg-livotale-pink/15 text-livotale-pink font-medium' : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  {STEP_LABELS[step]}
-                </div>
-              ))}
-            </div>
+        {bloodBeforeScan ? (
+          <>
+            {bloodPanel}
+            {scanPanel}
+          </>
+        ) : (
+          <>
+            {scanPanel}
+            {bloodPanel}
+          </>
+        )}
 
-            <div className="flex flex-wrap gap-2">
-              {currentStep === 'assigned' && (
-                <Button size="sm" disabled={acting} onClick={() => run(() => technicianOrderService.markVisitStarted(id!))}>
-                  Start visit
-                </Button>
-              )}
-              {(currentStep === 'visit_started' || currentStep === 'assigned') && (
-                <Button size="sm" disabled={acting} onClick={() => run(() => technicianOrderService.markReached(id!))}>
-                  Mark reached location
-                </Button>
-              )}
-              {(currentStep === 'reached_location' || currentStep === 'scan_in_progress') && (
-                <Button
-                  size="sm"
-                  disabled={acting || currentStep === 'scan_completed'}
-                  onClick={() => run(() => technicianOrderService.completeScan(id!))}
-                >
-                  Mark scan completed
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {!fibrosisScanIncluded && visitReady && pathologyRequired && (
+          <Card>
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              This package includes pathology only — complete blood sample collection above.
+            </CardContent>
+          </Card>
+        )}
 
-      {currentStep !== 'scan_completed' && currentStep !== 'unable_to_complete' && (
-        <LiverFibrosisScanCapturePanel orderId={id!} onUpdated={load} />
-      )}
+        {currentStep === 'scan_completed' && (
+          <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30">
+            <CardContent className="py-4 text-sm text-emerald-800 dark:text-emerald-200">
+              Visit completed. Operations will review scan data and generate the report.
+            </CardContent>
+          </Card>
+        )}
 
-      {currentStep === 'scan_completed' && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="py-4 text-sm text-green-800">
-            Scan completed for this order. Operations will review data and generate the report.
-          </CardContent>
-        </Card>
-      )}
+        {currentStep !== 'scan_completed' && currentStep !== 'unable_to_complete' && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                <FiAlertTriangle className="h-4 w-4" aria-hidden />
+                Unable to complete
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                placeholder="Reason — patient not home, device issue, fasting not met…"
+                value={unableReason}
+                onChange={(e) => setUnableReason(e.target.value)}
+                rows={2}
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full sm:w-auto"
+                disabled={acting || unableReason.trim().length < 5}
+                onClick={() => run(() => technicianOrderService.markUnable(id!, unableReason.trim()))}
+              >
+                Mark unable to complete
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-      <SampleDispatchPanel order={order} pathologyRequired={pathologyRequired} onUpdated={load} />
-
-      {currentStep !== 'scan_completed' && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Unable to complete</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea
-              placeholder="Reason — patient not home, device issue, fasting not met…"
-              value={unableReason}
-              onChange={(e) => setUnableReason(e.target.value)}
-              rows={2}
-            />
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={acting || unableReason.trim().length < 5}
-              onClick={() => run(() => technicianOrderService.markUnable(id!, unableReason.trim()))}
-            >
-              Mark unable to complete
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {currentStep === 'unable_to_complete' && visit?.unableReason && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="py-4 text-sm">
-            Marked unable to complete: {visit.unableReason}
-          </CardContent>
-        </Card>
-      )}
+        {currentStep === 'unable_to_complete' && visit?.unableReason && (
+          <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+            <CardContent className="py-4 text-sm">
+              Marked unable to complete: {visit.unableReason}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

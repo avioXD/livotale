@@ -6,20 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
 import { useAdminAppointmentsStore } from '@/store';
-
-function KpiCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-semibold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function AdminAppointmentsDashboardPage() {
   const dashboard = useAdminAppointmentsStore((s) => s.dashboard);
@@ -79,14 +67,18 @@ export function AdminAppointmentsDashboardPage() {
       )}
 
       {dashboard && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <KpiCard label="Today's appointments" value={dashboard.kpis.today_total} />
-          <KpiCard label="Pending assignments" value={dashboard.kpis.pending_assignments} />
-          <KpiCard label="Delayed technicians" value={dashboard.kpis.delayed_technicians} />
-          <KpiCard label="Completed today" value={dashboard.kpis.completed_today} />
-          <KpiCard label="Cancelled today" value={dashboard.kpis.cancelled_today} />
-          <KpiCard label="Missed today" value={dashboard.kpis.missed_today} />
-        </div>
+        <KpiGrid cols="three">
+          {[
+            { label: "Today's appointments", value: dashboard.kpis.today_total },
+            { label: 'Pending assignments', value: dashboard.kpis.pending_assignments },
+            { label: 'Delayed technicians', value: dashboard.kpis.delayed_technicians },
+            { label: 'Completed today', value: dashboard.kpis.completed_today },
+            { label: 'Cancelled today', value: dashboard.kpis.cancelled_today },
+            { label: 'Missed today', value: dashboard.kpis.missed_today },
+          ].map((kpi, i) => (
+            <KpiCard key={kpi.label} {...kpi} accent={kpiAccentAt(i)} />
+          ))}
+        </KpiGrid>
       )}
 
       <Card>

@@ -4,6 +4,8 @@ import { FiUserPlus } from 'react-icons/fi';
 import {
   DataTable,
   FilterField,
+  KpiCard,
+  kpiAccentAt,
   ListToolbar,
   PaginationControls,
 } from '@/components/common';
@@ -129,7 +131,7 @@ export function StaffRoleWorkspace({
           { label: 'Samples in pipeline', value: s.in_lab_pipeline },
           { label: 'Published reports', value: s.reports_published },
           { label: 'Rejected', value: s.rejected },
-          { label: 'Active labs', value: labPartners.length },
+          { label: 'Lab partner profiles', value: labPartners.length },
         ],
       };
     }
@@ -177,12 +179,15 @@ export function StaffRoleWorkspace({
               <CardTitle className="text-base">{role.label} — global report</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                {dashboard.kpis.map((kpi) => (
-                  <div key={kpi.label} className="rounded-md border px-3 py-3">
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                    <p className="text-2xl font-semibold">{kpi.value}</p>
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {dashboard.kpis.map((kpi, i) => (
+                  <KpiCard
+                    key={kpi.label}
+                    label={kpi.label}
+                    value={kpi.value}
+                    hint={kpi.hint}
+                    accent={kpiAccentAt(i)}
+                  />
                 ))}
               </div>
             </CardContent>
@@ -191,7 +196,7 @@ export function StaffRoleWorkspace({
             <SampleAnalyticsPanel analytics={analytics} title={`Technician global analytics (${period})`} />
           )}
           {role.key === 'lab_partner' && analytics && (
-            <SampleAnalyticsPanel analytics={analytics} title={`Lab network global analytics (${period})`} />
+            <SampleAnalyticsPanel analytics={analytics} title={`Lab partner network analytics (${period})`} />
           )}
         </TabsContent>
 
@@ -232,7 +237,7 @@ export function StaffRoleWorkspace({
             data={paged.items}
             emptyMessage={`No ${role.label.toLowerCase()} found. Adjust filters or run seed data.`}
             getRowKey={(row) => row.id}
-            onRowClick={(row) => navigate(staffMemberDetailPath(role.key, row.id))}
+            onRowClick={(row) => navigate(row.profilePath ?? staffMemberDetailPath(role.key, row.id))}
           />
 
           <PaginationControls

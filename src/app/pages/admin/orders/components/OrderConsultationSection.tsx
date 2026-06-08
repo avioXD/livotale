@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LiverCarePrescriptionPreview } from '@/app/pages/doctor/consultations/components/LiverCarePrescriptionPreview';
 import { adminAppointmentsService } from '@/services';
-import { liverCareOrderService } from '@/services/liverCare';
+import { liverCareOrderService, prescriptionOrderService } from '@/services/liverCare';
 import type { DoctorAvailabilityCalendar, DoctorOption, TimeSlotOption } from '@/types';
+import type { LiverCarePrescription } from '@/types/consultation';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 
 function addDays(iso: string, days: number): string {
@@ -98,6 +100,8 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
   const [assigning, setAssigning] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prescription, setPrescription] = useState<LiverCarePrescription | null>(null);
+  const [loadingPrescription, setLoadingPrescription] = useState(false);
 
   const selectedDoctor = useMemo(
     () => doctors.find((d) => d.id === selectedDoctorId) ?? null,
@@ -135,6 +139,15 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
       .catch(() => setDoctors([]))
       .finally(() => setLoadingDoctors(false));
   }, []);
+
+  useEffect(() => {
+    setLoadingPrescription(true);
+    void prescriptionOrderService
+      .getForOrder(order.id)
+      .then(setPrescription)
+      .catch(() => setPrescription(null))
+      .finally(() => setLoadingPrescription(false));
+  }, [order.id, order.orderStatus, order.updatedAt]);
 
   useEffect(() => {
     setSelectedDoctorId(order.doctorId ?? '');
@@ -407,6 +420,45 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
               Patient and doctor receive the video link after scheduling. Prescription is completed on the doctor portal
               after the consult.
             </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle className="text-base">Prescription</CardTitle>
+            {prescription && (
+              <Badge variant={prescription.status === 'published' ? 'secondary' : 'outline'} className="capitalize">
+                {prescription.status}
+              </Badge>
+            )}
+          </div>
+          <CardDescription>
+            Read-only view of the doctor&apos;s prescription after the consultation. Doctors author and publish Rx on
+            the doctor portal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadingPrescription && <p className="text-sm text-muted-foreground">Loading prescription…</p>}
+
+          {!loadingPrescription && !prescription && (
+            <p className="text-sm text-muted-foreground">
+              No prescription yet. It will appear here once the doctor publishes it after the consultation.
+            </p>
+          )}
+
+          {prescription && (
+            <>
+              {prescription.pdfUrl && prescription.status === 'published' && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={prescription.pdfUrl} target="_blank" rel="noopener noreferrer">
+                    Download PDF
+                  </a>
+                </Button>
+              )}
+              <LiverCarePrescriptionPreview order={order} prescription={prescription} />
+            </>
           )}
         </CardContent>
       </Card>

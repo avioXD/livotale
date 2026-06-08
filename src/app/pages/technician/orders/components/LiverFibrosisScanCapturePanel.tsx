@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { FiWifi } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +10,9 @@ import type { FibrosisScanRecord } from '@/types/fibrosisScan';
 
 interface LiverFibrosisScanCapturePanelProps {
   orderId: string;
+  orderNumber: string;
   onUpdated?: () => void;
+  onSaved?: () => void;
 }
 
 const emptyForm = () => ({
@@ -52,10 +55,16 @@ function recordToForm(r: FibrosisScanRecord) {
   };
 }
 
-export function LiverFibrosisScanCapturePanel({ orderId, onUpdated }: LiverFibrosisScanCapturePanelProps) {
+export function LiverFibrosisScanCapturePanel({
+  orderId,
+  orderNumber,
+  onUpdated,
+  onSaved,
+}: LiverFibrosisScanCapturePanelProps) {
   const [form, setForm] = useState(emptyForm());
   const [locked, setLocked] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
@@ -77,6 +86,7 @@ export function LiverFibrosisScanCapturePanel({ orderId, onUpdated }: LiverFibro
       await action();
       await load();
       onUpdated?.();
+      onSaved?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -109,112 +119,175 @@ export function LiverFibrosisScanCapturePanel({ orderId, onUpdated }: LiverFibro
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="text-base">Liver Fibrosis Scan capture</CardTitle>
+        <CardDescription>
+          Start device session with order <span className="font-mono font-medium">{orderNumber}</span>, then fetch or
+          enter readings.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={saving || locked}
-            onClick={() => run(() => technicianOrderService.fetchDeviceScan(orderId))}
-          >
-            Fetch from device (dummy Wi-Fi)
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="w-full gap-2 sm:w-auto"
+          disabled={saving || locked}
+          onClick={() => run(() => technicianOrderService.fetchDeviceScan(orderId))}
+        >
+          <FiWifi className="h-4 w-4" aria-hidden />
+          Fetch from device (Wi-Fi)
+        </Button>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label>LSM (kPa)</Label>
-            <Input value={form.liverStiffnessKpa} disabled={locked} onChange={(e) => setForm({ ...form, liverStiffnessKpa: e.target.value })} />
+            <Input
+              inputMode="decimal"
+              value={form.liverStiffnessKpa}
+              disabled={locked}
+              onChange={(e) => setForm({ ...form, liverStiffnessKpa: e.target.value })}
+            />
           </div>
           <div className="space-y-1">
             <Label>CAP (dB/m)</Label>
-            <Input value={form.capDbm} disabled={locked} onChange={(e) => setForm({ ...form, capDbm: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>IQR</Label>
-            <Input value={form.iqr} disabled={locked} onChange={(e) => setForm({ ...form, iqr: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>IQR/Median %</Label>
-            <Input value={form.iqrMedianPercent} disabled={locked} onChange={(e) => setForm({ ...form, iqrMedianPercent: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Valid measurements</Label>
-            <Input value={form.validMeasurements} disabled={locked} onChange={(e) => setForm({ ...form, validMeasurements: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Total measurements</Label>
-            <Input value={form.totalMeasurements} disabled={locked} onChange={(e) => setForm({ ...form, totalMeasurements: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Success rate %</Label>
-            <Input value={form.successRatePercent} disabled={locked} onChange={(e) => setForm({ ...form, successRatePercent: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Probe type</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={form.probeType}
+            <Input
+              inputMode="decimal"
+              value={form.capDbm}
               disabled={locked}
-              onChange={(e) => setForm({ ...form, probeType: e.target.value as 'M' | 'XL' })}
-            >
-              <option value="M">M</option>
-              <option value="XL">XL</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label>BMI</Label>
-            <Input value={form.bmi} disabled={locked} onChange={(e) => setForm({ ...form, bmi: e.target.value })} />
+              onChange={(e) => setForm({ ...form, capDbm: e.target.value })}
+            />
           </div>
           <div className="space-y-1">
             <Label>Fibrosis stage</Label>
-            <Input value={form.fibrosisStage} disabled={locked} onChange={(e) => setForm({ ...form, fibrosisStage: e.target.value })} />
+            <Input
+              value={form.fibrosisStage}
+              disabled={locked}
+              onChange={(e) => setForm({ ...form, fibrosisStage: e.target.value })}
+            />
           </div>
           <div className="space-y-1">
             <Label>Steatosis grade</Label>
-            <Input value={form.steatosisGrade} disabled={locked} onChange={(e) => setForm({ ...form, steatosisGrade: e.target.value })} />
+            <Input
+              value={form.steatosisGrade}
+              disabled={locked}
+              onChange={(e) => setForm({ ...form, steatosisGrade: e.target.value })}
+            />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 sm:col-span-2">
             <Label>Interpretation</Label>
-            <Input value={form.interpretation} disabled={locked} onChange={(e) => setForm({ ...form, interpretation: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Device serial</Label>
-            <Input value={form.deviceSerial} disabled={locked} onChange={(e) => setForm({ ...form, deviceSerial: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label>Operator</Label>
-            <Input value={form.operatorName} disabled={locked} onChange={(e) => setForm({ ...form, operatorName: e.target.value })} />
+            <Input
+              value={form.interpretation}
+              disabled={locked}
+              onChange={(e) => setForm({ ...form, interpretation: e.target.value })}
+            />
           </div>
         </div>
 
-        <div className="space-y-1">
-          <Label>Remarks</Label>
-          <Textarea value={form.remarks} disabled={locked} rows={2} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
-        </div>
+        <button
+          type="button"
+          className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+          onClick={() => setShowAdvanced((v) => !v)}
+        >
+          {showAdvanced ? 'Hide' : 'Show'} advanced parameters
+        </button>
 
-        <div className="flex flex-wrap gap-2">
+        {showAdvanced && (
+          <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/20 p-3">
+            <div className="space-y-1">
+              <Label className="text-xs">IQR</Label>
+              <Input value={form.iqr} disabled={locked} onChange={(e) => setForm({ ...form, iqr: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">IQR/Median %</Label>
+              <Input
+                value={form.iqrMedianPercent}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, iqrMedianPercent: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Valid measurements</Label>
+              <Input
+                value={form.validMeasurements}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, validMeasurements: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Total measurements</Label>
+              <Input
+                value={form.totalMeasurements}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, totalMeasurements: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Success rate %</Label>
+              <Input
+                value={form.successRatePercent}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, successRatePercent: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">BMI</Label>
+              <Input value={form.bmi} disabled={locked} onChange={(e) => setForm({ ...form, bmi: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Probe</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={form.probeType}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, probeType: e.target.value as 'M' | 'XL' })}
+              >
+                <option value="M">M</option>
+                <option value="XL">XL</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Device serial</Label>
+              <Input
+                value={form.deviceSerial}
+                disabled={locked}
+                onChange={(e) => setForm({ ...form, deviceSerial: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Remarks</Label>
+              <Textarea
+                value={form.remarks}
+                disabled={locked}
+                rows={2}
+                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button
+            size="sm"
+            className="w-full sm:w-auto"
             disabled={saving || locked}
             onClick={() => run(() => technicianOrderService.saveScan(orderId, buildInput()))}
           >
             Save scan data
           </Button>
           <Button
+            size="sm"
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={saving || locked}
             onClick={() => run(() => technicianOrderService.attachScanFile(orderId, 'scan-report.pdf'))}
           >
-            Attach scan PDF (dummy)
+            Attach scan PDF
           </Button>
         </div>
       </CardContent>

@@ -1,24 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { pathologyService, technicianOrderService } from '@/services/liverCare';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { SampleDispatch } from '@/types/sampleDispatch';
-
-function KpiCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function TechnicianDashboardPanel() {
   const [orders, setOrders] = useState<LiverCareOrder[]>([]);
@@ -37,14 +25,20 @@ export function TechnicianDashboardPanel() {
     return order && d.status === 'pending_dispatch';
   }).length;
 
+  const kpis = [
+    { label: 'Assigned orders', value: orders.length, href: '/technician/orders' },
+    { label: 'Scans scheduled today', value: scansToday },
+    { label: 'Scans completed (active)', value: scanCompleted },
+    { label: 'Samples to send to lab', value: samplesToSend },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Assigned orders" value={orders.length} />
-        <KpiCard label="Scans scheduled today" value={scansToday} />
-        <KpiCard label="Scans completed (active)" value={scanCompleted} />
-        <KpiCard label="Samples to send to lab" value={samplesToSend} />
-      </div>
+      <KpiGrid cols="default">
+        {kpis.map((kpi, i) => (
+          <KpiCard key={kpi.label} {...kpi} accent={kpiAccentAt(i)} />
+        ))}
+      </KpiGrid>
 
       <Card>
         <CardHeader className="pb-2">

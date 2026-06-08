@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   DataTable,
   FilterField,
+  KpiCard,
+  KpiGrid,
+  kpiAccentAt,
   ListToolbar,
   PageHeader,
   PaginationControls,
@@ -306,32 +309,15 @@ export function TechnicianSchedulePage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Scheduled today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">{clinicalVisits.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active samples</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">{activeSamples}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">In progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">{inProgressClinical}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiGrid cols="three" className="xl:grid-cols-3">
+        {[
+          { label: 'Scheduled today', value: clinicalVisits.length },
+          { label: 'Active samples', value: activeSamples },
+          { label: 'In progress', value: inProgressClinical },
+        ].map((kpi, i) => (
+          <KpiCard key={kpi.label} {...kpi} accent={kpiAccentAt(i)} />
+        ))}
+      </KpiGrid>
 
       <ListToolbar
         searchValue={searchInput}

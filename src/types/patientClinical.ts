@@ -19,19 +19,10 @@ export interface PatientClinicalContext {
   scans: FibrosisScanRecord[];
 }
 
-export type PatientDetailTab =
-  | 'profile'
-  | 'appointments'
-  | 'orders'
-  | 'tests'
-  | 'scans'
-  | 'payments';
+export type PatientDetailTab = 'profile' | 'orders' | 'payments';
 
 export const PATIENT_DETAIL_TABS: { value: PatientDetailTab; label: string }[] = [
   { value: 'profile', label: 'Profile' },
-  { value: 'appointments', label: 'Appointments' },
   { value: 'orders', label: 'Orders' },
-  { value: 'tests', label: 'Tests' },
-  { value: 'scans', label: 'Scans' },
   { value: 'payments', label: 'Payments' },
 ];

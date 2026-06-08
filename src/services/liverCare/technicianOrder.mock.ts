@@ -59,6 +59,7 @@ export const MOCK_TECH_VISITS: Record<string, TechnicianOrderVisit> = {
     address: 'Andheri East, Mumbai',
     city: 'Mumbai',
     pincode: '400069',
+    patientEmail: 'meera.kapoor@example.com',
   },
 };
 

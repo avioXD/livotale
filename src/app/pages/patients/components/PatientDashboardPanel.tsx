@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { KpiGrid, KpiInsightCard } from '@/components/common';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardStatCard } from '@/app/pages/dashboard/components/DashboardStatCard';
 import type { PatientDashboardData } from '@/types';
@@ -65,7 +66,7 @@ function PatientDashboardStats({ dashboard }: PatientDashboardPanelProps) {
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <KpiGrid>
       {items.map((item) => (
         <DashboardStatCard
           key={item.label}
@@ -74,7 +75,7 @@ function PatientDashboardStats({ dashboard }: PatientDashboardPanelProps) {
           accent={item.accent}
         />
       ))}
-    </div>
+    </KpiGrid>
   );
 }
 
@@ -111,60 +112,42 @@ export function PatientDashboardPanel({ dashboard }: PatientDashboardPanelProps)
     <div className="space-y-6">
       <PatientDashboardStats dashboard={dashboard} />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 px-5 pb-2 pt-5">
-            <CardDescription className="text-[11px] font-semibold uppercase tracking-wider">Care Plan</CardDescription>
-            <CardTitle className="text-base font-semibold leading-snug">{k.activePackage ?? 'No active package'}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5 pt-0 text-xs leading-relaxed text-muted-foreground">
-            {k.packageStart && (
-              <p>
-                {new Date(k.packageStart).toLocaleDateString()} –{' '}
-                {k.packageEnd ? new Date(k.packageEnd).toLocaleDateString() : 'ongoing'}
-              </p>
-            )}
-            <p className="mt-1 capitalize">Fibrosis: {k.fibrosisStage ?? '—'} · Steatosis: {k.steatosisGrade ?? '—'}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 px-5 pb-2 pt-5">
-            <CardDescription className="text-[11px] font-semibold uppercase tracking-wider">Latest Labs</CardDescription>
-            <CardTitle className="text-base font-semibold">Metabolic panel</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3 px-5 pb-5 pt-0 text-sm">
-            <div><span className="text-muted-foreground">ALT</span><p className="font-medium">{k.sgpt ?? '—'} U/L</p></div>
-            <div><span className="text-muted-foreground">AST</span><p className="font-medium">{k.sgot ?? '—'} U/L</p></div>
-            <div><span className="text-muted-foreground">HbA1c</span><p className="font-medium">{k.hba1c ?? '—'}%</p></div>
-            <div><span className="text-muted-foreground">TG</span><p className="font-medium">{k.triglycerides ?? '—'} mg/dL</p></div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 px-5 pb-2 pt-5">
-            <CardDescription className="text-[11px] font-semibold uppercase tracking-wider">Engagement</CardDescription>
-            <CardTitle className="text-base font-semibold">Visits & prescriptions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5 px-5 pb-5 pt-0 text-sm leading-relaxed">
-            <p>Home visits: {k.homeVisitsCompleted}/{k.homeVisitsTotal} completed</p>
-            <p className="mt-1">Prescriptions: {k.prescriptionsApproved}/{k.prescriptionsTotal} approved</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 px-5 pb-2 pt-5">
-            <CardDescription className="text-[11px] font-semibold uppercase tracking-wider">Weekly Check-in</CardDescription>
-            <CardTitle className="text-base font-semibold">Latest compliance</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1.5 px-5 pb-5 pt-0 text-sm leading-relaxed">
-            <p>Diet {k.dietCompliance ?? '—'}% · Exercise {k.exerciseCompliance ?? '—'}%</p>
-            <p className="mt-1">Medicine {k.medicineCompliance ?? '—'}%</p>
-            {k.scoreCalculatedAt && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Scores updated {new Date(k.scoreCalculatedAt).toLocaleDateString()}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <KpiGrid>
+        <KpiInsightCard
+          label="Care Plan"
+          title={k.activePackage ?? 'No active package'}
+          accent="pink"
+        >
+          {k.packageStart && (
+            <p>
+              {new Date(k.packageStart).toLocaleDateString()} –{' '}
+              {k.packageEnd ? new Date(k.packageEnd).toLocaleDateString() : 'ongoing'}
+            </p>
+          )}
+          <p className="mt-1 capitalize">Fibrosis: {k.fibrosisStage ?? '—'} · Steatosis: {k.steatosisGrade ?? '—'}</p>
+        </KpiInsightCard>
+        <KpiInsightCard label="Latest Labs" title="Metabolic panel" accent="teal">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div><span className="text-muted-foreground">ALT</span><p className="font-medium text-foreground">{k.sgpt ?? '—'} U/L</p></div>
+            <div><span className="text-muted-foreground">AST</span><p className="font-medium text-foreground">{k.sgot ?? '—'} U/L</p></div>
+            <div><span className="text-muted-foreground">HbA1c</span><p className="font-medium text-foreground">{k.hba1c ?? '—'}%</p></div>
+            <div><span className="text-muted-foreground">TG</span><p className="font-medium text-foreground">{k.triglycerides ?? '—'} mg/dL</p></div>
+          </div>
+        </KpiInsightCard>
+        <KpiInsightCard label="Engagement" title="Visits & prescriptions" accent="indigo">
+          <p>Home visits: {k.homeVisitsCompleted}/{k.homeVisitsTotal} completed</p>
+          <p className="mt-1">Prescriptions: {k.prescriptionsApproved}/{k.prescriptionsTotal} approved</p>
+        </KpiInsightCard>
+        <KpiInsightCard label="Weekly Check-in" title="Latest compliance" accent="amber">
+          <p>Diet {k.dietCompliance ?? '—'}% · Exercise {k.exerciseCompliance ?? '—'}%</p>
+          <p className="mt-1">Medicine {k.medicineCompliance ?? '—'}%</p>
+          {k.scoreCalculatedAt && (
+            <p className="mt-2 text-xs">
+              Scores updated {new Date(k.scoreCalculatedAt).toLocaleDateString()}
+            </p>
+          )}
+        </KpiInsightCard>
+      </KpiGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartShell title="Body Composition" description="Weight and BMI over time">

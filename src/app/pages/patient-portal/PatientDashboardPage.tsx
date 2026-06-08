@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiBell, FiDownload, FiFileText, FiUser } from 'react-icons/fi';
+import { KpiActionCard, KpiGrid } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { patientPortalService } from '@/services/liverCare';
 import { usePatientPortalStore } from '@/store';
+import { formatScanVisitSummary } from '@/services/liverCare/scanSchedule';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { PatientDownloadItem, PatientNotification } from '@/types/patientPortal';
@@ -45,44 +47,38 @@ export function PatientDashboardPage() {
         <p className="text-muted-foreground">Track orders, payments, reports, and prescriptions.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <FiUser className="h-5 w-5 text-livotale-pink" />
-            <div>
-              <p className="text-sm font-medium">Profile</p>
-              <Link to="/patient/profile" className="text-xs text-primary underline">Edit details</Link>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <FiBell className="h-5 w-5 text-livotale-pink" />
-            <div>
-              <p className="text-sm font-medium">Notifications {unread > 0 && `(${unread})`}</p>
-              <Link to="/patient/notifications" className="text-xs text-primary underline">View inbox</Link>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <FiDownload className="h-5 w-5 text-livotale-pink" />
-            <div>
-              <p className="text-sm font-medium">Downloads ({downloads.length})</p>
-              <Link to="/patient/downloads" className="text-xs text-primary underline">Download center</Link>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <FiFileText className="h-5 w-5 text-livotale-pink" />
-            <div>
-              <p className="text-sm font-medium">Support</p>
-              <a href="mailto:care@livotale.test" className="text-xs text-primary underline">care@livotale.test</a>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiGrid>
+        <KpiActionCard
+          label="Profile"
+          actionLabel="Edit details"
+          href="/patient/profile"
+          icon={FiUser}
+          accent="pink"
+        />
+        <KpiActionCard
+          label="Notifications"
+          actionLabel="View inbox"
+          href="/patient/notifications"
+          icon={FiBell}
+          accent="teal"
+          badge={unread > 0 ? unread : undefined}
+        />
+        <KpiActionCard
+          label="Downloads"
+          actionLabel="Download center"
+          href="/patient/downloads"
+          icon={FiDownload}
+          accent="indigo"
+          badge={downloads.length}
+        />
+        <KpiActionCard
+          label="Support"
+          actionLabel="care@livotale.test"
+          href="mailto:care@livotale.test"
+          icon={FiFileText}
+          accent="amber"
+        />
+      </KpiGrid>
 
       {(reports.length > 0 || prescriptions.length > 0) && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -143,9 +139,9 @@ export function PatientDashboardPage() {
                     Consultation: {new Date(order.consultationScheduledAt).toLocaleString()}
                   </p>
                 )}
-                {order.scanScheduledAt && (
+                {(order.scanScheduledAt || order.scanPatientPreferredAt) && (
                   <p className="text-xs text-muted-foreground">
-                    Scan: {new Date(order.scanScheduledAt).toLocaleString()}
+                    Scan: {formatScanVisitSummary(order)}
                   </p>
                 )}
               </div>

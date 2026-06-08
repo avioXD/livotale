@@ -50,7 +50,7 @@ const EVENT_LABELS: Record<OrderWorkflowEvent, string> = {
   schedule_scan: 'Schedule scan',
   start_scan: 'Start scan',
   complete_scan: 'Complete scan',
-  assign_lab: 'Assign partner lab',
+  assign_lab: 'Assign lab partner',
   upload_lab_report: 'Upload lab report',
   trigger_ai: 'Trigger AI extraction',
   verify_ai: 'Verify AI data',

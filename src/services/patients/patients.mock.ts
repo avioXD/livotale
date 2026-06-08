@@ -10,7 +10,6 @@ import type {
   PatientTrendPoint,
   TimelineEvent,
 } from '@/types';
-import type { PatientAppointmentRecord, PatientVisitRecord } from '@/types/patientProfile';
 import { mapListItemToPatient } from '@/types/patients';
 
 export { MOCK_SEED_PATIENT_ID };
@@ -220,99 +219,6 @@ export function getMockPatientHistory(_patientId: string): PatientHistory {
       { code: 'hypertension', name: 'Hypertension' },
     ],
   };
-}
-
-export function getMockPatientAppointments(_patientId: string): PatientAppointmentRecord[] {
-  return [
-    {
-      id: 'appt-mock-001',
-      appointmentCode: 'APT-2026-0142',
-      typeName: 'Doctor Consultation',
-      visitMode: 'clinic',
-      status: 'doctor_assigned',
-      scheduledStart: daysFromNow(2, 9, 0),
-      scheduledEnd: daysFromNow(2, 9, 30),
-      doctorName: 'Dr. Anuradha Iyer',
-      chiefComplaint: 'Elevated liver enzymes, fatigue',
-      paymentStatus: 'paid',
-    },
-    {
-      id: 'appt-mock-002',
-      appointmentCode: 'APT-2026-0098',
-      typeName: 'Teleconsultation',
-      visitMode: 'tele',
-      status: 'confirmed',
-      scheduledStart: daysFromNow(5, 14, 0),
-      scheduledEnd: daysFromNow(5, 14, 30),
-      doctorName: 'Dr. Rajesh Kumar',
-      chiefComplaint: 'Follow-up on Liver Fibrosis Scan results',
-      paymentStatus: 'paid',
-    },
-    {
-      id: 'appt-mock-003',
-      appointmentCode: 'APT-2026-0061',
-      typeName: 'Home Visit',
-      visitMode: 'home',
-      status: 'completed',
-      scheduledStart: daysAgo(12, 10, 0),
-      scheduledEnd: daysAgo(12, 11, 30),
-      doctorName: 'Dr. Anuradha Iyer',
-      technicianName: 'Ravi Sharma',
-      chiefComplaint: 'Liver Fibrosis Scan + blood draw',
-      paymentStatus: 'paid',
-    },
-    {
-      id: 'appt-mock-004',
-      appointmentCode: 'APT-2026-0033',
-      typeName: 'Clinic Visit',
-      visitMode: 'clinic',
-      status: 'completed',
-      scheduledStart: daysAgo(28, 15, 0),
-      scheduledEnd: daysAgo(28, 15, 45),
-      doctorName: 'Dr. Meera Shah',
-      paymentStatus: 'paid',
-    },
-  ];
-}
-
-export function getMockPatientVisits(_patientId: string): PatientVisitRecord[] {
-  return [
-    {
-      id: 'visit-mock-001',
-      visitType: 'home_visit',
-      status: 'completed',
-      scheduledAt: daysAgo(12, 10, 0),
-      completedAt: daysAgo(12, 11, 25),
-      technicianName: 'Ravi Sharma',
-      addressSummary: 'A-1402, Lodha Park, Lower Parel, 400013',
-      preferredTimeSlot: 'morning',
-      checklistCompleted: 5,
-      checklistTotal: 5,
-    },
-    {
-      id: 'visit-mock-002',
-      visitType: 'Liver Fibrosis Scan',
-      status: 'completed',
-      scheduledAt: daysAgo(45, 14, 0),
-      completedAt: daysAgo(45, 14, 50),
-      technicianName: 'Priya Nair',
-      addressSummary: 'A-1402, Lodha Park, Lower Parel, 400013',
-      preferredTimeSlot: 'afternoon',
-      checklistCompleted: 3,
-      checklistTotal: 3,
-    },
-    {
-      id: 'visit-mock-003',
-      visitType: 'blood_sample_collection',
-      status: 'booked',
-      scheduledAt: daysFromNow(7, 9, 0),
-      technicianName: 'Ravi Sharma',
-      addressSummary: 'A-1402, Lodha Park, Lower Parel, 400013',
-      preferredTimeSlot: 'morning',
-      checklistCompleted: 0,
-      checklistTotal: 4,
-    },
-  ];
 }
 
 export function mergeMockPatientDetail(

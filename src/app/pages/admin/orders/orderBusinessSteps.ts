@@ -46,10 +46,7 @@ function stepConfig(id: OrderBusinessStepId, pkg: LiverCarePackage | null): Orde
     return { ...base, packageReason: 'Fibrosis scan included in package' };
   }
   if (id === 'lab' && pkg?.pathologyIncluded) {
-    return {
-      ...base,
-      packageReason: 'Partner lab, PDF upload, AI extraction, and Livotale letterhead report',
-    };
+    return { ...base, packageReason: 'Pathology included in package' };
   }
   if (id === 'consultation' && pkg?.consultationIncluded) {
     return { ...base, packageReason: 'Doctor consultation included in package' };

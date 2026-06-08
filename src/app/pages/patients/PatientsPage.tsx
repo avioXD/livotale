@@ -45,7 +45,7 @@ export function PatientsPage() {
         title="Patients"
         description={
           isDoctor
-            ? 'Search and open patient records — reports, scans, history, and care journey.'
+            ? 'Search and open patient records — demographics, history, orders, and care journey.'
             : 'Manage patient records, home visit schedules, and care journeys.'
         }
         actions={

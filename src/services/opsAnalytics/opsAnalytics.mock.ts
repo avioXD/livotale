@@ -1,4 +1,7 @@
 import { LAB_DEMO_ANALYTICS } from '@/services/sampleCollection/labSample.mock';
+import { MOCK_LIVER_ORDERS } from '@/services/liverCare/liverCare.mock';
+import { buildPartnerLabStats } from '@/services/liverCare/partnerLab.stats';
+import { MOCK_LAB_REPORTS, MOCK_PARTNER_LABS, MOCK_SAMPLE_DISPATCHES } from '@/services/liverCare/pathology.mock';
 import type { AnalyticsPeriod } from '@/services/opsAnalytics/OpsAnalyticsService';
 import type {
   SampleCollectionAnalytics,
@@ -36,21 +39,22 @@ export function mockListTechnicians(): StaffTechnicianProfile[] {
 }
 
 export function mockListLabPartners(): StaffLabPartnerProfile[] {
-  return [
-    {
-      id: 'lab-1',
-      name: 'Livotale Partner Lab — Bandra',
-      contactUserId: 'u-lab',
-      contactName: 'Lab Partner Ops',
-      email: 'lab.mock@livotale.test',
-      mobile: '+911111111112',
-      registrationNumber: 'LAB-MOCK-001',
-      status: 'active',
-      samplesReceived: 14,
-      reportsUploaded: 8,
-      reportsPublished: 6,
-    },
-  ];
+  return MOCK_PARTNER_LABS.map((lab) => {
+    const stats = buildPartnerLabStats(lab.id, MOCK_LIVER_ORDERS, MOCK_SAMPLE_DISPATCHES, MOCK_LAB_REPORTS);
+    return {
+      id: lab.id,
+      name: lab.name,
+      contactUserId: null,
+      contactName: lab.contactPerson,
+      email: lab.email,
+      mobile: lab.phone,
+      registrationNumber: lab.registrationNumber ?? null,
+      status: lab.active ? 'active' : 'inactive',
+      samplesReceived: stats.samplesReceived,
+      reportsUploaded: stats.reportsUploaded,
+      reportsPublished: stats.letterheadPublished,
+    };
+  });
 }
 
 export function mockUpdateTechnician(id: string, body: Partial<StaffTechnicianProfile>): StaffTechnicianProfile {

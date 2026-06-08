@@ -46,7 +46,7 @@ const FIXED_CHECKLIST_SECTION_DEFS: FixedSectionDef[] = [
       { id: 'ci-path-lft', label: 'Liver function panel (SGOT, SGPT, bilirubin)' },
       { id: 'ci-path-cbc', label: 'Complete blood count' },
       { id: 'ci-path-viral', label: 'Viral markers (HBsAg, Anti-HCV)' },
-      { id: 'ci-path-lab', label: 'Partner lab processing' },
+      { id: 'ci-path-lab', label: 'Lab partner processing' },
       { id: 'ci-path-ai', label: 'AI-assisted report merge' },
     ],
   },

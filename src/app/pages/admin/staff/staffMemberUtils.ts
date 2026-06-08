@@ -32,6 +32,7 @@ export function mapLabPartnersToRows(rows: StaffLabPartnerProfile[]): StaffMembe
     status: l.status,
     email: l.email,
     mobile: l.mobile,
+    profilePath: `/admin/staff/lab-partners/${l.id}`,
     metrics: [
       { label: 'Received', value: l.samplesReceived },
       { label: 'Reports', value: l.reportsUploaded },

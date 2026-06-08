@@ -10,6 +10,7 @@ import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { OrderInvoice } from '@/types/patientPortal';
 import type { FinalReport } from '@/types/finalReport';
 import type { LiverCarePrescription } from '@/types/consultation';
+import { PatientScanScheduleSection } from '@/app/pages/patient-portal/components/PatientScanScheduleSection';
 
 export function PatientOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -73,6 +74,12 @@ export function PatientOrderDetailPage() {
           <Link to={`/patient/orders/${order.id}/pay`}>Pay now — dummy Razorpay</Link>
         </Button>
       )}
+
+      <PatientScanScheduleSection
+        order={order}
+        phone={session.phone}
+        onUpdated={(updated) => setOrder(updated)}
+      />
 
       {invoice && (
         <Card>

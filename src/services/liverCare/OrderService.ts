@@ -1,6 +1,11 @@
 import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
-import type { CreateOrderInput, LiverCareOrder, OrderTimelineEvent } from '@/types/serviceOrder';
+import type {
+  CreateOrderInput,
+  LiverCareOrder,
+  OrderTimelineEvent,
+  ScheduleScanInput,
+} from '@/types/serviceOrder';
 import type { OrderWorkflowEvent } from './orderWorkflow';
 import { applyTransition, canTransition, getApplicableEvents, getPackageFlags } from './orderWorkflow';
 import {
@@ -22,6 +27,7 @@ import { getPaymentService, getNotificationService, getPDFGenerationService } fr
 import type { OfflinePaymentRecord } from '@/types/payment';
 import type { OrderInvoice } from '@/types/patientPortal';
 import { phonesMatch } from './patientPortal.utils';
+import { canOpsConfirmScanSchedule, SCAN_VISIT_MODE_LABELS } from './scanSchedule';
 
 const MOCK_OFFLINE_PAYMENTS: OfflinePaymentRecord[] = [];
 const MOCK_INVOICES: Record<string, OrderInvoice> = {};
@@ -182,6 +188,63 @@ class OrderService extends BaseApiService {
     return mockOrApi(
       () => [...MOCK_ASSIGNABLE_TECHNICIANS],
       () => this.get<AssignableTechnician[]>('/admin/technicians/assignable'),
+    );
+  }
+
+  async scheduleScan(orderId: string, input: ScheduleScanInput): Promise<LiverCareOrder> {
+    return mockOrApi(
+      () => {
+        const idx = MOCK_LIVER_ORDERS.findIndex((o) => o.id === orderId);
+        if (idx < 0) throw new Error('Order not found');
+        const order = MOCK_LIVER_ORDERS[idx];
+        if (order.orderStatus === 'cancelled') throw new Error('Cannot schedule scan on a cancelled order');
+        if (order.orderStatus === 'completed') throw new Error('Order is complete');
+
+        const draft: LiverCareOrder = {
+          ...order,
+          scanVisitMode: input.visitMode,
+          scanTimeSlot: input.timeSlot,
+          scanClinicLocation: input.visitMode === 'clinic' ? (input.clinicLocation ?? null) : null,
+          scanScheduledAt: input.scheduledAt,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (!canOpsConfirmScanSchedule(draft)) {
+          throw new Error(
+            'Complete all scheduling requirements: payment, visit type, date/time, address (home visits), and technician assignment.',
+          );
+        }
+
+        const pkg = MOCK_PACKAGES.find((p) => p.id === order.packageId)!;
+        const flags = getPackageFlags(pkg);
+
+        let updated = draft;
+        if (canTransition(order, 'schedule_scan', flags)) {
+          updated = applyTransition(draft, 'schedule_scan', flags);
+        } else if (!['scan_scheduled', 'scan_in_progress', 'scan_completed'].includes(order.orderStatus)) {
+          throw new Error('Scan cannot be scheduled at this stage');
+        }
+
+        MOCK_LIVER_ORDERS[idx] = updated;
+
+        const modeLabel = SCAN_VISIT_MODE_LABELS[input.visitMode];
+        const location =
+          input.visitMode === 'clinic' && input.clinicLocation ? ` · ${input.clinicLocation}` : '';
+        appendOrderTimeline(orderId, 'schedule_scan', {
+          performedBy: 'operations',
+          detail: `${modeLabel} · ${input.timeSlot} · ${new Date(input.scheduledAt).toLocaleString()}${location}`,
+          metadata: {
+            scheduledAt: input.scheduledAt,
+            visitMode: input.visitMode,
+            timeSlot: input.timeSlot,
+            technicianId: order.technicianId ?? '',
+            technicianName: order.technicianName ?? '',
+          },
+        });
+
+        return updated;
+      },
+      () => this.post<LiverCareOrder>(`/admin/orders/${orderId}/schedule-scan`, input),
     );
   }
 

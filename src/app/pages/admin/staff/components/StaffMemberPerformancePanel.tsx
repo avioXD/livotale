@@ -1,3 +1,4 @@
+import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
 import type { StaffMemberRow, StaffRoleKey } from '@/types/staffHub';
@@ -39,14 +40,11 @@ export function StaffMemberPerformancePanel({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">{member.subtitle}</p>
-        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {allMetrics.map((m) => (
-            <div key={m.label} className="rounded-md border px-3 py-2">
-              <dt className="text-xs text-muted-foreground">{m.label}</dt>
-              <dd className="text-lg font-semibold">{m.value}</dd>
-            </div>
+        <KpiGrid cols="three">
+          {allMetrics.map((m, i) => (
+            <KpiCard key={m.label} label={m.label} value={m.value} accent={kpiAccentAt(i)} />
           ))}
-        </dl>
+        </KpiGrid>
         {roleKey === 'technician' && (
           <p className="text-xs text-muted-foreground">
             Sample collection counts reflect field work handed to lab and completed patient reports.

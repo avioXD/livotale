@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { prescriptionOrderService } from '@/services/liverCare';
-import type { LiverCarePrescription, PrescriptionMedicine } from '@/types/consultation';
+import type { ConsultationVisitLog, LiverCarePrescription, PrescriptionMedicine } from '@/types/consultation';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { LiverCarePrescriptionPreview } from './LiverCarePrescriptionPreview';
 
@@ -19,17 +19,26 @@ const ADVICE_TEMPLATES = {
 
 interface LiverCarePrescriptionEditorProps {
   order: LiverCareOrder;
+  visitLog: ConsultationVisitLog;
   onPublished?: () => void;
+}
+
+function toDateTimeLocal(iso?: string | null): string {
+  if (!iso) return '';
+  return iso.slice(0, 16);
 }
 
 function newMedicineId() {
   return `med-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePrescriptionEditorProps) {
+export function LiverCarePrescriptionEditor({ order, visitLog, onPublished }: LiverCarePrescriptionEditorProps) {
   const [rx, setRx] = useState<LiverCarePrescription | null>(null);
   const [diagnosis, setDiagnosis] = useState('');
   const [clinicalNotes, setClinicalNotes] = useState('');
+  const [symptoms, setSymptoms] = useState('');
+  const [visitDate, setVisitDate] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
   const [dietAdvice, setDietAdvice] = useState('');
   const [lifestyleAdvice, setLifestyleAdvice] = useState('');
   const [followUpAdvice, setFollowUpAdvice] = useState('');
@@ -45,22 +54,31 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
   const [showPreview, setShowPreview] = useState(false);
 
   const load = async () => {
-    const existing = await prescriptionOrderService.getForOrder(order.id);
+    const existing = await prescriptionOrderService.getForVisit(order.id, visitLog.id);
     setRx(existing);
     if (existing) {
       setDiagnosis(existing.diagnosis ?? '');
       setClinicalNotes(existing.clinicalNotes ?? '');
+      setSymptoms(existing.symptoms ?? visitLog.symptoms ?? '');
+      setVisitDate(toDateTimeLocal(existing.visitDate ?? visitLog.visitCompletedAt));
+      setFollowUpDate(toDateTimeLocal(existing.followUpDate ?? visitLog.followUpAt));
       setDietAdvice(existing.dietAdvice ?? '');
       setLifestyleAdvice(existing.lifestyleAdvice ?? '');
       setFollowUpAdvice(existing.followUpAdvice ?? '');
       setWarningSigns(existing.warningSigns ?? '');
       setMedicines(existing.medicines);
+    } else {
+      setClinicalNotes(visitLog.doctorNotes ?? '');
+      setSymptoms(visitLog.symptoms ?? '');
+      setVisitDate(toDateTimeLocal(visitLog.visitCompletedAt ?? new Date().toISOString()));
+      setFollowUpDate(toDateTimeLocal(visitLog.followUpAt));
+      setMedicines([]);
     }
   };
 
   useEffect(() => {
     void load();
-  }, [order.id]);
+  }, [order.id, visitLog.id, visitLog.updatedAt]);
 
   const isPublished = rx?.status === 'published';
 
@@ -86,6 +104,9 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
   const buildInput = () => ({
     diagnosis: diagnosis.trim() || null,
     clinicalNotes: clinicalNotes.trim() || null,
+    symptoms: symptoms.trim() || null,
+    visitDate: visitDate ? new Date(visitDate).toISOString() : null,
+    followUpDate: followUpDate ? new Date(followUpDate).toISOString() : null,
     medicines,
     dietAdvice: dietAdvice.trim() || null,
     lifestyleAdvice: lifestyleAdvice.trim() || null,
@@ -97,7 +118,7 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
     setSaving(true);
     setError(null);
     try {
-      const saved = await prescriptionOrderService.saveDraft(order.id, buildInput());
+      const saved = await prescriptionOrderService.saveDraft(order.id, visitLog.id, buildInput());
       setRx(saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed');
@@ -110,8 +131,8 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
     setSaving(true);
     setError(null);
     try {
-      await prescriptionOrderService.saveDraft(order.id, buildInput());
-      const published = await prescriptionOrderService.publish(order.id);
+      await prescriptionOrderService.saveDraft(order.id, visitLog.id, buildInput());
+      const published = await prescriptionOrderService.publish(order.id, visitLog.id);
       setRx(published);
       onPublished?.();
     } catch (err) {
@@ -124,7 +145,7 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
   const handleRevise = async () => {
     setSaving(true);
     try {
-      const revised = await prescriptionOrderService.createRevision(order.id);
+      const revised = await prescriptionOrderService.createRevision(order.id, visitLog.id);
       setRx(revised);
     } finally {
       setSaving(false);
@@ -132,8 +153,9 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
   };
 
   const draftPreview: LiverCarePrescription | null = rx ?? (diagnosis || medicines.length ? {
-    id: `rx-draft-${order.id}`,
+    id: `rx-draft-${visitLog.id}`,
     orderId: order.id,
+    visitLogId: visitLog.id,
     patientId: order.patientId,
     consultationId: `con-${order.id}`,
     doctorId: 'doc-1',
@@ -143,6 +165,9 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
     status: 'draft',
     diagnosis,
     clinicalNotes,
+    symptoms,
+    visitDate: visitDate ? new Date(visitDate).toISOString() : null,
+    followUpDate: followUpDate ? new Date(followUpDate).toISOString() : null,
     medicines,
     dietAdvice,
     lifestyleAdvice,
@@ -175,6 +200,21 @@ export function LiverCarePrescriptionEditor({ order, onPublished }: LiverCarePre
           <div className="space-y-2">
             <Label htmlFor="rx-notes">Clinical notes</Label>
             <Input id="rx-notes" value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)} disabled={isPublished} />
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="rx-symptoms">Symptoms</Label>
+            <Textarea id="rx-symptoms" rows={2} value={symptoms} onChange={(e) => setSymptoms(e.target.value)} disabled={isPublished} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rx-visit">Visit date</Label>
+            <Input id="rx-visit" type="datetime-local" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} disabled={isPublished} />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="rx-followup-date">Follow-up date</Label>
+            <Input id="rx-followup-date" type="datetime-local" value={followUpDate} onChange={(e) => setFollowUpDate(e.target.value)} disabled={isPublished} />
           </div>
         </div>
 

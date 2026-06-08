@@ -1,95 +1,96 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { DataTable } from '@/components/common';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { isAdminRole } from '@/app/config/productRoles';
 import { partnerLabService } from '@/services/liverCare';
-import { useUserRole } from '@/store';
 import type { PartnerLab } from '@/types/partnerLab';
+import type { TableColumn } from '@/types';
+
+type PartnerLabListRow = PartnerLab & { reportsUploaded: number; inPipeline: number };
 
 export function AdminPartnerLabsPage() {
-  const userRole = useUserRole();
-  const canEdit = isAdminRole(userRole);
-  const [labs, setLabs] = useState<PartnerLab[]>([]);
-  const [selected, setSelected] = useState<PartnerLab | null>(null);
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+  const [labs, setLabs] = useState<PartnerLabListRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    const rows = await partnerLabService.list(false);
-    setLabs(rows);
-  };
+  const openLab = useCallback((id: string) => navigate(`/admin/staff/lab-partners/${id}`), [navigate]);
 
   useEffect(() => {
-    void load();
+    void partnerLabService.listSummaries(false).then((rows) => {
+      setLabs(rows);
+      setLoading(false);
+    });
   }, []);
 
-  const handleSave = async () => {
-    if (!selected) return;
-    setSaving(true);
-    try {
-      await partnerLabService.update(selected.id, { notes });
-      await load();
-      setSelected(null);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const columns: TableColumn<PartnerLabListRow>[] = useMemo(
+    () => [
+      {
+        key: 'name',
+        header: 'Lab',
+        render: (r) => (
+          <div>
+            <p className="font-medium">{r.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {r.city}, {r.state}
+            </p>
+          </div>
+        ),
+      },
+      {
+        key: 'contact',
+        header: 'Contact',
+        render: (r) => (
+          <div className="text-sm">
+            <p>{r.contactPerson}</p>
+            <p className="text-xs text-muted-foreground">{r.email}</p>
+          </div>
+        ),
+      },
+      {
+        key: 'reports',
+        header: 'Reports uploaded',
+        render: (r) => r.reportsUploaded,
+      },
+      {
+        key: 'pipeline',
+        header: 'In pipeline',
+        render: (r) => r.inPipeline,
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (r) => (
+          <Badge variant={r.active ? 'default' : 'outline'}>{r.active ? 'Active' : 'Inactive'}</Badge>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Partner labs"
-        description={canEdit ? 'Manage pathology partner records, contracts, and tie-up details.' : 'View partner lab records (operations — read only).'}
+        title="Lab partners"
+        description="Associated pathology lab profiles — contact, legal documents, report volume, and billing. Labs email PDFs; operations uploads on each order."
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {labs.map((lab) => (
-          <Card key={lab.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base">{lab.name}</CardTitle>
-                <Badge variant={lab.active ? 'default' : 'outline'}>{lab.active ? 'Active' : 'Inactive'}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>{lab.contactPerson} · {lab.phone}</p>
-              <p className="text-muted-foreground">{lab.address}, {lab.city} {lab.pincode}</p>
-              {lab.gstNumber && <p>GST: {lab.gstNumber}</p>}
-              <p className="text-muted-foreground">
-                Contract: {lab.contractStart ?? '—'} → {lab.contractEnd ?? '—'}
-              </p>
-              <p className="text-muted-foreground">
-                Tests: {lab.supportedTests.join(', ')}
-              </p>
-              {canEdit && (
-                <Button size="sm" variant="outline" onClick={() => { setSelected(lab); setNotes(lab.notes ?? ''); }}>
-                  Edit notes
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DataTable
+        columns={columns}
+        data={labs}
+        isLoading={loading}
+        emptyMessage="No lab partner profiles configured."
+        getRowKey={(r) => r.id}
+        onRowClick={(r) => openLab(r.id)}
+      />
 
-      {selected && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Edit {selected.name}</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1">
-              <Label>Notes</Label>
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={saving}>Save</Button>
-              <Button variant="ghost" onClick={() => setSelected(null)}>Cancel</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <p className="text-xs text-muted-foreground">
+        Tip: use{' '}
+        <Link to="/admin/operations?tab=partner-lab" className="text-livotale-pink hover:underline">
+          Operations → Lab reports
+        </Link>{' '}
+        for live order workflow (dispatch, PDF upload, AI review).
+      </p>
     </div>
   );
 }

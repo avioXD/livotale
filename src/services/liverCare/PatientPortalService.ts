@@ -8,15 +8,27 @@ import type {
   PatientProfile,
   OrderInvoice,
 } from '@/types/patientPortal';
-import type { LiverCareOrder } from '@/types/serviceOrder';
+import type { LiverCareOrder, PatientScanDateRequest } from '@/types/serviceOrder';
 import { MOCK_LIVER_ORDERS, MOCK_PATIENT_PORTAL_PHONE } from './liverCare.mock';
-import { MOCK_PATIENT_NOTIFICATIONS, MOCK_PATIENT_PROFILES } from './patientPortal.mock';
-import { phonesMatch, normalizePhone } from './patientPortal.utils';
+import { MOCK_PATIENT_DEV_USERS, MOCK_PATIENT_NOTIFICATIONS, MOCK_PATIENT_PROFILES } from './patientPortal.mock';
+import { phonesMatch, normalizePhone, resolveSessionFromOrders } from './patientPortal.utils';
 import { liverCareOrderService } from './OrderService';
 import { finalReportService } from './FinalReportService';
 import { prescriptionOrderService } from './PrescriptionOrderService';
+import { appendOrderTimeline } from './orderTimeline';
+import { isPaymentReadyForScan, SCAN_VISIT_MODE_LABELS } from './scanSchedule';
 
 const DEV_OTP = '123456';
+
+interface PatientPortalAuthResponse {
+  user: {
+    fullName: string;
+    mobile: string | null;
+  };
+  context?: {
+    patient?: { id: string } | null;
+  };
+}
 
 class PatientPortalService extends BaseApiService {
   async sendOtp(phone: string): Promise<{ sent: boolean }> {
@@ -38,17 +50,69 @@ class PatientPortalService extends BaseApiService {
     return mockOrApi(
       () => {
         if (otp !== DEV_OTP) throw new Error('Invalid OTP. Use 123456 in demo mode.');
-        const normalized = normalizePhone(phone);
-        const order = MOCK_LIVER_ORDERS.find((o) => phonesMatch(o.patientPhone, normalized));
-        if (!order) throw new Error('No order found for this phone number.');
-        return {
-          phone: normalized,
-          patientId: order.patientId,
-          patientName: order.patientName,
-        };
+        const session = resolveSessionFromOrders(MOCK_LIVER_ORDERS, phone);
+        if (!session) throw new Error('No order found for this phone number.');
+        return session;
       },
       () => this.post<PatientPortalSession>('/patient-portal/otp/verify', { phone, otp }),
     );
+  }
+
+  /** Dev/demo: skip OTP send + verify when phone matches a seeded order. */
+  async bypassOtpLogin(phone: string): Promise<PatientPortalSession> {
+    return mockOrApi(
+      () => {
+        const session = resolveSessionFromOrders(MOCK_LIVER_ORDERS, phone);
+        if (!session) {
+          throw new Error('No order found for this phone number. Contact operations after placing an order.');
+        }
+        return session;
+      },
+      () => this.verifyOtp(phone, DEV_OTP),
+    );
+  }
+
+  async loginWithPassword(identifier: string, password: string): Promise<PatientPortalSession> {
+    return mockOrApi(
+      () => {
+        const key = identifier.trim().toLowerCase();
+        const account = MOCK_PATIENT_DEV_USERS.find(
+          (user) =>
+            user.username?.toLowerCase() === key
+            && 'password' in user
+            && user.password === password,
+        );
+        if (!account) throw new Error('Invalid username or password');
+        const session = resolveSessionFromOrders(MOCK_LIVER_ORDERS, account.phone);
+        if (!session) {
+          return {
+            phone: normalizePhone(account.phone),
+            patientId: account.patientId,
+            patientName: account.patientName,
+          };
+        }
+        return session;
+      },
+      async () => {
+        const api = await this.post<PatientPortalAuthResponse>('/auth/patient/login', {
+          identifier: identifier.trim(),
+          password,
+        });
+        const mobile = api.user.mobile;
+        if (!mobile) throw new Error('No mobile number on file. Use OTP login instead.');
+        const patientId = api.context?.patient?.id;
+        if (!patientId) throw new Error('Patient profile not found for this account.');
+        return {
+          phone: normalizePhone(mobile),
+          patientId,
+          patientName: api.user.fullName,
+        };
+      },
+    );
+  }
+
+  getDemoPatients() {
+    return MOCK_PATIENT_DEV_USERS;
   }
 
   async listMyOrders(phone: string): Promise<LiverCareOrder[]> {
@@ -58,6 +122,52 @@ class PatientPortalService extends BaseApiService {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ),
       () => this.get<LiverCareOrder[]>('/patient-portal/orders', { params: { phone } }),
+    );
+  }
+
+  async requestScanDate(
+    phone: string,
+    orderId: string,
+    input: PatientScanDateRequest,
+  ): Promise<LiverCareOrder> {
+    return mockOrApi(
+      () => {
+        const idx = MOCK_LIVER_ORDERS.findIndex((o) => o.id === orderId);
+        if (idx < 0) throw new Error('Order not found');
+        const order = MOCK_LIVER_ORDERS[idx];
+        if (!phonesMatch(order.patientPhone, phone)) throw new Error('Order not found');
+        if (order.orderStatus === 'cancelled') throw new Error('This order was cancelled');
+        if (order.scanScheduledAt) throw new Error('Scan is already confirmed by operations');
+        if (!isPaymentReadyForScan(order)) {
+          throw new Error('Complete payment before selecting a scan date');
+        }
+        if (['scan_in_progress', 'scan_completed', 'completed'].includes(order.orderStatus)) {
+          throw new Error('Scan date can no longer be changed');
+        }
+
+        const updated: LiverCareOrder = {
+          ...order,
+          scanVisitMode: input.visitMode,
+          scanTimeSlot: input.timeSlot,
+          scanPatientPreferredAt: input.preferredAt,
+          scanClinicLocation: input.visitMode === 'clinic' ? order.scanClinicLocation ?? null : null,
+          updatedAt: new Date().toISOString(),
+        };
+        MOCK_LIVER_ORDERS[idx] = updated;
+
+        appendOrderTimeline(orderId, 'scan_date_requested', {
+          performedBy: 'patient',
+          detail: `${SCAN_VISIT_MODE_LABELS[input.visitMode]} · ${input.timeSlot} · ${new Date(input.preferredAt).toLocaleString()}`,
+          metadata: {
+            preferredAt: input.preferredAt,
+            visitMode: input.visitMode,
+            timeSlot: input.timeSlot,
+          },
+        });
+
+        return updated;
+      },
+      () => this.post<LiverCareOrder>(`/patient-portal/orders/${orderId}/scan-date`, input),
     );
   }
 

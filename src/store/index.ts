@@ -13,3 +13,4 @@ export { useStaffOnboardingStore } from './staff/staffOnboardingStore';
 export { usePatientPortalStore } from './patientPortalStore';
 export { usePackagesAdminStore, usePackageDetailStore, usePublicPackagesStore } from './packages';
 export { useEnquiriesAdminStore, useEnquiryDetailStore } from './enquiries';
+export { useLabReportsStore } from './pathology';

@@ -25,7 +25,14 @@ export function LiverCarePrescriptionPreview({ order, prescription }: LiverCareP
         <p><span className="text-muted-foreground">Patient:</span> {order.patientName}</p>
         <p><span className="text-muted-foreground">Phone:</span> {order.patientPhone}</p>
         <p><span className="text-muted-foreground">Order:</span> {order.orderNumber}</p>
-        <p><span className="text-muted-foreground">Date:</span> {new Date(prescription.updatedAt).toLocaleDateString()}</p>
+        <p><span className="text-muted-foreground">Visit date:</span>{' '}
+          {prescription.visitDate
+            ? new Date(prescription.visitDate).toLocaleString()
+            : new Date(prescription.updatedAt).toLocaleDateString()}
+        </p>
+        {prescription.followUpDate && (
+          <p><span className="text-muted-foreground">Follow-up:</span> {new Date(prescription.followUpDate).toLocaleString()}</p>
+        )}
       </div>
 
       <div className="mt-4 rounded-md bg-muted/30 p-3">
@@ -45,6 +52,13 @@ export function LiverCarePrescriptionPreview({ order, prescription }: LiverCareP
         <div className="mt-4">
           <p className="font-medium">Clinical notes</p>
           <p className="text-muted-foreground">{prescription.clinicalNotes}</p>
+        </div>
+      )}
+
+      {prescription.symptoms && (
+        <div className="mt-4">
+          <p className="font-medium">Symptoms</p>
+          <p className="text-muted-foreground">{prescription.symptoms}</p>
         </div>
       )}
 

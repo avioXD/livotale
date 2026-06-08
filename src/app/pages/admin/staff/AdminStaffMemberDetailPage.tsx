@@ -105,6 +105,10 @@ export function AdminStaffMemberDetailPage() {
 
   if (!memberId || !roleSlug) return null;
 
+  if (roleKey === 'lab_partner') {
+    return <Navigate to={`/admin/staff/lab-partners/${memberId}`} replace />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

@@ -1,5 +1,25 @@
 import type { PatientNotification, PatientProfile } from '@/types/patientPortal';
 
+/** Mock patient portal logins — separate from staff dev quick login on `/login`. */
+export const MOCK_PATIENT_DEV_USERS = [
+  {
+    label: 'Rohan Mehta',
+    hint: 'Pending payment',
+    username: 'patient.rohan',
+    password: 'Patient@123',
+    phone: '9900000001',
+    patientId: 'demo-patient-rohan',
+    patientName: 'Rohan Mehta',
+  },
+  {
+    label: 'Anita Desai',
+    hint: 'Published report',
+    phone: '9988776655',
+    patientId: 'demo-patient-1',
+    patientName: 'Anita Desai',
+  },
+] as const;
+
 const now = Date.now();
 const days = (n: number) => new Date(now - n * 86400000).toISOString();
 

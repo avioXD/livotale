@@ -8,6 +8,7 @@ export { pathologyService } from './PathologyService';
 export { aiExtractionOrderService } from './AIExtractionOrderService';
 export { finalReportService } from './FinalReportService';
 export { doctorConsultationService } from './DoctorConsultationService';
+export { consultationOpsService } from './ConsultationOpsService';
 export { prescriptionOrderService } from './PrescriptionOrderService';
 export { adminDashboardService } from './AdminDashboardService';
 export * from './orderWorkflow';

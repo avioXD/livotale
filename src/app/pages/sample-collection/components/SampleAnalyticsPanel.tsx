@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { SampleCollectionAnalytics } from '@/types/sampleCollection';
 
@@ -47,13 +48,17 @@ export function SampleAnalyticsPanel({ analytics, title = 'Sample & report analy
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">{title}</h3>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Total samples</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{s.total_samples}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Collected</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{s.collected}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">In lab pipeline</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{s.in_lab_pipeline}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Reports published</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{s.reports_published}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Rejected</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{s.rejected}</p></CardContent></Card>
-      </div>
+      <KpiGrid className="lg:grid-cols-5">
+        {[
+          { label: 'Total samples', value: s.total_samples },
+          { label: 'Collected', value: s.collected },
+          { label: 'In lab pipeline', value: s.in_lab_pipeline },
+          { label: 'Reports published', value: s.reports_published },
+          { label: 'Rejected', value: s.rejected },
+        ].map((kpi, i) => (
+          <KpiCard key={kpi.label} {...kpi} accent={kpiAccentAt(i)} />
+        ))}
+      </KpiGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {collections.length > 0 && (

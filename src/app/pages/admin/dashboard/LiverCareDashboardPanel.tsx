@@ -1,30 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
 import { Label } from '@/components/ui/label';
 import { adminDashboardService, packageService } from '@/services/liverCare';
 import type { LiverCareDashboardFilters, LiverCareDashboardSummary } from '@/types/adminDashboard';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { LiverCarePackage } from '@/types/package';
-
-function KpiCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
-  const content = (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-  if (href) {
-    return <Link to={href} className="block transition-opacity hover:opacity-90">{content}</Link>;
-  }
-  return content;
-}
 
 export function LiverCareDashboardPanel() {
   const [summary, setSummary] = useState<LiverCareDashboardSummary | null>(null);
@@ -46,6 +29,18 @@ export function LiverCareDashboardPanel() {
   if (!summary) {
     return <p className="text-sm text-muted-foreground">Loading liver care KPIs…</p>;
   }
+
+  const kpis = [
+    { label: 'Enquiries', value: summary.enquiries.total, href: '/admin/enquiries' },
+    { label: 'New enquiries', value: summary.enquiries.new, href: '/admin/enquiries' },
+    { label: 'Orders', value: summary.orders.total, href: '/admin/operations?tab=orders' },
+    { label: 'Payment pending', value: summary.orders.paymentPending, href: '/admin/operations?tab=orders' },
+    { label: 'Scan completed', value: summary.orders.scanCompleted },
+    { label: 'Lab pending', value: summary.orders.labPending, href: '/admin/operations?tab=orders' },
+    { label: 'Report pending', value: summary.orders.reportPending, href: '/admin/operations?tab=orders' },
+    { label: 'Consultation pending', value: summary.orders.consultationPending },
+    { label: 'Rx pending', value: summary.orders.prescriptionPending },
+  ];
 
   return (
     <div className="space-y-6">
@@ -80,26 +75,19 @@ export function LiverCareDashboardPanel() {
         <Button variant="outline" size="sm" onClick={() => setFilters({})}>Clear filters</Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Enquiries" value={summary.enquiries.total} href="/admin/enquiries" />
-        <KpiCard label="New enquiries" value={summary.enquiries.new} href="/admin/enquiries" />
-        <KpiCard label="Orders" value={summary.orders.total} href="/admin/operations?tab=orders" />
-        <KpiCard label="Payment pending" value={summary.orders.paymentPending} href="/admin/operations?tab=orders" />
-        <KpiCard label="Scan completed" value={summary.orders.scanCompleted} />
-        <KpiCard label="Lab pending" value={summary.orders.labPending} href="/admin/operations?tab=orders" />
-        <KpiCard label="Report pending" value={summary.orders.reportPending} href="/admin/operations?tab=orders" />
-        <KpiCard label="Consultation pending" value={summary.orders.consultationPending} />
-        <KpiCard label="Rx pending" value={summary.orders.prescriptionPending} />
-      </div>
+      <KpiGrid>
+        {kpis.map((kpi, i) => (
+          <KpiCard key={kpi.label} {...kpi} accent={kpiAccentAt(i)} />
+        ))}
+      </KpiGrid>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Revenue (filtered)</CardTitle></CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-2xl font-bold">₹{summary.revenue.total.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-muted-foreground">Today: ₹{summary.revenue.today.toLocaleString('en-IN')}</p>
-          </CardContent>
-        </Card>
+        <KpiCard
+          label="Revenue (filtered)"
+          value={`₹${summary.revenue.total.toLocaleString('en-IN')}`}
+          hint={`Today: ₹${summary.revenue.today.toLocaleString('en-IN')}`}
+          accent="emerald"
+        />
         <Card className="md:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Package-wise sales</CardTitle></CardHeader>
           <CardContent>

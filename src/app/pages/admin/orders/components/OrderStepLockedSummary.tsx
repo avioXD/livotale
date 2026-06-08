@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FiLock } from 'react-icons/fi';
 import type { OrderBusinessStepId } from '@/app/pages/admin/orders/orderBusinessSteps';
+import { formatScanVisitSummary } from '@/services/liverCare/scanSchedule';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 
@@ -50,15 +51,15 @@ export function OrderStepLockedSummary({
           <>
             <p>Technician: {order.technicianName ?? '—'}</p>
             <p>
-              Scan: {order.scanScheduledAt
-                ? new Date(order.scanScheduledAt).toLocaleString()
+              Scan: {order.scanScheduledAt || order.scanPatientPreferredAt
+                ? formatScanVisitSummary(order)
                 : ORDER_STATUS_LABELS[order.orderStatus]}
             </p>
           </>
         )}
         {stepId === 'lab' && (
           <>
-            <p>Partner lab: {order.partnerLabName ?? '—'}</p>
+            <p>Lab partner: {order.partnerLabName ?? '—'}</p>
             <p>Lab PDF processed, AI parameters verified, and Livotale letterhead report available.</p>
           </>
         )}

@@ -3,14 +3,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { aiExtractionOrderService } from '@/services/liverCare';
-import type { AIExtractionJob, ExtractedField } from '@/types/aiExtraction';
-import type { LabReportUpload } from '@/types/labReport';
-import { pathologyService } from '@/services/liverCare';
+import { useLabReportsStore } from '@/store';
+import type { ExtractedField } from '@/types/aiExtraction';
 
 interface AIExtractionReviewPanelProps {
   orderId: string;
   pathologyRequired: boolean;
+  embeddedInLab?: boolean;
   onUpdated: () => void;
   readOnly?: boolean;
 }
@@ -22,40 +21,43 @@ const FLAG_COLORS: Record<string, string> = {
   critical: 'bg-red-100 text-red-900',
 };
 
-export function AIExtractionReviewPanel({ orderId, pathologyRequired, onUpdated, readOnly = false }: AIExtractionReviewPanelProps) {
-  const [job, setJob] = useState<AIExtractionJob | null>(null);
-  const [report, setReport] = useState<LabReportUpload | null>(null);
+export function AIExtractionReviewPanel({
+  orderId,
+  pathologyRequired,
+  embeddedInLab = false,
+  onUpdated,
+  readOnly = false,
+}: AIExtractionReviewPanelProps) {
   const [fields, setFields] = useState<ExtractedField[]>([]);
-  const [acting, setActing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
-    const [j, r] = await Promise.all([
-      aiExtractionOrderService.getJobForOrder(orderId),
-      pathologyService.getReport(orderId),
-    ]);
-    setJob(j);
-    setReport(r);
-    if (j) setFields(j.fields);
-  };
+  const activeOrderId = useLabReportsStore((s) => s.activeOrderId);
+  const job = useLabReportsStore((s) => (s.activeOrderId === orderId ? s.aiJob : null));
+  const report = useLabReportsStore((s) => (s.activeOrderId === orderId ? s.report : null));
+  const orderSaving = useLabReportsStore((s) => s.orderSaving);
+  const orderError = useLabReportsStore((s) => (s.activeOrderId === orderId ? s.orderError : null));
+
+  const loadOrder = useLabReportsStore((s) => s.loadOrder);
+  const triggerExtraction = useLabReportsStore((s) => s.triggerExtraction);
+  const updateExtractionFields = useLabReportsStore((s) => s.updateExtractionFields);
+  const verifyExtraction = useLabReportsStore((s) => s.verifyExtraction);
+  const requestReupload = useLabReportsStore((s) => s.requestReupload);
 
   useEffect(() => {
-    void load();
-  }, [orderId]);
+    if (activeOrderId !== orderId) void loadOrder(orderId);
+  }, [orderId, activeOrderId, loadOrder]);
+
+  useEffect(() => {
+    if (job) setFields(job.fields);
+  }, [job]);
 
   if (!pathologyRequired) return null;
 
   const run = async (action: () => Promise<unknown>) => {
-    setActing(true);
-    setError(null);
     try {
       await action();
-      await load();
       onUpdated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Action failed');
-    } finally {
-      setActing(false);
+    } catch {
+      // orderError set in store
     }
   };
 
@@ -80,27 +82,20 @@ export function AIExtractionReviewPanel({ orderId, pathologyRequired, onUpdated,
     ]);
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">AI-extracted report parameters</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          AI reads the uploaded lab PDF and extracts test parameters. Review values, save to the database, then generate the Livotale letterhead PDF below.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
+  const content = (
+    <div className="space-y-4">
+        {orderError && (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
+            {orderError}
           </div>
         )}
 
         {!report && (
-          <p className="text-sm text-muted-foreground">Upload the partner lab PDF above to start AI parameter extraction.</p>
+          <p className="text-sm text-muted-foreground">Upload the lab partner PDF to start extraction.</p>
         )}
 
         {!readOnly && report && !job && (
-          <Button size="sm" disabled={acting} onClick={() => run(() => aiExtractionOrderService.triggerExtraction(orderId))}>
+          <Button size="sm" disabled={orderSaving} onClick={() => run(() => triggerExtraction(orderId))}>
             Re-run AI extraction
           </Button>
         )}
@@ -158,7 +153,7 @@ export function AIExtractionReviewPanel({ orderId, pathologyRequired, onUpdated,
 
             {job.status === 'verified' && (
               <p className="text-sm text-green-700">
-                Verified by {job.verifiedBy} on {job.verifiedAt ? new Date(job.verifiedAt).toLocaleString() : '—'} — ready for letterhead report generation.
+                Verified by {job.verifiedBy} on {job.verifiedAt ? new Date(job.verifiedAt).toLocaleString() : '—'}
               </p>
             )}
 
@@ -172,23 +167,23 @@ export function AIExtractionReviewPanel({ orderId, pathologyRequired, onUpdated,
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={acting}
-                  onClick={() => run(() => aiExtractionOrderService.updateFields(orderId, fields))}
+                  disabled={orderSaving}
+                  onClick={() => run(() => updateExtractionFields(orderId, fields))}
                 >
                   Save edits to database
                 </Button>
                 <Button
                   size="sm"
-                  disabled={acting || fields.length === 0}
-                  onClick={() => run(() => aiExtractionOrderService.verifyExtraction(orderId))}
+                  disabled={orderSaving || fields.length === 0}
+                  onClick={() => run(() => verifyExtraction(orderId))}
                 >
                   Confirm parameters for letterhead
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={acting}
-                  onClick={() => run(() => aiExtractionOrderService.requestReupload(orderId))}
+                  disabled={orderSaving}
+                  onClick={() => run(() => requestReupload(orderId))}
                 >
                   Request re-upload
                 </Button>
@@ -196,7 +191,24 @@ export function AIExtractionReviewPanel({ orderId, pathologyRequired, onUpdated,
             )}
           </>
         )}
-      </CardContent>
+    </div>
+  );
+
+  if (embeddedInLab) {
+    return (
+      <section className="rounded-md border p-4">
+        <h3 className="mb-3 text-sm font-semibold">AI extraction review</h3>
+        {content}
+      </section>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">AI extraction review</CardTitle>
+      </CardHeader>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 }
