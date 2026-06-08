@@ -24,7 +24,7 @@
 ## File map
 
 ```
-livotel-ui/src/app/pages/admin/operations/
+livotale-ui/src/app/pages/admin/operations/
   AdminOperationsHubPage.tsx
   adminOperationsConfig.ts
   components/

@@ -129,7 +129,7 @@ export function AdminAppointmentsDashboardPage() {
                       <td className="py-3 pr-3">
                         <Link
                           to={`/patients/${row.patientId}`}
-                          className="font-medium text-livotel-pink hover:underline"
+                          className="font-medium text-livotale-pink hover:underline"
                         >
                           {row.patientName}
                         </Link>

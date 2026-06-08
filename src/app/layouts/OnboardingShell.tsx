@@ -13,7 +13,7 @@ export function OnboardingShell() {
         <div className="flex items-center gap-2">
           <img src="/assets/livotale-logo.png" alt="" className="h-8 w-8 object-contain" />
           <div>
-            <p className="text-sm font-bold text-livotel-pink">{APP_NAME}</p>
+            <p className="text-sm font-bold text-livotale-pink">{APP_NAME}</p>
             <p className="text-xs text-muted-foreground">Patient onboarding</p>
           </div>
         </div>

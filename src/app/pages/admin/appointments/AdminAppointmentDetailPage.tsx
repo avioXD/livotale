@@ -111,7 +111,7 @@ export function AdminAppointmentDetailPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="text-muted-foreground">Patient</p>
-                <Link to={`/patients/${selected.patientId}`} className="font-medium text-livotel-pink hover:underline">
+                <Link to={`/patients/${selected.patientId}`} className="font-medium text-livotale-pink hover:underline">
                   {selected.patientName}
                 </Link>
               </div>

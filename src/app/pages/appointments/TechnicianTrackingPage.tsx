@@ -84,7 +84,7 @@ export function TechnicianTrackingPage() {
             {tracking.lastLocation ? (
               <div className="rounded-lg border bg-muted/20 p-4">
                 <p className="inline-flex items-center gap-2 font-medium">
-                  <FiMapPin className="h-4 w-4 text-livotel-pink" />
+                  <FiMapPin className="h-4 w-4 text-livotale-pink" />
                   Last known location
                 </p>
                 <p className="mt-2 text-muted-foreground">

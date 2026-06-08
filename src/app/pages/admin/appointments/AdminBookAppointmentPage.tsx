@@ -294,7 +294,7 @@ export function AdminBookAppointmentPage() {
                         setSlotId('');
                       }}
                       className={`w-full rounded-lg border p-3 text-left ${
-                        selectedType?.id === type.id ? 'border-livotel-pink bg-livotel-pink/5' : 'hover:bg-muted/40'
+                        selectedType?.id === type.id ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
                       }`}
                     >
                       <p className="font-medium">{type.name}</p>
@@ -355,7 +355,7 @@ export function AdminBookAppointmentPage() {
                   setSlotId('');
                 }}
                 className={`w-full rounded-lg border p-4 text-left ${
-                  selectedDoctor?.id === doctor.id ? 'border-livotel-pink bg-livotel-pink/5' : 'hover:bg-muted/40'
+                  selectedDoctor?.id === doctor.id ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
                 }`}
               >
                 <p className="font-medium">{doctor.fullName}</p>
@@ -399,7 +399,7 @@ export function AdminBookAppointmentPage() {
                         setSlotId('');
                       }}
                       className={`rounded-lg border p-3 text-left text-sm ${
-                        selected ? 'border-livotel-pink bg-livotel-pink/5' : 'hover:bg-muted/40'
+                        selected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
                       }`}
                     >
                       <p className="font-medium">

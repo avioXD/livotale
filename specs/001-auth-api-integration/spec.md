@@ -6,7 +6,7 @@
 
 **Status**: Approved
 
-**Input**: Wire livotel-ui login/register to livotale_app Fastify API with role-based access.
+**Input**: Wire livotale-ui login/register to livotale_app Fastify API with role-based access.
 
 ## User Scenarios & Testing
 

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `003-rbac-auth-module` | **Created**: 2026-06-06 | **Status**: Approved
 
-**Product**: LIVGASTRO (Livotel)
+**Product**: LIVGASTRO (Livotale)
 
 ## Objective
 

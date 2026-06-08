@@ -127,7 +127,7 @@ export function AdminStaffMemberDetailPage() {
 
       {!isLoading && member && (
         <>
-          <Card className="border-livotel-pink/30 bg-gradient-to-r from-livotel-pink/5 to-transparent">
+          <Card className="border-livotale-pink/30 bg-gradient-to-r from-livotale-pink/5 to-transparent">
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <CardTitle className="text-lg">Staff summary</CardTitle>

@@ -69,7 +69,7 @@ export function AdminOperationsAppointmentsTab() {
         key: 'patient',
         header: 'Patient',
         render: (r) => (
-          <Link to={`/patients/${r.patientId}`} className="text-livotel-pink hover:underline" onClick={(e) => e.stopPropagation()}>
+          <Link to={`/patients/${r.patientId}`} className="text-livotale-pink hover:underline" onClick={(e) => e.stopPropagation()}>
             {r.patientName}
           </Link>
         ),

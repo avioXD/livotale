@@ -98,7 +98,7 @@ export function AppointmentCard({
         )}
 
         <div className="rounded-lg border bg-muted/20 px-3 py-2 text-sm">
-          <p className="font-medium text-livotel-pink">{appointment.currentStepLabel}</p>
+          <p className="font-medium text-livotale-pink">{appointment.currentStepLabel}</p>
           <p className="text-xs text-muted-foreground">Current booking status</p>
         </div>
       </CardHeader>
@@ -130,7 +130,7 @@ export function AppointmentCard({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 px-0 text-livotel-pink hover:bg-transparent hover:text-livotel-pink/80"
+          className="h-8 px-0 text-livotale-pink hover:bg-transparent hover:text-livotale-pink/80"
           onClick={(e) => {
             e.stopPropagation();
             setExpanded((v) => !v);

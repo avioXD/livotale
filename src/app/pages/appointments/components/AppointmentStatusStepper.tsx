@@ -8,8 +8,8 @@ interface AppointmentStatusStepperProps {
 }
 
 const stateStyles: Record<string, string> = {
-  completed: 'border-livotel-teal bg-livotel-teal/10 text-livotel-teal',
-  current: 'border-livotel-pink bg-livotel-pink/10 text-livotel-pink ring-2 ring-livotel-pink/20',
+  completed: 'border-livotale-teal bg-livotale-teal/10 text-livotale-teal',
+  current: 'border-livotale-pink bg-livotale-pink/10 text-livotale-pink ring-2 ring-livotale-pink/20',
   pending: 'border-muted bg-muted/30 text-muted-foreground',
   cancelled: 'border-destructive bg-destructive/10 text-destructive',
   skipped: 'border-transparent bg-muted/20 text-muted-foreground/50',
@@ -37,7 +37,7 @@ export function AppointmentStatusStepper({ steps, compact }: AppointmentStatusSt
               <span
                 className={cn(
                   'my-1 w-0.5 flex-1 min-h-[1.25rem]',
-                  step.state === 'completed' ? 'bg-livotel-teal/40' : 'bg-border',
+                  step.state === 'completed' ? 'bg-livotale-teal/40' : 'bg-border',
                 )}
               />
             )}
@@ -46,7 +46,7 @@ export function AppointmentStatusStepper({ steps, compact }: AppointmentStatusSt
             <p
               className={cn(
                 'text-sm font-medium leading-tight',
-                step.state === 'current' && 'text-livotel-pink',
+                step.state === 'current' && 'text-livotale-pink',
                 step.state === 'pending' && 'text-muted-foreground',
               )}
             >
@@ -58,7 +58,7 @@ export function AppointmentStatusStepper({ steps, compact }: AppointmentStatusSt
               </p>
             )}
             {step.state === 'current' && (
-              <p className="mt-1 text-xs font-medium text-livotel-pink">Current step</p>
+              <p className="mt-1 text-xs font-medium text-livotale-pink">Current step</p>
             )}
           </div>
         </li>

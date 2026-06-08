@@ -30,7 +30,7 @@ export function TypeStep({ types, selectedCode, onSelect, onNext }: TypeStepProp
               type="button"
               onClick={() => onSelect(type)}
               className={`w-full rounded-lg border p-4 text-left transition-colors ${
-                selected ? 'border-livotel-pink bg-livotel-pink/5' : 'hover:bg-muted/40'
+                selected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -40,7 +40,7 @@ export function TypeStep({ types, selectedCode, onSelect, onNext }: TypeStepProp
                     {type.durationMinutes} min · {formatPrice(type.basePrice)}
                   </p>
                 </div>
-                {selected && <span className="text-xs font-semibold text-livotel-pink">Selected</span>}
+                {selected && <span className="text-xs font-semibold text-livotale-pink">Selected</span>}
               </div>
             </button>
           );

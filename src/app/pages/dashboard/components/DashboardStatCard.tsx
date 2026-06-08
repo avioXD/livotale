@@ -5,14 +5,14 @@ type StatAccent = 'pink' | 'teal' | 'amber' | 'indigo' | 'rose' | 'neutral' | 'd
 
 const accentStyles: Record<StatAccent, { border: string; bg: string; value: string }> = {
   pink: {
-    border: 'border-l-livotel-pink',
-    bg: 'from-livotel-pink/[0.12]',
-    value: 'text-livotel-pink',
+    border: 'border-l-livotale-pink',
+    bg: 'from-livotale-pink/[0.12]',
+    value: 'text-livotale-pink',
   },
   teal: {
-    border: 'border-l-livotel-teal',
-    bg: 'from-livotel-teal/[0.12]',
-    value: 'text-livotel-teal',
+    border: 'border-l-livotale-teal',
+    bg: 'from-livotale-teal/[0.12]',
+    value: 'text-livotale-teal',
   },
   amber: {
     border: 'border-l-amber-500',

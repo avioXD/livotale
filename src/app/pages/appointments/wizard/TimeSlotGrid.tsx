@@ -41,8 +41,8 @@ export function TimeSlotGrid({
             }}
             className={cn(
               'rounded-lg border px-3 py-2.5 text-center text-sm font-medium transition-colors',
-              selected && !disabled && 'border-livotel-pink bg-livotel-pink/10 text-livotel-pink',
-              !selected && !disabled && 'hover:border-livotel-pink/40 hover:bg-muted/50',
+              selected && !disabled && 'border-livotale-pink bg-livotale-pink/10 text-livotale-pink',
+              !selected && !disabled && 'hover:border-livotale-pink/40 hover:bg-muted/50',
               booked && 'cursor-not-allowed border-dashed bg-muted/30 text-muted-foreground opacity-60',
             )}
           >

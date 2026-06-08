@@ -7,7 +7,7 @@ Sync Impact Report
 - Follow-up: specs/001-auth-api-integration
 -->
 
-# Livotel UI Constitution
+# Livotale UI Constitution
 
 ## Core Principles
 
@@ -48,6 +48,6 @@ Prefer the smallest diff that satisfies the spec. Reuse existing stores, service
 
 ## Governance
 
-This constitution supersedes ad-hoc practices. Amendments require updating this file, bumping the version, and noting impact in the Sync Impact Report comment. Development standards in `.cursor/rules/livotel-development-standards.mdc` supplement but do not override these principles.
+This constitution supersedes ad-hoc practices. Amendments require updating this file, bumping the version, and noting impact in the Sync Impact Report comment. Development standards in `.cursor/rules/livotale-development-standards.mdc` supplement but do not override these principles.
 
 **Version**: 1.0.0 | **Ratified**: 2026-06-06 | **Last Amended**: 2026-06-06

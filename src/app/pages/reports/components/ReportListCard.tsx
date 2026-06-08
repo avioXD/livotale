@@ -14,7 +14,7 @@ export function ReportListCard({ report }: ReportListCardProps) {
 
   return (
     <Link to={`/reports/${encodeURIComponent(report.reportKey)}`} className="block">
-      <Card className="h-full transition-all hover:border-livotel-pink/40 hover:shadow-md">
+      <Card className="h-full transition-all hover:border-livotale-pink/40 hover:shadow-md">
         <CardHeader className="space-y-2 px-5 pb-2 pt-5">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
@@ -42,7 +42,7 @@ export function ReportListCard({ report }: ReportListCardProps) {
         </CardHeader>
         <CardContent className="flex items-end justify-between px-5 pb-5 pt-0">
           <p className="line-clamp-2 flex-1 text-sm text-muted-foreground">{report.summary}</p>
-          <FiChevronRight className="ml-2 h-5 w-5 shrink-0 text-livotel-pink" />
+          <FiChevronRight className="ml-2 h-5 w-5 shrink-0 text-livotale-pink" />
         </CardContent>
       </Card>
     </Link>

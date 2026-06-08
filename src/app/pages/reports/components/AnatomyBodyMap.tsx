@@ -47,7 +47,7 @@ export function AnatomyBodyMap({ regions }: AnatomyBodyMapProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-livotel-teal/30 bg-gradient-to-br from-livotel-teal/5 to-transparent">
+    <Card className="overflow-hidden border-livotale-teal/30 bg-gradient-to-br from-livotale-teal/5 to-transparent">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Body Scan Map</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -73,7 +73,7 @@ export function AnatomyBodyMap({ regions }: AnatomyBodyMapProps) {
                 onClick={() => setActive(region.regionId)}
                 className={cn(
                   'w-full rounded-lg border p-3 text-left transition-all',
-                  active === region.regionId ? 'border-livotel-pink bg-livotel-pink/5 shadow-sm' : 'hover:bg-muted/40',
+                  active === region.regionId ? 'border-livotale-pink bg-livotale-pink/5 shadow-sm' : 'hover:bg-muted/40',
                 )}
               >
                 <div className="flex items-center gap-2">

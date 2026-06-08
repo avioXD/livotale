@@ -8,7 +8,7 @@ export const BRAND = {
   teal: '#1EABB3',
 } as const;
 
-export const APP_NAME = 'Livotel';
+export const APP_NAME = 'Livotale';
 
 export const APP_TAGLINE =
   'Tech-enabled liver care ecosystem — Liver Fibrosis Scan, AI treatment plans, and home delivery.';

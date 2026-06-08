@@ -120,7 +120,7 @@ export function Sidebar() {
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
         )}
       >
-        <ChildIcon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+        <ChildIcon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotale-pink')} />
         <span className="truncate">{child.label}</span>
       </Link>
     );
@@ -151,7 +151,7 @@ export function Sidebar() {
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
             )}
           >
-            <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+            <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotale-pink')} />
             <span className="truncate">{item.label}</span>
           </Link>
           <div className="ml-3 border-l border-border/60 pl-1">
@@ -172,7 +172,7 @@ export function Sidebar() {
           collapsed && 'justify-center px-2',
         )}
       >
-        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+        <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotale-pink')} />
         {!collapsed && <span className="truncate">{item.label}</span>}
       </Link>
     );
@@ -191,7 +191,7 @@ export function Sidebar() {
                   isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
                 )}
               >
-                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotel-pink')} />
+                <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-livotale-pink')} />
               </div>
             ) : (
               linkContent
@@ -241,7 +241,7 @@ export function Sidebar() {
           />
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-livotel-pink">{APP_NAME}</p>
+              <p className="truncate text-sm font-bold text-livotale-pink">{APP_NAME}</p>
               <p className="truncate text-xs text-muted-foreground">Liver Care Admin</p>
             </div>
           )}
@@ -269,7 +269,7 @@ export function Sidebar() {
               )}
             >
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-livotel-teal text-white text-xs">
+                <AvatarFallback className="bg-livotale-teal text-white text-xs">
                   {getInitialsFromFullName(user.fullName)}
                 </AvatarFallback>
               </Avatar>
@@ -338,7 +338,7 @@ export function TopBar() {
       </div>
       <img
         src="/assets/livotale-logo.png"
-        alt="Livotel"
+        alt="Livotale"
         className="h-8 w-8 object-contain lg:hidden"
       />
     </header>

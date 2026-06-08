@@ -37,7 +37,7 @@ export function VisitModeStep({ type, selected, onSelect, onBack, onNext }: Visi
               type="button"
               onClick={() => onSelect(mode)}
               className={`w-full rounded-lg border p-4 text-left transition-colors ${
-                isSelected ? 'border-livotel-pink bg-livotel-pink/5' : 'hover:bg-muted/40'
+                isSelected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
               }`}
             >
               <p className="font-medium">{meta.title}</p>

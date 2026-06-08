@@ -7,7 +7,7 @@ const DEMO_MEMBERS: Record<Exclude<StaffRoleKey, 'technician' | 'doctor' | 'lab_
       fullName: 'Anita Desai',
       subtitle: 'Clinical nutrition · RD-1024',
       status: 'active',
-      email: 'anita.desai@livotel.demo',
+      email: 'anita.desai@livotale.demo',
       mobile: '+91 98100 11223',
       metrics: [
         { label: 'Active patients', value: 42 },
@@ -22,7 +22,7 @@ const DEMO_MEMBERS: Record<Exclude<StaffRoleKey, 'technician' | 'doctor' | 'lab_
       fullName: 'Vikram Joshi',
       subtitle: 'Liver wellness coach · HC-0088',
       status: 'active',
-      email: 'vikram.joshi@livotel.demo',
+      email: 'vikram.joshi@livotale.demo',
       mobile: '+91 98200 33445',
       metrics: [
         { label: 'Active journeys', value: 31 },
@@ -52,7 +52,7 @@ const DEMO_MEMBERS: Record<Exclude<StaffRoleKey, 'technician' | 'doctor' | 'lab_
       fullName: 'Sneha Kapoor',
       subtitle: 'City operations lead',
       status: 'active',
-      email: 'sneha.kapoor@livotel.demo',
+      email: 'sneha.kapoor@livotale.demo',
       mobile: '+91 98900 55667',
       metrics: [
         { label: 'Pending assigns', value: 5 },

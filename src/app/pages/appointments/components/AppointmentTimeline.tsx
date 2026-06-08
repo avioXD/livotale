@@ -40,7 +40,7 @@ export function AppointmentTimeline({ events, unifiedTimeline }: AppointmentTime
     <ol className="relative space-y-4 border-l border-border pl-6">
       {rows.map((row) => (
         <li key={row.key} className="relative">
-          <span className="absolute -left-[1.65rem] top-1.5 h-2.5 w-2.5 rounded-full bg-livotel-pink" />
+          <span className="absolute -left-[1.65rem] top-1.5 h-2.5 w-2.5 rounded-full bg-livotale-pink" />
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium capitalize">{row.title}</p>
             {row.actor && (

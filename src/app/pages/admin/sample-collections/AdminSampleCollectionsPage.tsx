@@ -180,7 +180,7 @@ export function AdminSampleCollectionsPage() {
       </div>
 
       {(routeRequests.length > 0 || routeRequestsUsingDemo || isRouteRequestDemoActive()) && (
-        <Card className="border-livotel-pink/40">
+        <Card className="border-livotale-pink/40">
           <CardHeader>
             <CardTitle className="text-base">Pending route requests ({routeRequests.length})</CardTitle>
           </CardHeader>

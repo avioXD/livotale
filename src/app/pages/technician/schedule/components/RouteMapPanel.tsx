@@ -29,7 +29,7 @@ export function RouteMapPanel({ route }: RouteMapPanelProps) {
         <ol className="space-y-3">
           {route.stops.map((stop) => (
             <li key={`${stop.appointmentId ?? stop.visitId}-${stop.sortOrder}`} className="flex gap-3 rounded-lg border p-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-livotel-pink/10 text-sm font-semibold text-livotel-pink">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-livotale-pink/10 text-sm font-semibold text-livotale-pink">
                 {stop.sortOrder}
               </span>
               <div className="min-w-0 flex-1">

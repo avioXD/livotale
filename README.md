@@ -108,8 +108,8 @@ The API lives in a separate repo/folder (`livotale_app/api`). Run migrations and
 ## Cursor rules
 
 - `.cursor/rules/spec-driven-development.mdc` — Spec Kit workflow
-- `.cursor/rules/livotel-development-standards.mdc` — Folder layout and UI patterns
+- `.cursor/rules/livotale-development-standards.mdc` — Folder layout and UI patterns
 
 ## License
 
-Private — Livotale / Livotel.
+Private — Livotale / Livotale.

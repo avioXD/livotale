@@ -14,7 +14,7 @@ Delivery is **6 phases** over incremental PRs; each phase is independently testa
 |------|--------|
 | Backend | Node.js API in `livotale_app/api` (existing Fastify-style routes) |
 | Database | PostgreSQL migrations `019`–`022` in `livotale_app/database/migrations` |
-| Frontend | React 19 + Vite in `livotel-ui`; Zustand stores + class services |
+| Frontend | React 19 + Vite in `livotale-ui`; Zustand stores + class services |
 | Auth/RBAC | Extend 003 permissions; middleware in route registrars |
 | PDF | Server-side generation (pdfkit or existing storage pipeline) + QR |
 | Notifications | Extend `core.notifications` + `appointment_reminder_logs` |
@@ -67,7 +67,7 @@ src/
     └── appointmentMissedDetector.js
 ```
 
-### Frontend (`livotel-ui`)
+### Frontend (`livotale-ui`)
 
 ```text
 src/

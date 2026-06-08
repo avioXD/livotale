@@ -38,7 +38,7 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        livotel: {
+        livotale: {
           pink: '#D7316C',
           teal: '#1EABB3',
         },

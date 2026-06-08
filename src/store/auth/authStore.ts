@@ -163,7 +163,7 @@ export const useAuthStore = create<AuthState>()(
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     }),
     {
-      name: 'livotel-auth',
+      name: 'livotale-auth',
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

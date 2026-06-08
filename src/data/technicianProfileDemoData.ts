@@ -5,7 +5,7 @@ export const TECHNICIAN_PROFILE_DEMO: TechnicianFullProfile = {
   userId: 'demo-tech-user',
   employeeCode: 'TECH-DEMO-001',
   fullName: 'Amit Sharma',
-  email: 'amit.sharma@livotel.demo',
+  email: 'amit.sharma@livotale.demo',
   mobile: '+91 98765 43210',
   gender: 'male',
   dob: '1990-04-15',

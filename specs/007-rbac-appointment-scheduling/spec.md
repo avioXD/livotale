@@ -2,7 +2,7 @@
 
 **Feature Branch**: `007-rbac-appointment-scheduling` | **Created**: 2026-06-06 | **Status**: Approved (Phase 0 in progress)
 
-**Product**: LIVGASTRO Smart Liver Clinic (Livotel)
+**Product**: LIVGASTRO Smart Liver Clinic (Livotale)
 
 **Supersedes / extends**: [005-appointments-module](../005-appointments-module/spec.md) (home-visit MVP). Existing `operations.home_visits` and patient booking UI remain supported during migration.
 

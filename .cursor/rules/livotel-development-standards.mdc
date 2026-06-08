@@ -1,9 +1,9 @@
 ---
-description: Livotel UI architecture — folderization, Zustand, types, lists, debounce
+description: Livotale UI architecture — folderization, Zustand, types, lists, debounce
 alwaysApply: true
 ---
 
-# Livotel Development Standards
+# Livotale Development Standards
 
 ## Folder Layout
 

@@ -71,7 +71,7 @@ export function DoctorAppointmentsListPanel({
         render: (r) => (
           <Link
             to={`/patients/${r.patientId}?tab=dashboard`}
-            className="text-livotel-pink hover:underline"
+            className="text-livotale-pink hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
             {r.patientName}

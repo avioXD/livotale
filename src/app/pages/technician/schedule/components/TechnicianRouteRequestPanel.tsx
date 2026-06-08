@@ -70,7 +70,7 @@ export function TechnicianRouteRequestPanel({ date, onAssigned }: TechnicianRout
   return (
     <div className="space-y-4">
       {usingDemo && (
-        <p className="rounded-md border border-dashed border-livotel-pink/40 bg-livotel-pink/5 px-3 py-2 text-sm text-muted-foreground">
+        <p className="rounded-md border border-dashed border-livotale-pink/40 bg-livotale-pink/5 px-3 py-2 text-sm text-muted-foreground">
           Demo data — restart API after pulling latest code, run migration 028, then refresh for live route requests.
         </p>
       )}

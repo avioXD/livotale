@@ -2,7 +2,7 @@
 
 **Feature Branch**: `008-sample-collection-lab-workflow` | **Created**: 2026-06-07 | **Status**: Approved
 
-**Product**: LIVGASTRO Smart Liver Clinic (Livotel)
+**Product**: LIVGASTRO Smart Liver Clinic (Livotale)
 
 **Extends**: [007-rbac-appointment-scheduling](../007-rbac-appointment-scheduling/spec.md), [006-clinical-reports](../006-clinical-reports/spec.md)
 

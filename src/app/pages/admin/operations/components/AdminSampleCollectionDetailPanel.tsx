@@ -236,7 +236,7 @@ export function AdminSampleCollectionDetailPanel({
             label="Appointment"
             value={
               sample.appointmentCode ? (
-                <Link to={`/admin/appointments/${sample.appointmentId}`} className="text-livotel-pink hover:underline">
+                <Link to={`/admin/appointments/${sample.appointmentId}`} className="text-livotale-pink hover:underline">
                   {sample.appointmentCode}
                 </Link>
               ) : (
@@ -247,7 +247,7 @@ export function AdminSampleCollectionDetailPanel({
           <DetailRow
             label="Patient"
             value={
-              <Link to={`/patients/${sample.patientId}`} className="text-livotel-pink hover:underline">
+              <Link to={`/patients/${sample.patientId}`} className="text-livotale-pink hover:underline">
                 {sample.patientName}
                 {sample.patientCode ? ` · ${sample.patientCode}` : ''}
               </Link>

@@ -4,7 +4,7 @@
 
 ## Summary
 
-Align livotel-ui authentication with the existing livotale_app Fastify API. Add response mapping for `{ data }` envelopes, switch login to username-based auth, route registration to `POST /patient/register`, and map API role codes to UI `AppRole` for RBAC guards.
+Align livotale-ui authentication with the existing livotale_app Fastify API. Add response mapping for `{ data }` envelopes, switch login to username-based auth, route registration to `POST /patient/register`, and map API role codes to UI `AppRole` for RBAC guards.
 
 ## Technical Context
 
@@ -35,7 +35,7 @@ specs/001-auth-api-integration/
 ├── tasks.md
 └── contracts/auth-api.md
 
-livotel-ui/src/
+livotale-ui/src/
 ├── types/auth.ts
 ├── utils/authMappers.ts
 ├── services/auth/AuthService.ts
