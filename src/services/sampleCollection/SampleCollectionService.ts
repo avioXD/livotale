@@ -1,50 +1,68 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   AdminSampleCollectionUpdate,
   SampleCollection,
   SampleCollectionConfig,
   SamplePhotoType,
-  SampleRejectionReason,
 } from '@/types/sampleCollection';
 import type { AvailableRouteOrder, TechnicianRouteRequest } from '@/types/routeRequest';
 import {
-  getAdminDemoSampleById,
-  listAdminDemoSamples,
-  updateAdminDemoSample,
-} from '@/data/adminSampleDemoData';
-import {
-  getLabDemoSampleById,
-  isApiUnavailableError,
-  LAB_DEMO_SAMPLES,
-} from '@/data/labSampleDemoData';
-import {
   approveDemoRouteRequest,
   createDemoRouteRequest,
+  getAdminDemoSampleById,
+  getLabDemoSampleById,
   getRouteRequestDemoAdminPending,
   getRouteRequestDemoMyRequests,
   getRouteRequestDemoOrders,
-  isRouteRequestDemoId,
+  LAB_DEMO_SAMPLES,
+  listAdminDemoSamples,
   markRouteRequestDemoActive,
   rejectDemoRouteRequest,
-} from '@/data/routeRequestDemoData';
+  updateAdminDemoSample,
+} from './sampleCollection.mock';
 
 class SampleCollectionService extends BaseApiService {
   async listTechnicianToday(date?: string): Promise<SampleCollection[]> {
-    return this.get<SampleCollection[]>('/technician/sample-collections/today', {
-      params: date ? { date } : undefined,
-    });
+    return mockOrApi(
+      () => listAdminDemoSamples({ status: 'assigned' }),
+      () =>
+        this.get<SampleCollection[]>('/technician/sample-collections/today', {
+          params: date ? { date } : undefined,
+        }),
+    );
   }
 
   async getTechnicianById(id: string): Promise<SampleCollection> {
-    return this.get<SampleCollection>(`/technician/sample-collections/${id}`);
+    return mockOrApi(
+      () => {
+        const demo = getAdminDemoSampleById(id) ?? getLabDemoSampleById(id);
+        if (!demo) throw new Error('Sample collection not found');
+        return demo;
+      },
+      () => this.get<SampleCollection>(`/technician/sample-collections/${id}`),
+    );
   }
 
   async getByAppointment(appointmentId: string): Promise<SampleCollection | null> {
-    return this.get<SampleCollection | null>(`/technician/sample-collections/by-appointment/${appointmentId}`);
+    return mockOrApi(
+      () =>
+        listAdminDemoSamples().find((s) => s.appointmentId === appointmentId) ??
+        LAB_DEMO_SAMPLES.find((s) => s.appointmentId === appointmentId) ??
+        null,
+      () => this.get<SampleCollection | null>(`/technician/sample-collections/by-appointment/${appointmentId}`),
+    );
   }
 
   async technicianAction(id: string, action: string, body: Record<string, unknown> = {}) {
-    return this.post<SampleCollection>(`/technician/sample-collections/${id}/${action}`, body);
+    return mockOrApi(
+      () => {
+        const updated = updateAdminDemoSample(id, { status: action as SampleCollection['status'], ...body });
+        if (!updated) throw new Error('Sample collection not found');
+        return updated;
+      },
+      () => this.post<SampleCollection>(`/technician/sample-collections/${id}/${action}`, body),
+    );
   }
 
   async uploadPhoto(
@@ -54,123 +72,67 @@ class SampleCollectionService extends BaseApiService {
     photoType: SamplePhotoType = 'container_label',
   ) {
     const storageUrl = await this.fileToDataUrl(file);
-    return this.post<SampleCollection>(`/technician/sample-collections/${id}/photo`, {
-      fileName: file.name,
-      mimeType: file.type || 'image/jpeg',
-      storageUrl,
-      photoType,
-      latitude: geo?.latitude,
-      longitude: geo?.longitude,
-    });
-  }
-
-  async uploadLabPhoto(
-    id: string,
-    file: File,
-    photoType: SamplePhotoType = 'lab_bottle_verification',
-  ) {
-    const storageUrl = await this.fileToDataUrl(file);
-    return this.post<SampleCollection>(`/lab/sample-collections/${id}/photo`, {
-      fileName: file.name,
-      mimeType: file.type || 'image/jpeg',
-      storageUrl,
-      photoType,
-    });
-  }
-
-  async updateLabResults(
-    id: string,
-    results: Array<{
-      labTestId: string;
-      resultValue?: number | string | null;
-      resultText?: string | null;
-    }>,
-  ) {
-    return this.post<SampleCollection>(`/lab/sample-collections/${id}/results`, { results });
-  }
-
-  async generateLabReport(id: string) {
-    return this.post<{ report: Record<string, unknown>; sampleCollection: SampleCollection }>(
-      `/lab/sample-collections/${id}/reports/generate`,
-      {},
+    return mockOrApi(
+      () => {
+        const existing = getAdminDemoSampleById(id);
+        if (!existing) throw new Error('Sample collection not found');
+        return updateAdminDemoSample(id, {
+          photos: [
+            ...(existing.photos ?? []),
+            {
+              id: `photo-${Date.now()}`,
+              fileId: null,
+              photoType,
+              createdAt: new Date().toISOString(),
+              storageUrl,
+              latitude: geo?.latitude,
+              longitude: geo?.longitude,
+            },
+          ],
+        })!;
+      },
+      () =>
+        this.post<SampleCollection>(`/technician/sample-collections/${id}/photo`, {
+          fileName: file.name,
+          mimeType: file.type || 'image/jpeg',
+          storageUrl,
+          photoType,
+          latitude: geo?.latitude,
+          longitude: geo?.longitude,
+        }),
     );
   }
 
   async handover(id: string, body: Record<string, unknown>) {
-    return this.post<SampleCollection>(`/technician/sample-collections/${id}/handover`, body);
-  }
-
-  async listLab(status?: string): Promise<SampleCollection[]> {
-    try {
-      return await this.get<SampleCollection[]>('/lab/sample-collections', { params: status ? { status } : undefined });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return LAB_DEMO_SAMPLES;
-      }
-      throw err;
-    }
-  }
-
-  async getLabById(id: string): Promise<SampleCollection> {
-    try {
-      return await this.get<SampleCollection>(`/lab/sample-collections/${id}`);
-    } catch (err) {
-      const demo = getLabDemoSampleById(id);
-      if (isApiUnavailableError(err) && demo) return demo;
-      if (isApiUnavailableError(err) && LAB_DEMO_SAMPLES[0]) return LAB_DEMO_SAMPLES[0];
-      throw err;
-    }
-  }
-
-  async receiveLab(id: string, remarks?: string) {
-    return this.post<SampleCollection>(`/lab/sample-collections/${id}/receive`, { remarks });
-  }
-
-  async rejectLab(id: string, reasonCode: SampleRejectionReason, remarks?: string) {
-    return this.post<SampleCollection>(`/lab/sample-collections/${id}/reject`, { reasonCode, remarks });
-  }
-
-  async startTesting(id: string) {
-    return this.post<SampleCollection>(`/lab/sample-collections/${id}/start-testing`);
-  }
-
-  async uploadReport(id: string, body: Record<string, unknown>) {
-    return this.post<{ report: Record<string, unknown>; sampleCollection: SampleCollection }>(
-      `/lab/sample-collections/${id}/reports`,
-      body,
+    return mockOrApi(
+      () => updateAdminDemoSample(id, { status: 'handed_over_to_lab', ...body })!,
+      () => this.post<SampleCollection>(`/technician/sample-collections/${id}/handover`, body),
     );
   }
 
   async listAdmin(filters: { status?: string; pincode?: string; limit?: number } = {}) {
-    try {
-      return await this.get<SampleCollection[]>('/admin/sample-collections', { params: filters });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return listAdminDemoSamples({ status: filters.status });
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => listAdminDemoSamples({ status: filters.status }),
+      () => this.get<SampleCollection[]>('/admin/sample-collections', { params: filters }),
+    );
   }
 
   async getAdminById(id: string): Promise<SampleCollection> {
-    try {
-      return await this.get<SampleCollection>(`/admin/sample-collections/${id}`);
-    } catch (err) {
-      const demo = getAdminDemoSampleById(id);
-      if (isApiUnavailableError(err) && demo) return demo;
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
+        const demo = getAdminDemoSampleById(id);
+        if (demo) return demo;
         const list = listAdminDemoSamples();
         if (list[0]) return list[0];
-      }
-      throw err;
-    }
+        throw new Error('Sample collection not found');
+      },
+      () => this.get<SampleCollection>(`/admin/sample-collections/${id}`),
+    );
   }
 
   async updateAdminDetails(id: string, body: AdminSampleCollectionUpdate): Promise<SampleCollection> {
-    try {
-      return await this.patch<SampleCollection>(`/admin/sample-collections/${id}`, body);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
         const updated = updateAdminDemoSample(id, {
           priority: body.priority,
           pincode: body.pincode ?? undefined,
@@ -181,131 +143,120 @@ class SampleCollectionService extends BaseApiService {
           collectionRemarks: body.collectionRemarks ?? undefined,
           labPartnerId: body.labPartnerId ?? undefined,
         });
-        if (updated) return updated;
-      }
-      throw err;
-    }
+        if (!updated) throw new Error('Sample collection not found');
+        return updated;
+      },
+      () => this.patch<SampleCollection>(`/admin/sample-collections/${id}`, body),
+    );
   }
 
   async assignTechnician(id: string, technicianId: string, reason?: string) {
-    try {
-      return await this.post<SampleCollection>(`/admin/sample-collections/${id}/assign-technician`, {
-        technicianId,
-        reason,
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
         const existing = getAdminDemoSampleById(id);
-        if (existing) {
-          return updateAdminDemoSample(id, {
-            technicianId,
-            technicianName: 'Assigned (demo)',
-            status: 'assigned',
-            assignedAt: new Date().toISOString(),
-          })!;
-        }
-      }
-      throw err;
-    }
+        if (!existing) throw new Error('Sample collection not found');
+        return updateAdminDemoSample(id, {
+          technicianId,
+          technicianName: 'Vinod K.',
+          status: 'assigned',
+          assignedAt: new Date().toISOString(),
+          collectionRemarks: reason ?? existing.collectionRemarks,
+        })!;
+      },
+      () =>
+        this.post<SampleCollection>(`/admin/sample-collections/${id}/assign-technician`, {
+          technicianId,
+          reason,
+        }),
+    );
   }
 
   async approveReport(sampleId: string, reportId: string, notes?: string) {
-    return this.post<SampleCollection>(`/admin/sample-collections/${sampleId}/reports/${reportId}/approve`, { notes });
+    return mockOrApi(
+      () => updateAdminDemoSample(sampleId, { status: 'approved', collectionRemarks: notes ?? null })!,
+      () => this.post<SampleCollection>(`/admin/sample-collections/${sampleId}/reports/${reportId}/approve`, { notes }),
+    );
   }
 
   async publishToPatient(id: string) {
-    return this.post<SampleCollection>(`/admin/sample-collections/${id}/publish`);
+    return mockOrApi(
+      () => updateAdminDemoSample(id, { status: 'published_to_patient', reportPublishedAt: new Date().toISOString() })!,
+      () => this.post<SampleCollection>(`/admin/sample-collections/${id}/publish`),
+    );
   }
 
   async getConfig(): Promise<SampleCollectionConfig> {
-    return this.get<SampleCollectionConfig>('/admin/sample-collection-config');
+    return mockOrApi(
+      () => ({
+        collection_duration_minutes: 45,
+        travel_buffer_minutes: 20,
+        max_daily_appointments_per_technician: 12,
+      }),
+      () => this.get<SampleCollectionConfig>('/admin/sample-collection-config'),
+    );
   }
 
   async listAvailableRouteOrders(date?: string): Promise<AvailableRouteOrder[]> {
     const day = date ?? new Date().toISOString().slice(0, 10);
-    try {
-      return await this.get<AvailableRouteOrder[]>('/technician/route-requests/available', {
-        params: { date: day },
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
         markRouteRequestDemoActive();
         return getRouteRequestDemoOrders(day);
-      }
-      throw err;
-    }
+      },
+      () =>
+        this.get<AvailableRouteOrder[]>('/technician/route-requests/available', {
+          params: { date: day },
+        }),
+    );
   }
 
   async listMyRouteRequests(status?: string): Promise<TechnicianRouteRequest[]> {
-    try {
-      return await this.get<TechnicianRouteRequest[]>('/technician/route-requests', {
-        params: status ? { status } : undefined,
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
         markRouteRequestDemoActive();
         const mine = getRouteRequestDemoMyRequests();
         return status ? mine.filter((r) => r.status === status) : mine;
-      }
-      throw err;
-    }
+      },
+      () =>
+        this.get<TechnicianRouteRequest[]>('/technician/route-requests', {
+          params: status ? { status } : undefined,
+        }),
+    );
   }
 
   async requestRoute(sampleCollectionId: string, note?: string): Promise<TechnicianRouteRequest> {
-    if (isRouteRequestDemoId(sampleCollectionId)) {
-      return createDemoRouteRequest(sampleCollectionId, note);
-    }
-    try {
-      return await this.post<TechnicianRouteRequest>('/technician/route-requests', {
-        sampleCollectionId,
-        note,
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return createDemoRouteRequest(sampleCollectionId, note);
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => createDemoRouteRequest(sampleCollectionId, note),
+      () =>
+        this.post<TechnicianRouteRequest>('/technician/route-requests', {
+          sampleCollectionId,
+          note,
+        }),
+    );
   }
 
   async listAdminRouteRequests(status = 'pending'): Promise<TechnicianRouteRequest[]> {
-    try {
-      return await this.get<TechnicianRouteRequest[]>('/admin/route-requests', { params: { status } });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      () => {
         markRouteRequestDemoActive();
         return status === 'pending' ? getRouteRequestDemoAdminPending() : [];
-      }
-      throw err;
-    }
+      },
+      () => this.get<TechnicianRouteRequest[]>('/admin/route-requests', { params: { status } }),
+    );
   }
 
   async approveRouteRequest(id: string, note?: string): Promise<TechnicianRouteRequest> {
-    if (isRouteRequestDemoId(id)) {
-      return approveDemoRouteRequest(id, note);
-    }
-    try {
-      return await this.post<TechnicianRouteRequest>(`/admin/route-requests/${id}/approve`, { note });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return approveDemoRouteRequest(id, note);
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => approveDemoRouteRequest(id, note),
+      () => this.post<TechnicianRouteRequest>(`/admin/route-requests/${id}/approve`, { note }),
+    );
   }
 
   async rejectRouteRequest(id: string, note?: string): Promise<TechnicianRouteRequest> {
-    if (isRouteRequestDemoId(id)) {
-      return rejectDemoRouteRequest(id, note);
-    }
-    try {
-      return await this.post<TechnicianRouteRequest>(`/admin/route-requests/${id}/reject`, { note });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return rejectDemoRouteRequest(id, note);
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => rejectDemoRouteRequest(id, note),
+      () => this.post<TechnicianRouteRequest>(`/admin/route-requests/${id}/reject`, { note }),
+    );
   }
 
   private fileToDataUrl(file: File): Promise<string> {

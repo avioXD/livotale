@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { getDefaultHomePath } from '@/app/config/navigation';
 import { canAccessRoute } from '@/rbac';
 import { useAuthStore, useUserRole } from '@/store';
 import { PostAuthRedirect } from '@/app/routes/PostAuthRedirect';
@@ -17,7 +18,7 @@ export function ProtectedRoute({ allowedRoles = [] }: ProtectedRouteProps) {
   }
 
   if (allowedRoles.length > 0 && !canAccessRoute(userRole, allowedRoles)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultHomePath(userRole)} replace />;
   }
 
   return <Outlet />;

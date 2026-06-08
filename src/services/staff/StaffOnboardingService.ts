@@ -1,5 +1,5 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
-import { isApiUnavailableError } from '@/data/labSampleDemoData';
 import {
   demoAttachUser,
   demoCreateInvite,
@@ -8,7 +8,7 @@ import {
   demoListInvites,
   demoMarkLinkSent,
   demoSubmitProfile,
-} from '@/data/staffOnboardingDemoData';
+} from './staffOnboarding.mock';
 import { STAFF_ROLE_SLUGS } from '@/app/pages/admin/staff/staffHubConfig';
 import type { StaffRoleKey } from '@/types/staffHub';
 import type {
@@ -20,81 +20,73 @@ import type {
 class StaffOnboardingService extends BaseApiService {
   async createInvite(roleKey: StaffRoleKey, payload: CreateStaffInvitePayload): Promise<StaffOnboardingInvite> {
     const slug = STAFF_ROLE_SLUGS[roleKey];
-    try {
-      return await this.post<StaffOnboardingInvite>(`/admin/staff/${slug}/onboard`, payload);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return demoCreateInvite(roleKey, payload);
-      }
-      return demoCreateInvite(roleKey, payload);
-    }
+    return mockOrApi(
+      () => demoCreateInvite(roleKey, payload),
+      () => this.post<StaffOnboardingInvite>(`/admin/staff/${slug}/onboard`, payload),
+    );
   }
 
   async listInvites(roleKey: StaffRoleKey): Promise<StaffOnboardingInvite[]> {
     const slug = STAFF_ROLE_SLUGS[roleKey];
-    try {
-      return await this.get<StaffOnboardingInvite[]>(`/admin/staff/${slug}/onboard`);
-    } catch {
-      return demoListInvites(roleKey);
-    }
+    return mockOrApi(
+      () => demoListInvites(roleKey),
+      () => this.get<StaffOnboardingInvite[]>(`/admin/staff/${slug}/onboard`),
+    );
   }
 
   async getInvite(token: string): Promise<StaffOnboardingInvite> {
-    try {
-      return await this.get<StaffOnboardingInvite>(`/staff/onboard/${token}`);
-    } catch {
-      const invite = demoGetInvite(token);
-      if (!invite) throw new Error('Onboarding invite not found');
-      return invite;
-    }
+    return mockOrApi(
+      () => {
+        const invite = demoGetInvite(token);
+        if (!invite) throw new Error('Onboarding invite not found');
+        return invite;
+      },
+      () => this.get<StaffOnboardingInvite>(`/staff/onboard/${token}`),
+    );
   }
 
   async sendLink(token: string): Promise<StaffOnboardingInvite> {
-    try {
-      return await this.post<StaffOnboardingInvite>(`/admin/staff/onboard/${token}/send-link`);
-    } catch {
-      return demoMarkLinkSent(token) ?? (await this.getInvite(token));
-    }
+    return mockOrApi(
+      () => demoMarkLinkSent(token) ?? demoGetInvite(token)!,
+      () => this.post<StaffOnboardingInvite>(`/admin/staff/onboard/${token}/send-link`),
+    );
   }
 
   async attachUser(token: string, userId?: string): Promise<StaffOnboardingInvite> {
-    try {
-      return await this.post<StaffOnboardingInvite>(`/staff/onboard/${token}/attach`);
-    } catch {
-      const uid = userId ?? 'demo-current-user';
-      return demoAttachUser(token, uid) ?? (await this.getInvite(token));
-    }
+    return mockOrApi(
+      () => demoAttachUser(token, userId ?? 'demo-current-user') ?? demoGetInvite(token)!,
+      () => this.post<StaffOnboardingInvite>(`/staff/onboard/${token}/attach`),
+    );
   }
 
   async submitProfile(
     token: string,
     body: { profileComplete: boolean; verificationStatus: string },
   ): Promise<StaffOnboardingInvite> {
-    try {
-      return await this.post<StaffOnboardingInvite>(`/staff/onboard/${token}/submit`, {
-        ...body,
-        employmentStatus: body.profileComplete && body.verificationStatus === 'verified' ? 'active' : 'inactive',
-      });
-    } catch {
-      return (
-        demoSubmitProfile(token, body) ?? (await this.getInvite(token))
-      );
-    }
+    return mockOrApi(
+      () => demoSubmitProfile(token, body) ?? demoGetInvite(token)!,
+      () =>
+        this.post<StaffOnboardingInvite>(`/staff/onboard/${token}/submit`, {
+          ...body,
+          employmentStatus: body.profileComplete && body.verificationStatus === 'verified' ? 'active' : 'inactive',
+        }),
+    );
   }
 
   async getStatus(userId?: string): Promise<StaffOnboardingStatus> {
-    try {
-      return await this.get<StaffOnboardingStatus>('/staff/onboarding/status');
-    } catch {
-      if (userId) return demoGetStatusForUser(userId);
-      return {
-        required: false,
-        profileComplete: true,
-        verificationComplete: true,
-        employmentStatus: 'active',
-        canAccessApp: true,
-      };
-    }
+    return mockOrApi(
+      () => {
+        if (userId) return demoGetStatusForUser(userId);
+        return {
+          required: false,
+          profileComplete: true,
+          verificationComplete: true,
+          employmentStatus: 'active',
+          canAccessApp: true,
+        };
+      },
+      () => this.get<StaffOnboardingStatus>('/staff/onboarding/status'),
+    );
   }
 }
 

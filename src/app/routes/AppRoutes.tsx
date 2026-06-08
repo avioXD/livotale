@@ -17,21 +17,20 @@ import { BookAppointmentWizardPage } from '@/app/pages/appointments/BookAppointm
 import { TechnicianTrackingPage } from '@/app/pages/appointments/TechnicianTrackingPage';
 import { TechnicianSchedulePage } from '@/app/pages/technician/schedule/TechnicianSchedulePage';
 import { TechnicianVisitDetailPage } from '@/app/pages/technician/schedule/TechnicianVisitDetailPage';
-import { TechnicianSampleCollectionsPage } from '@/app/pages/technician/sample-collections/TechnicianSampleCollectionsPage';
+import { TechnicianOrdersPage } from '@/app/pages/technician/orders/TechnicianOrdersPage';
+import { TechnicianOrderDetailPage } from '@/app/pages/technician/orders/TechnicianOrderDetailPage';
 import { DoctorAppointmentsPage } from '@/app/pages/doctor/appointments/DoctorAppointmentsPage';
+import { DoctorConsultationsPage } from '@/app/pages/doctor/consultations/DoctorConsultationsPage';
+import { DoctorConsultationDetailPage } from '@/app/pages/doctor/consultations/DoctorConsultationDetailPage';
 import { AdminOperationsHubPage } from '@/app/pages/admin/operations/AdminOperationsHubPage';
 import { NotificationLogPage } from '@/app/pages/admin/appointments/NotificationLogPage';
 import { AdminAnalyticsPage } from '@/app/pages/admin/appointments/AdminAnalyticsPage';
 import { AdminBookAppointmentPage } from '@/app/pages/admin/appointments/AdminBookAppointmentPage';
 import { AdminAppointmentDetailPage } from '@/app/pages/admin/appointments/AdminAppointmentDetailPage';
 import { TeleconsultationJoinPage } from '@/app/pages/appointments/TeleconsultationJoinPage';
-import { Liver Fibrosis ScanPage } from '@/app/pages/Liver Fibrosis Scan/Liver Fibrosis ScanPage';
-import { Liver Fibrosis ScanVisitDetailPage } from '@/app/pages/Liver Fibrosis Scan/Liver Fibrosis ScanVisitDetailPage';
-import { ReportsPage } from '@/app/pages/reports/ReportsPage';
-import { ReportDetailPage } from '@/app/pages/reports/ReportDetailPage';
 import { TreatmentPlansPage } from '@/app/pages/treatment-plans/TreatmentPlansPage';
-import { LabSamplesPage } from '@/app/pages/lab-samples/LabSamplesPage';
-import { LabDashboardPage } from '@/app/pages/lab-samples/LabDashboardPage';
+import { ADMIN_ROLES } from '@/app/config/productRoles';
+import { LIVER_CARE_ROUTE_ROLES } from '@/app/config/liverCareRouteRoles';
 import { AdminStaffHubPage, AdminStaffHubRedirect } from '@/app/pages/admin/staff/AdminStaffHubPage';
 import { AdminStaffPerformancePage } from '@/app/pages/admin/staff/AdminStaffPerformancePage';
 import { AdminStaffMemberDetailPage } from '@/app/pages/admin/staff/AdminStaffMemberDetailPage';
@@ -47,21 +46,56 @@ import { CoachingPage } from '@/app/pages/coaching/CoachingPage';
 import { SettingsPage } from '@/app/pages/settings/SettingsPage';
 import { PatientJourneyPage } from '@/app/pages/patient-journey/PatientJourneyPage';
 import { NotFoundPage } from '@/app/pages/not-found/NotFoundPage';
+import { PublicLayout } from '@/app/layouts/PublicLayout';
+import { PackagesPage } from '@/app/pages/public/PackagesPage';
+import { PackageDetailPage } from '@/app/pages/public/PackageDetailPage';
+import { EnquirePage } from '@/app/pages/public/EnquirePage';
+import { EnquireThanksPage } from '@/app/pages/public/EnquireThanksPage';
+import { EnquiryDetailPage } from '@/app/pages/admin/enquiries/EnquiryDetailPage';
+import { LiverCareOrderDetailPage } from '@/app/pages/admin/orders/LiverCareOrderDetailPage';
+import { AdminPartnerLabsPage } from '@/app/pages/admin/labs/AdminPartnerLabsPage';
+import { AdminPackagesPage } from '@/app/pages/admin/packages/AdminPackagesPage';
+import { AdminPackageDetailPage } from '@/app/pages/admin/packages/AdminPackageDetailPage';
+import { AdminLiverCareNotificationsPage } from '@/app/pages/admin/notifications/AdminLiverCareNotificationsPage';
+import { AdminAuditLogPage } from '@/app/pages/admin/audit/AdminAuditLogPage';
+import { AdminIntegrationsPage } from '@/app/pages/admin/settings/AdminIntegrationsPage';
+import { PatientPortalLayout } from '@/app/layouts/PatientPortalLayout';
+import { PatientLoginPage } from '@/app/pages/patient-portal/PatientLoginPage';
+import { PatientDashboardPage } from '@/app/pages/patient-portal/PatientDashboardPage';
+import { PatientOrderDetailPage } from '@/app/pages/patient-portal/PatientOrderDetailPage';
+import { PatientPayCheckoutPage } from '@/app/pages/patient-portal/PatientPayCheckoutPage';
+import { PatientReportPage } from '@/app/pages/patient-portal/PatientReportPage';
+import { PatientPrescriptionPage } from '@/app/pages/patient-portal/PatientPrescriptionPage';
+import { PatientProfilePage } from '@/app/pages/patient-portal/PatientProfilePage';
+import { PatientNotificationsPage } from '@/app/pages/patient-portal/PatientNotificationsPage';
+import { StaffNotificationsPage } from '@/app/pages/notifications/StaffNotificationsPage';
+import { PatientDownloadsPage } from '@/app/pages/patient-portal/PatientDownloadsPage';
 import { AppRole } from '@/types';
 
-const CLINICAL_STAFF = [
-  AppRole.DOCTOR,
-  AppRole.TECHNICIAN,
-  AppRole.DIETICIAN,
-  AppRole.HEALTH_COACH,
-  AppRole.OPERATIONS,
-  AppRole.CITY_MANAGER,
-  AppRole.SUPER_ADMIN,
-] as const;
 
 export function AppRoutes() {
   return (
     <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/packages" element={<PackagesPage />} />
+        <Route path="/packages/:code" element={<PackageDetailPage />} />
+        <Route path="/enquire" element={<EnquirePage />} />
+        <Route path="/enquire/thanks" element={<EnquireThanksPage />} />
+      </Route>
+
+      <Route path="/patient/login" element={<PatientLoginPage />} />
+
+      <Route element={<PatientPortalLayout />}>
+        <Route path="/patient" element={<PatientDashboardPage />} />
+        <Route path="/patient/profile" element={<PatientProfilePage />} />
+        <Route path="/patient/notifications" element={<PatientNotificationsPage />} />
+        <Route path="/patient/downloads" element={<PatientDownloadsPage />} />
+        <Route path="/patient/orders/:id" element={<PatientOrderDetailPage />} />
+        <Route path="/patient/orders/:id/pay" element={<PatientPayCheckoutPage />} />
+        <Route path="/patient/orders/:id/report" element={<PatientReportPage />} />
+        <Route path="/patient/orders/:id/prescription" element={<PatientPrescriptionPage />} />
+      </Route>
+
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -82,37 +116,24 @@ export function AppRoutes() {
           <Route element={<StaffOnboardingRoute />}>
             <Route element={<AdminShell />}>
               <Route index element={<PostAuthRedirect />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.dashboard]} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.staffNotifications]} />}>
+                <Route path="/notifications" element={<StaffNotificationsPage />} />
+              </Route>
               <Route path="/staff/onboarding" element={<StaffOnboardingPage />} />
 
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    AppRole.DOCTOR,
-                    AppRole.LAB_PARTNER,
-                    AppRole.DIETICIAN,
-                    AppRole.HEALTH_COACH,
-                    AppRole.PHARMACY,
-                    AppRole.OPERATIONS,
-                    AppRole.CITY_MANAGER,
-                  ]}
-                />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.staffProfile]} />}>
               <Route path="/staff/profile" element={<StaffSelfProfilePage />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[...CLINICAL_STAFF]} />}>
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.patients]} />}>
               <Route path="/patients" element={<PatientsPage />} />
               <Route path="/patients/:id" element={<PatientDetailPage />} />
             </Route>
 
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={[AppRole.PATIENT, AppRole.DIETICIAN, AppRole.HEALTH_COACH]} />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={[AppRole.PATIENT]} />}>
               <Route path="/appointments" element={<AppointmentsPage />} />
             </Route>
 
@@ -123,19 +144,24 @@ export function AppRoutes() {
             <Route path="/appointments/:id/tele" element={<TeleconsultationJoinPage />} />
             <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
 
-            <Route element={<ProtectedRoute allowedRoles={[AppRole.DOCTOR]} />}>
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.doctorConsultations]} />}>
+              <Route path="/doctor/consultations" element={<DoctorConsultationsPage />} />
+              <Route path="/doctor/consultations/:id" element={<DoctorConsultationDetailPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.doctorAppointments]} />}>
               <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
               <Route path="/doctor/appointments/:id/tele" element={<TeleconsultationJoinPage />} />
             </Route>
 
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={[AppRole.OPERATIONS, AppRole.CITY_MANAGER, AppRole.SUPER_ADMIN]} />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.adminOperations]} />}>
               <Route path="/admin/operations" element={<AdminOperationsHubPage />} />
+              <Route path="/admin/enquiries" element={<Navigate to="/admin/operations?tab=enquiries" replace />} />
+              <Route path="/admin/enquiries/:id" element={<EnquiryDetailPage />} />
+              <Route path="/admin/orders/:id" element={<LiverCareOrderDetailPage />} />
+              <Route path="/admin/notifications" element={<AdminLiverCareNotificationsPage />} />
               <Route path="/admin/appointments" element={<Navigate to="/admin/operations?tab=appointments" replace />} />
-              <Route path="/admin/sample-collections" element={<Navigate to="/admin/operations?tab=samples" replace />} />
+              <Route path="/admin/sample-collections" element={<Navigate to="/admin/operations?tab=partner-lab" replace />} />
               <Route path="/admin/appointments/book" element={<AdminBookAppointmentPage />} />
               <Route path="/admin/appointments/routes" element={<Navigate to="/admin/operations?tab=appointments" replace />} />
               <Route path="/admin/appointments/missed" element={<Navigate to="/admin/operations?tab=appointments&status=missed" replace />} />
@@ -149,76 +175,39 @@ export function AppRoutes() {
               <Route path="/admin/appointments/:id" element={<AdminAppointmentDetailPage />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[AppRole.TECHNICIAN]} />}>
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.adminPackages]} />}>
+              <Route path="/admin/packages" element={<AdminPackagesPage />} />
+              <Route path="/admin/packages/:id" element={<AdminPackageDetailPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.adminLabPartners]} />}>
+              <Route path="/admin/lab-partners" element={<AdminPartnerLabsPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[...ADMIN_ROLES]} />}>
+              <Route path="/admin/audit" element={<AdminAuditLogPage />} />
+              <Route path="/admin/integrations" element={<AdminIntegrationsPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.technician]} />}>
+              <Route path="/technician/orders" element={<TechnicianOrdersPage />} />
+              <Route path="/technician/orders/:id" element={<TechnicianOrderDetailPage />} />
               <Route path="/technician/schedule" element={<TechnicianSchedulePage />} />
               <Route path="/technician/schedule/:id" element={<TechnicianVisitDetailPage />} />
               <Route path="/technician/profile" element={<TechnicianProfilePage />} />
-              <Route path="/technician/sample-collections" element={<TechnicianSampleCollectionsPage />} />
+              <Route path="/technician/sample-collections" element={<Navigate to="/technician/schedule" replace />} />
             </Route>
 
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    AppRole.TECHNICIAN,
-                    AppRole.DOCTOR,
-                    AppRole.SUPER_ADMIN,
-                    AppRole.CITY_MANAGER,
-                  ]}
-                />
-              }
-            >
-              <Route path="/Liver Fibrosis Scan" element={<Liver Fibrosis ScanPage />} />
-              <Route path="/Liver Fibrosis Scan/:id" element={<Liver Fibrosis ScanVisitDetailPage />} />
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.treatmentPlans]} />}>
+              <Route path="/treatment-plans" element={<TreatmentPlansPage />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[AppRole.LAB_PARTNER]} />}>
-              <Route path="/lab/dashboard" element={<LabDashboardPage />} />
-              <Route path="/lab-samples" element={<LabSamplesPage />} />
-            </Route>
-
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    AppRole.DOCTOR,
-                    AppRole.SUPER_ADMIN,
-                    AppRole.CITY_MANAGER,
-                  ]}
-                />
-              }
-            >
-              <Route path="/lab-samples" element={<LabSamplesPage />} />
-            </Route>
-
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/reports/:reportKey" element={<ReportDetailPage />} />
-            <Route path="/treatment-plans" element={<TreatmentPlansPage />} />
-
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={[AppRole.DOCTOR, AppRole.PHARMACY, AppRole.SUPER_ADMIN]}
-                />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.prescriptions]} />}>
               <Route path="/prescriptions" element={<PrescriptionsPage />} />
             </Route>
 
-            <Route path="/delivery" element={<DeliveryPage />} />
-
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    AppRole.HEALTH_COACH,
-                    AppRole.DIETICIAN,
-                    AppRole.DOCTOR,
-                    AppRole.SUPER_ADMIN,
-                  ]}
-                />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={[AppRole.PATIENT]} />}>
+              <Route path="/delivery" element={<DeliveryPage />} />
               <Route path="/coaching" element={<CoachingPage />} />
             </Route>
 

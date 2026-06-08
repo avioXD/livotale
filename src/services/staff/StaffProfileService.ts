@@ -1,9 +1,6 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
-import { isApiUnavailableError } from '@/data/labSampleDemoData';
-import {
-  getCachedStaffProfile,
-  updateCachedStaffProfile,
-} from '@/data/staffProfileDemoData';
+import { getCachedStaffProfile, updateCachedStaffProfile } from './staffProfile.mock';
 import type { StaffMemberRow, StaffRoleKey } from '@/types/staffHub';
 import type {
   StaffComplianceDocument,
@@ -29,34 +26,34 @@ class StaffProfileService extends BaseApiService {
     if (role === 'technician') {
       throw new Error('Use technicianProfileService for technicians');
     }
-    try {
-      return await this.get<StaffFullProfile>(`/admin/staff/${this.rolePath(role)}/${memberId}/profile`);
-    } catch {
-      return getCachedStaffProfile(role, member ?? {
-        id: memberId,
-        fullName: 'Staff member',
-        subtitle: '',
-        status: 'active',
-        metrics: [],
-      });
-    }
+    return mockOrApi(
+      () =>
+        getCachedStaffProfile(
+          role,
+          member ?? {
+            id: memberId,
+            fullName: 'Staff member',
+            subtitle: '',
+            status: 'active',
+            metrics: [],
+          },
+        ),
+      () => this.get<StaffFullProfile>(`/admin/staff/${this.rolePath(role)}/${memberId}/profile`),
+    );
   }
 
   async getMyProfile(role: StaffRoleKey): Promise<StaffFullProfile> {
-    try {
-      return await this.get<StaffFullProfile>(`/staff/${this.rolePath(role)}/profile`);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return getCachedStaffProfile(role, {
+    return mockOrApi(
+      () =>
+        getCachedStaffProfile(role, {
           id: `self-${role}`,
           fullName: 'My profile',
           subtitle: '',
           status: 'active',
           metrics: [],
-        });
-      }
-      throw err;
-    }
+        }),
+      () => this.get<StaffFullProfile>(`/staff/${this.rolePath(role)}/profile`),
+    );
   }
 
   async updateAdminProfile(
@@ -65,30 +62,24 @@ class StaffProfileService extends BaseApiService {
     body: Record<string, unknown>,
     member?: StaffMemberRow,
   ): Promise<StaffFullProfile> {
-    try {
-      return await this.patch<StaffFullProfile>(
-        `/admin/staff/${this.rolePath(role)}/${memberId}/profile`,
-        body,
-      );
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      async () => {
         const current = await this.getAdminProfile(role, memberId, member);
         return updateCachedStaffProfile(role, memberId, { ...current, ...body } as Partial<StaffFullProfile>);
-      }
-      throw err;
-    }
+      },
+      () =>
+        this.patch<StaffFullProfile>(`/admin/staff/${this.rolePath(role)}/${memberId}/profile`, body),
+    );
   }
 
   async updateMyProfile(role: StaffRoleKey, body: Record<string, unknown>): Promise<StaffFullProfile> {
-    try {
-      return await this.patch<StaffFullProfile>(`/staff/${this.rolePath(role)}/profile`, body);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      async () => {
         const current = await this.getMyProfile(role);
         return updateCachedStaffProfile(role, current.id, { ...current, ...body } as Partial<StaffFullProfile>);
-      }
-      throw err;
-    }
+      },
+      () => this.patch<StaffFullProfile>(`/staff/${this.rolePath(role)}/profile`, body),
+    );
   }
 
   async uploadAdminDocument(
@@ -105,18 +96,8 @@ class StaffProfileService extends BaseApiService {
     member?: StaffMemberRow,
   ): Promise<StaffComplianceDocument> {
     const storageUrl = await this.fileToDataUrl(file);
-    try {
-      return await this.post<StaffComplianceDocument>(
-        `/admin/staff/${this.rolePath(role)}/${memberId}/documents`,
-        {
-          ...meta,
-          fileName: file.name,
-          mimeType: file.type || 'application/pdf',
-          storageUrl,
-        },
-      );
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      async () => {
         const doc: StaffComplianceDocument = {
           id: `demo-doc-${Date.now()}`,
           documentType: meta.documentType,
@@ -133,9 +114,15 @@ class StaffProfileService extends BaseApiService {
         const profile = await this.getAdminProfile(role, memberId, member);
         updateCachedStaffProfile(role, memberId, { documents: [doc, ...profile.documents] });
         return doc;
-      }
-      throw err;
-    }
+      },
+      () =>
+        this.post<StaffComplianceDocument>(`/admin/staff/${this.rolePath(role)}/${memberId}/documents`, {
+          ...meta,
+          fileName: file.name,
+          mimeType: file.type || 'application/pdf',
+          storageUrl,
+        }),
+    );
   }
 
   async uploadMyDocument(
@@ -150,15 +137,8 @@ class StaffProfileService extends BaseApiService {
     },
   ): Promise<StaffComplianceDocument> {
     const storageUrl = await this.fileToDataUrl(file);
-    try {
-      return await this.post<StaffComplianceDocument>(`/staff/${this.rolePath(role)}/profile/documents`, {
-        ...meta,
-        fileName: file.name,
-        mimeType: file.type || 'application/pdf',
-        storageUrl,
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
+    return mockOrApi(
+      async () => {
         const profile = await this.getMyProfile(role);
         const doc: StaffComplianceDocument = {
           id: `demo-doc-${Date.now()}`,
@@ -175,35 +155,35 @@ class StaffProfileService extends BaseApiService {
         };
         updateCachedStaffProfile(role, profile.id, { documents: [doc, ...profile.documents] });
         return doc;
-      }
-      throw err;
-    }
+      },
+      () =>
+        this.post<StaffComplianceDocument>(`/staff/${this.rolePath(role)}/profile/documents`, {
+          ...meta,
+          fileName: file.name,
+          mimeType: file.type || 'application/pdf',
+          storageUrl,
+        }),
+    );
   }
 
   async verifyDocument(documentId: string, status: 'verified' | 'rejected' | 'expired', notes?: string) {
-    try {
-      return await this.post<StaffComplianceDocument>(
-        `/admin/staff/documents/${documentId}/verify`,
-        { status, notes },
-      );
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          id: documentId,
-          documentType: 'other' as StaffDocumentType,
-          documentNumber: null,
-          fileId: null,
-          storageUrl: null,
-          issuedOn: null,
-          expiresOn: null,
-          status,
-          verifiedAt: new Date().toISOString(),
-          notes: notes ?? null,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => ({
+        id: documentId,
+        documentType: 'other' as StaffDocumentType,
+        documentNumber: null,
+        fileId: null,
+        storageUrl: null,
+        issuedOn: null,
+        expiresOn: null,
+        status,
+        verifiedAt: new Date().toISOString(),
+        notes: notes ?? null,
+        createdAt: new Date().toISOString(),
+      }),
+      () =>
+        this.post<StaffComplianceDocument>(`/admin/staff/documents/${documentId}/verify`, { status, notes }),
+    );
   }
 
   private fileToDataUrl(file: File): Promise<string> {

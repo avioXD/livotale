@@ -1,3 +1,4 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   ConsentPurpose,
@@ -7,24 +8,43 @@ import type {
   UserConsent,
   UserProfile,
 } from '@/types';
+import {
+  mockAcceptConsent,
+  mockGetProfile,
+  mockListConsentPurposes,
+  mockListConsents,
+  mockUpdateBasic,
+  mockUpdateEmergencyContact,
+  mockUpsertInsurance,
+} from './profile.mock';
 
 class ProfileService extends BaseApiService {
   async getProfile(): Promise<UserProfile> {
-    return this.get('/profile');
+    return mockOrApi(
+      () => mockGetProfile(),
+      () => this.get('/profile'),
+    );
   }
 
   async updateBasic(payload: UpdateBasicPayload): Promise<UserProfile> {
-    return this.patch('/profile/basic', {
-      fullName: payload.fullName,
-      email: payload.email,
-      mobile: payload.mobile,
-      gender: payload.gender,
-      dob: payload.dob,
-    });
+    return mockOrApi(
+      () => mockUpdateBasic(payload),
+      () =>
+        this.patch('/profile/basic', {
+          fullName: payload.fullName,
+          email: payload.email,
+          mobile: payload.mobile,
+          gender: payload.gender,
+          dob: payload.dob,
+        }),
+    );
   }
 
   async updateEmergencyContact(payload: UpdateEmergencyContactPayload): Promise<UserProfile> {
-    return this.patch('/profile/emergency-contact', payload);
+    return mockOrApi(
+      () => mockUpdateEmergencyContact(payload),
+      () => this.patch('/profile/emergency-contact', payload),
+    );
   }
 
   async upsertInsurance(payload: {
@@ -35,19 +55,31 @@ class ProfileService extends BaseApiService {
     validUntil?: string;
     isPrimary?: boolean;
   }): Promise<InsuranceDetails> {
-    return this.patch('/profile/insurance', payload);
+    return mockOrApi(
+      () => mockUpsertInsurance(payload),
+      () => this.patch('/profile/insurance', payload),
+    );
   }
 
   async listConsents(): Promise<UserConsent[]> {
-    return this.get('/consent/mine');
+    return mockOrApi(
+      () => mockListConsents(),
+      () => this.get('/consent/mine'),
+    );
   }
 
   async listConsentPurposes(): Promise<ConsentPurpose[]> {
-    return this.get('/consent/purposes');
+    return mockOrApi(
+      () => mockListConsentPurposes(),
+      () => this.get('/consent/purposes'),
+    );
   }
 
   async acceptConsent(purposeId: string): Promise<UserConsent[]> {
-    return this.post('/consent/accept', { purposeId });
+    return mockOrApi(
+      () => mockAcceptConsent(purposeId),
+      () => this.post('/consent/accept', { purposeId }),
+    );
   }
 }
 

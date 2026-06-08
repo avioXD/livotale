@@ -26,7 +26,7 @@ export function DashboardCharts({ overview }: DashboardChartsProps) {
     date: new Date(row.snapshot_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     bmi: row.avg_bmi != null ? Number(row.avg_bmi) : null,
     alt: row.avg_alt != null ? Number(row.avg_alt) : null,
-    Liver Fibrosis Scan: row.avg_Liver Fibrosis Scan != null ? Number(row.avg_Liver Fibrosis Scan) : null,
+    liverFibrosisScan: row.avg_liver_fibrosis_scan != null ? Number(row.avg_liver_fibrosis_scan) : null,
   }));
 
   return (
@@ -61,7 +61,7 @@ export function DashboardCharts({ overview }: DashboardChartsProps) {
                 <Legend />
                 <Line type="monotone" dataKey="bmi" stroke="#e91e8c" strokeWidth={2} dot={false} name="Avg BMI" />
                 <Line type="monotone" dataKey="alt" stroke="#14b8a6" strokeWidth={2} dot={false} name="Avg ALT" />
-                <Line type="monotone" dataKey="Liver Fibrosis Scan" stroke="#6366f1" strokeWidth={2} dot={false} name="Avg Liver Fibrosis Scan kPa" />
+                <Line type="monotone" dataKey="liverFibrosisScan" stroke="#6366f1" strokeWidth={2} dot={false} name="Avg Liver Fibrosis Scan kPa" />
               </LineChart>
             </ResponsiveContainer>
           </div>

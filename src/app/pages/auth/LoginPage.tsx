@@ -8,15 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuthLayout } from '@/app/pages/auth/components/AuthLayout';
 import { authService } from '@/services';
 import { useAuthStore } from '@/store';
+import { MOCK_DEV_USERS } from '@/services/auth/auth.mock';
 import { APP_NAME, DEV_LOGIN } from '@/utils/constants';
-
-const DEV_QUICK_USERS = [
-  { label: 'Doctor', username: 'doctor.iyer', password: 'Doctor@123' },
-  { label: 'Admin', username: 'admin.ops', password: 'Admin@123' },
-  { label: 'Patient', username: 'patient.rohan', password: 'Patient@123' },
-  { label: 'Technician', username: 'tech.vinod', password: 'Tech@123' },
-  { label: 'Lab', username: 'lab.ops', password: 'Lab@123' },
-] as const;
+import { isMockMode } from '@/services/mock';
 
 function devLoginDefaults() {
   if (!import.meta.env.DEV) return { identifier: '', password: '' };
@@ -91,7 +85,7 @@ export function LoginPage() {
     }
   };
 
-  const applyDevUser = (user: (typeof DEV_QUICK_USERS)[number]) => {
+  const applyDevUser = (user: (typeof MOCK_DEV_USERS)[number]) => {
     clearError();
     setIdentifier(user.username);
     setPassword(user.password);
@@ -113,11 +107,11 @@ export function LoginPage() {
 
         <TabsContent value="password">
           <form onSubmit={(e) => void handlePasswordLogin(e)} className="space-y-4 pt-2">
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && isMockMode() && (
               <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/30 p-3">
-                <p className="text-xs font-medium text-muted-foreground">Dev quick login</p>
+                <p className="text-xs font-medium text-muted-foreground">Dev quick login (mock mode)</p>
                 <div className="flex flex-wrap gap-2">
-                  {DEV_QUICK_USERS.map((user) => (
+                  {MOCK_DEV_USERS.map((user) => (
                     <Button
                       key={user.username}
                       type="button"
@@ -139,7 +133,7 @@ export function LoginPage() {
                 <Input
                   id="identifier"
                   type="text"
-                  placeholder="doctor.iyer or email@example.com"
+                  placeholder="doctor or administration"
                   className="pl-10"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -234,12 +228,14 @@ export function LoginPage() {
         </TabsContent>
       </Tabs>
 
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <Link to="/register" className="text-primary hover:underline">
-          Register as patient
-        </Link>
-      </p>
+      {!isMockMode() && (
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="text-primary hover:underline">
+            Register as patient
+          </Link>
+        </p>
+      )}
     </AuthLayout>
   );
 }

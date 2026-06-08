@@ -12,21 +12,21 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
   const summary = appointment.patientSummary;
   const pid = appointment.patientId;
   const links = [
-    { label: 'Profile', path: `/patients/${pid}?tab=demographics` },
-    { label: 'History', path: `/patients/${pid}?tab=timeline` },
-    { label: 'Reports', path: `/patients/${pid}?tab=reports` },
-    { label: 'Visits', path: `/patients/${pid}?tab=visits` },
-    { label: 'Liver Fibrosis Scan', path: `/patients/${pid}?tab=liver` },
-    { label: 'Medications', path: `/patients/${pid}?tab=medications` },
+    { label: 'Profile', path: `/patients/${pid}?tab=profile` },
+    { label: 'Appointments', path: `/patients/${pid}?tab=appointments` },
+    { label: 'Orders', path: `/patients/${pid}?tab=orders` },
+    { label: 'Tests', path: `/patients/${pid}?tab=tests` },
+    { label: 'Scans', path: `/patients/${pid}?tab=scans` },
+    { label: 'Payments', path: `/patients/${pid}?tab=payments` },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="gap-2" asChild>
-          <Link to={`/patients/${pid}?tab=dashboard`}>
+          <Link to={`/patients/${pid}?tab=profile`}>
             <FiExternalLink className="h-4 w-4" />
-            Patient dashboard
+            Open patient
           </Link>
         </Button>
         {links.map((l) => (
@@ -54,7 +54,7 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
               </p>
               <p>
                 <span className="text-muted-foreground">Latest Liver Fibrosis Scan: </span>
-                {summary.latest_Liver Fibrosis Scan_kpa != null ? `${summary.latest_Liver Fibrosis Scan_kpa} kPa` : '—'}
+                {summary.latest_fibroscan_kpa != null ? `${summary.latest_fibroscan_kpa} kPa` : '—'}
               </p>
               <p>
                 <span className="text-muted-foreground">Latest SGPT: </span>
@@ -75,13 +75,13 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
         </CardContent>
       </Card>
 
-      {appointment.Liver Fibrosis ScanSnippets.length > 0 && (
+      {appointment.liverFibrosisScanSnippets.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Recent Liver Fibrosis Scan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {appointment.Liver Fibrosis ScanSnippets.map((row) => (
+            {appointment.liverFibrosisScanSnippets.map((row) => (
               <div key={row.id} className="rounded-md border px-3 py-2">
                 <p>{row.liver_stiffness_kpa} kPa · Stage {row.fibrosis_stage}</p>
                 <p className="text-xs text-muted-foreground">

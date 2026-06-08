@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { technicianAppointmentsService } from '@/services';
 import type { TechnicianScheduleItem } from '@/types';
 
-interface Liver Fibrosis ScanClinicalPanelProps {
+interface LiverFibrosisScanClinicalPanelProps {
   appointmentId: string;
   summary: TechnicianScheduleItem;
   onUpdated?: () => void;
 }
 
-export function Liver Fibrosis ScanClinicalPanel({ appointmentId, summary, onUpdated }: Liver Fibrosis ScanClinicalPanelProps) {
+export function LiverFibrosisScanClinicalPanel({ appointmentId, summary, onUpdated }: LiverFibrosisScanClinicalPanelProps) {
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
   const [vitals, setVitals] = useState({ weightKg: '', heightCm: '', bpSystolic: '', bpDiastolic: '', waistCm: '' });
   const [fibro, setFibro] = useState({ liverStiffnessKpa: '', capDbm: '', fibrosisStage: 'F2', steatosisGrade: 'S2' });
@@ -25,7 +25,7 @@ export function Liver Fibrosis ScanClinicalPanel({ appointmentId, summary, onUpd
 
   const visit = detail?.visit as Record<string, unknown> | undefined;
   const checklist = (visit?.checklist as Array<{ code: string; title: string; status: string }>) ?? [];
-  const fibroResults = (visit?.Liver Fibrosis ScanResults as Array<Record<string, unknown>>) ?? [];
+  const fibroResults = (visit?.liverFibrosisScanResults as Array<Record<string, unknown>>) ?? [];
   const latestFibro = fibroResults[0];
   const vitalsRecord = visit?.vitals as Record<string, unknown> | null | undefined;
 
@@ -203,7 +203,7 @@ export function Liver Fibrosis ScanClinicalPanel({ appointmentId, summary, onUpd
               onSubmit={(e) => {
                 e.preventDefault();
                 void run(() =>
-                  technicianAppointmentsService.captureLiver Fibrosis Scan(appointmentId, {
+                  technicianAppointmentsService.captureLiverFibrosisScan(appointmentId, {
                     liverStiffnessKpa: Number(fibro.liverStiffnessKpa),
                     capDbm: Number(fibro.capDbm),
                     fibrosisStage: fibro.fibrosisStage,

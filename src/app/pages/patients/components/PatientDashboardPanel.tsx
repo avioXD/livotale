@@ -59,7 +59,7 @@ function PatientDashboardStats({ dashboard }: PatientDashboardPanelProps) {
     { label: 'Compliance', value: k.complianceScore != null ? `${k.complianceScore}%` : '—', accent: 'teal' as const },
     { label: 'BMI', value: k.bmi ?? '—', accent: 'neutral' as const },
     { label: 'Weight', value: k.weightKg != null ? `${k.weightKg} kg` : '—', accent: 'neutral' as const },
-    { label: 'Liver Fibrosis Scan', value: k.latestLiver Fibrosis ScanKpa != null ? `${k.latestLiver Fibrosis ScanKpa} kPa` : '—', accent: 'indigo' as const },
+    { label: 'Liver Fibrosis Scan', value: k.latestLiverFibrosisScanKpa != null ? `${k.latestLiverFibrosisScanKpa} kPa` : '—', accent: 'indigo' as const },
     { label: 'ALT (SGPT)', value: k.sgpt != null ? `${k.sgpt} U/L` : '—', accent: 'amber' as const },
     { label: 'HbA1c', value: k.hba1c != null ? `${k.hba1c}%` : '—', accent: 'rose' as const },
   ];
@@ -89,7 +89,7 @@ export function PatientDashboardPanel({ dashboard }: PatientDashboardPanelProps)
     bmi: num(t.bmi),
     alt: num(t.sgpt),
     ast: num(t.sgot),
-    Liver Fibrosis Scan: num(t.Liver Fibrosis Scan_kpa),
+    liverFibrosisScan: num(t.liverFibrosisScanKpa),
     cap: num(t.cap_dbm),
     hba1c: num(t.hba1c),
     triglycerides: num(t.triglycerides),
@@ -221,7 +221,7 @@ export function PatientDashboardPanel({ dashboard }: PatientDashboardPanelProps)
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="Liver Fibrosis Scan" stroke="#6366f1" strokeWidth={2} dot={false} name="kPa" />
+                  <Line yAxisId="left" type="monotone" dataKey="liverFibrosisScan" stroke="#6366f1" strokeWidth={2} dot={false} name="kPa" />
                   <Line yAxisId="right" type="monotone" dataKey="cap" stroke="#8b5cf6" strokeWidth={2} dot={false} name="CAP dB/m" />
                 </LineChart>
               </ResponsiveContainer>

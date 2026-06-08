@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -143,6 +143,19 @@ export function PatientJourneyPage() {
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-4 pb-6">
+      <Card className="border-livotale-pink/30 bg-livotale-pink/5">
+        <CardContent className="py-4 text-sm">
+          <p className="font-medium">Already have a Liver Care order?</p>
+          <p className="text-muted-foreground">
+            Track payments, reports, and prescriptions in the{' '}
+            <Link to="/patient/login" className="font-medium text-primary underline">
+              Patient Portal
+            </Link>
+            {' '}(phone + OTP login, separate from staff accounts).
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="space-y-1">
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Your liver care setup</h1>
         <p className="text-sm text-muted-foreground">

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiCopy, FiSend } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { STAFF_ROLE_CONFIGS, staffRoleFromSlug, staffRolePath } from '@/app/pages/admin/staff/staffHubConfig';
@@ -16,7 +16,11 @@ export function AdminStaffOnboardPage() {
   const { roleSlug } = useParams<{ roleSlug: string }>();
   const navigate = useNavigate();
   const roleKey = staffRoleFromSlug(roleSlug);
-  const roleConfig = STAFF_ROLE_CONFIGS.find((r) => r.key === roleKey)!;
+  const roleConfig = roleKey ? STAFF_ROLE_CONFIGS.find((r) => r.key === roleKey) : undefined;
+
+  if (!roleKey || !roleConfig) {
+    return <Navigate to="/admin/staff/technicians" replace />;
+  }
 
   const [form, setForm] = useState({ fullName: '', mobile: '', email: '', username: '' });
   const [invite, setInvite] = useState<StaffOnboardingInvite | null>(null);

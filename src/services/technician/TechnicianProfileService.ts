@@ -1,33 +1,33 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
-import { isApiUnavailableError } from '@/data/labSampleDemoData';
-import { TECHNICIAN_PROFILE_DEMO } from '@/data/technicianProfileDemoData';
+import { TECHNICIAN_PROFILE_DEMO } from './technicianProfile.mock';
 import type {
   TechnicianComplianceDocument,
   TechnicianDocumentType,
   TechnicianFullProfile,
 } from '@/types/technicianProfile';
 
+let mockTechnicianProfile: TechnicianFullProfile = { ...TECHNICIAN_PROFILE_DEMO };
+
 class TechnicianProfileService extends BaseApiService {
   async getMyProfile(): Promise<TechnicianFullProfile> {
-    try {
-      return await this.get<TechnicianFullProfile>('/technician/profile');
-    } catch {
-      return { ...TECHNICIAN_PROFILE_DEMO };
-    }
+    return mockOrApi(
+      () => ({ ...mockTechnicianProfile }),
+      () => this.get<TechnicianFullProfile>('/technician/profile'),
+    );
   }
 
   async updateMyProfile(body: Record<string, unknown>): Promise<TechnicianFullProfile> {
-    try {
-      return await this.patch<TechnicianFullProfile>('/technician/profile', body);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          ...TECHNICIAN_PROFILE_DEMO,
-          employee: { ...TECHNICIAN_PROFILE_DEMO.employee!, ...body } as TechnicianFullProfile['employee'],
+    return mockOrApi(
+      () => {
+        mockTechnicianProfile = {
+          ...mockTechnicianProfile,
+          employee: { ...mockTechnicianProfile.employee!, ...body } as TechnicianFullProfile['employee'],
         };
-      }
-      throw err;
-    }
+        return { ...mockTechnicianProfile };
+      },
+      () => this.patch<TechnicianFullProfile>('/technician/profile', body),
+    );
   }
 
   async uploadMyDocument(
@@ -41,69 +41,57 @@ class TechnicianProfileService extends BaseApiService {
     },
   ): Promise<TechnicianComplianceDocument> {
     const storageUrl = await this.fileToDataUrl(file);
-    try {
-      return await this.post<TechnicianComplianceDocument>('/technician/profile/documents', {
+    return mockOrApi(
+      () => ({
+        id: `demo-doc-${Date.now()}`,
         documentType: meta.documentType,
-        documentNumber: meta.documentNumber,
-        issuedOn: meta.issuedOn,
-        expiresOn: meta.expiresOn,
-        notes: meta.notes,
-        fileName: file.name,
-        mimeType: file.type || 'application/pdf',
+        documentNumber: meta.documentNumber ?? null,
+        fileId: null,
         storageUrl,
-      });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          id: `demo-doc-${Date.now()}`,
+        issuedOn: meta.issuedOn ?? null,
+        expiresOn: meta.expiresOn ?? null,
+        status: 'pending',
+        verifiedAt: null,
+        notes: meta.notes ?? null,
+        createdAt: new Date().toISOString(),
+      }),
+      () =>
+        this.post<TechnicianComplianceDocument>('/technician/profile/documents', {
           documentType: meta.documentType,
-          documentNumber: meta.documentNumber ?? null,
-          fileId: null,
+          documentNumber: meta.documentNumber,
+          issuedOn: meta.issuedOn,
+          expiresOn: meta.expiresOn,
+          notes: meta.notes,
+          fileName: file.name,
+          mimeType: file.type || 'application/pdf',
           storageUrl,
-          issuedOn: meta.issuedOn ?? null,
-          expiresOn: meta.expiresOn ?? null,
-          status: 'pending',
-          verifiedAt: null,
-          notes: meta.notes ?? null,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      throw err;
-    }
+        }),
+    );
   }
 
   async getAdminProfile(technicianId: string): Promise<TechnicianFullProfile> {
-    try {
-      return await this.get<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/profile`);
-    } catch {
-      return { ...TECHNICIAN_PROFILE_DEMO, id: technicianId };
-    }
+    return mockOrApi(
+      () => ({ ...TECHNICIAN_PROFILE_DEMO, id: technicianId }),
+      () => this.get<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/profile`),
+    );
   }
 
   async updateAdminProfile(technicianId: string, body: Record<string, unknown>): Promise<TechnicianFullProfile> {
-    try {
-      return await this.patch<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/profile`, body);
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return { ...TECHNICIAN_PROFILE_DEMO, id: technicianId, ...body } as TechnicianFullProfile;
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => ({ ...TECHNICIAN_PROFILE_DEMO, id: technicianId, ...body } as TechnicianFullProfile),
+      () => this.patch<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/profile`, body),
+    );
   }
 
   async setAdminPincodes(technicianId: string, pincodes: string[]): Promise<TechnicianFullProfile> {
-    try {
-      return await this.put<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/pincodes`, { pincodes });
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          ...TECHNICIAN_PROFILE_DEMO,
-          id: technicianId,
-          servicePincodes: pincodes.map((pincode) => ({ pincode, isActive: true })),
-        };
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => ({
+        ...TECHNICIAN_PROFILE_DEMO,
+        id: technicianId,
+        servicePincodes: pincodes.map((pincode) => ({ pincode, isActive: true })),
+      }),
+      () => this.put<TechnicianFullProfile>(`/admin/staff/technicians/${technicianId}/pincodes`, { pincodes }),
+    );
   }
 
   async uploadAdminDocument(
@@ -118,10 +106,22 @@ class TechnicianProfileService extends BaseApiService {
     },
   ): Promise<TechnicianComplianceDocument> {
     const storageUrl = await this.fileToDataUrl(file);
-    try {
-      return await this.post<TechnicianComplianceDocument>(
-        `/admin/staff/technicians/${technicianId}/documents`,
-        {
+    return mockOrApi(
+      () => ({
+        id: `demo-doc-${Date.now()}`,
+        documentType: meta.documentType,
+        documentNumber: meta.documentNumber ?? null,
+        fileId: null,
+        storageUrl,
+        issuedOn: meta.issuedOn ?? null,
+        expiresOn: meta.expiresOn ?? null,
+        status: 'pending',
+        verifiedAt: null,
+        notes: meta.notes ?? null,
+        createdAt: new Date().toISOString(),
+      }),
+      () =>
+        this.post<TechnicianComplianceDocument>(`/admin/staff/technicians/${technicianId}/documents`, {
           documentType: meta.documentType,
           documentNumber: meta.documentNumber,
           issuedOn: meta.issuedOn,
@@ -130,52 +130,31 @@ class TechnicianProfileService extends BaseApiService {
           fileName: file.name,
           mimeType: file.type || 'application/pdf',
           storageUrl,
-        },
-      );
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          id: `demo-doc-${Date.now()}`,
-          documentType: meta.documentType,
-          documentNumber: meta.documentNumber ?? null,
-          fileId: null,
-          storageUrl,
-          issuedOn: meta.issuedOn ?? null,
-          expiresOn: meta.expiresOn ?? null,
-          status: 'pending',
-          verifiedAt: null,
-          notes: meta.notes ?? null,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      throw err;
-    }
+        }),
+    );
   }
 
   async verifyDocument(documentId: string, status: 'verified' | 'rejected' | 'expired', notes?: string) {
-    try {
-      return await this.post<TechnicianComplianceDocument>(
-        `/admin/staff/technicians/documents/${documentId}/verify`,
-        { status, notes },
-      );
-    } catch (err) {
-      if (isApiUnavailableError(err)) {
-        return {
-          id: documentId,
-          documentType: 'other',
-          documentNumber: null,
-          fileId: null,
-          storageUrl: null,
-          issuedOn: null,
-          expiresOn: null,
-          status,
-          verifiedAt: new Date().toISOString(),
-          notes: notes ?? null,
-          createdAt: new Date().toISOString(),
-        };
-      }
-      throw err;
-    }
+    return mockOrApi(
+      () => ({
+        id: documentId,
+        documentType: 'other',
+        documentNumber: null,
+        fileId: null,
+        storageUrl: null,
+        issuedOn: null,
+        expiresOn: null,
+        status,
+        verifiedAt: new Date().toISOString(),
+        notes: notes ?? null,
+        createdAt: new Date().toISOString(),
+      }),
+      () =>
+        this.post<TechnicianComplianceDocument>(
+          `/admin/staff/technicians/documents/${documentId}/verify`,
+          { status, notes },
+        ),
+    );
   }
 
   private fileToDataUrl(file: File): Promise<string> {

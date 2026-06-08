@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { AppointmentCard } from '@/app/pages/appointments/components/AppointmentCard';
 import { CancelAppointmentDialog } from '@/app/pages/appointments/components/CancelAppointmentDialog';
 import { RescheduleAppointmentDialog } from '@/app/pages/appointments/components/RescheduleAppointmentDialog';
-import { StaffAppointmentsTablePanel } from '@/app/pages/appointments/components/StaffAppointmentsTablePanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppointmentsStore, useUserRole } from '@/store';
@@ -17,13 +16,10 @@ const ADMIN_OPS_ROLES = new Set<AppRole>([
   AppRole.SUPER_ADMIN,
 ]);
 
-const CARE_TEAM_ROLES = new Set<AppRole>([AppRole.DIETICIAN, AppRole.HEALTH_COACH]);
-
 export function AppointmentsPage() {
   const navigate = useNavigate();
   const userRole = useUserRole();
   const isPatient = userRole === AppRole.PATIENT;
-  const isCareTeam = userRole != null && CARE_TEAM_ROLES.has(userRole);
 
   const appointments = useAppointmentsStore((s) => s.appointments);
   const isLoading = useAppointmentsStore((s) => s.isLoading);
@@ -35,9 +31,9 @@ export function AppointmentsPage() {
   const [rescheduleAppt, setRescheduleAppt] = useState<(typeof appointments)[number] | null>(null);
 
   useEffect(() => {
-    if (!isPatient && !isCareTeam) return;
-    void loadAppointments(isCareTeam);
-  }, [loadAppointments, isCareTeam, isPatient]);
+    if (!isPatient) return;
+    void loadAppointments(false);
+  }, [loadAppointments, isPatient]);
 
   if (userRole === AppRole.DOCTOR) {
     return <Navigate to="/doctor/appointments" replace />;
@@ -47,27 +43,8 @@ export function AppointmentsPage() {
     return <Navigate to="/admin/operations?tab=appointments" replace />;
   }
 
-  if (userRole && !isPatient && !isCareTeam) {
+  if (userRole && !isPatient) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  if (isCareTeam) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Appointments"
-          description="Caseload appointments — search, filter, and open records from the table."
-        />
-
-        {error && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        <StaffAppointmentsTablePanel appointments={appointments} isLoading={isLoading} />
-      </div>
-    );
   }
 
   const upcoming = appointments.filter((a) => !['completed', 'cancelled'].includes(a.status));

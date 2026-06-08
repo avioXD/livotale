@@ -1,0 +1,37 @@
+---
+description: Standard list and detail page layout for livotale-ui admin screens
+globs: livotale-ui/src/app/pages/**/*.tsx
+alwaysApply: false
+---
+
+# UI page patterns (livotale-ui)
+
+Follow `specs/platform/ui-page-patterns.md`.
+
+## List pages (`ListPageShell`)
+
+- `PageHeader`: title left, **primary action** right (e.g. Add lead, Add package)
+- `ListToolbar`: search + Apply/Reset + filter fields in grid
+- `DataTable`: row click → detail route
+- `PaginationControls`: below table
+
+## Detail pages
+
+- **Back arrow** (`FiArrowLeft`) icon button **left of title** — use `DetailPageShell` or `EntityDetailShell`
+- Title = entity name; description = secondary id/meta
+- Header **actions** (delete, preview) align right in `PageHeader`
+- View/Edit tabs: `EntityDetailShell` + `?tab=view|edit`
+
+## Primary vs secondary fields
+
+CRM/enquiry forms: **name + phone required**; email, city, package, message optional (collapsed).
+
+## Routes
+
+```
+/admin/{entity}           → list
+/admin/{entity}/new       → create (`:id` = `new`)
+/admin/{entity}/:id       → detail
+```
+
+Reference: `AdminEnquiriesPage`, `AdminPackagesPage`, `PatientsPage`, `PatientDetailPage`.

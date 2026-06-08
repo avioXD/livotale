@@ -39,8 +39,11 @@ export function AdminOperationsOverviewTab({ overview, onNavigateTab }: AdminOpe
         <Button size="sm" variant="outline" onClick={() => onNavigateTab('appointments', { status: 'missed' })}>
           Missed today
         </Button>
-        <Button size="sm" variant="outline" onClick={() => onNavigateTab('samples', { status: 'pending_technician_assignment' })}>
-          Samples to assign
+        <Button size="sm" variant="outline" onClick={() => onNavigateTab('partner-lab', { status: 'pending_dispatch' })}>
+          Partner lab queue
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onNavigateTab('enquiries')}>
+          Enquiry queue
         </Button>
         <Button size="sm" variant="outline" onClick={() => onNavigateTab('orders', { paymentStatus: 'pending' })}>
           Collect payments
@@ -66,7 +69,7 @@ export function AdminOperationsOverviewTab({ overview, onNavigateTab }: AdminOpe
         <KpiCard
           label="Samples awaiting assign"
           value={overview.samplesPendingAssign}
-          hint="Home collection requests"
+          hint="Home collection — see Partner lab tab for dispatch"
         />
         <KpiCard
           label="Unpaid orders"

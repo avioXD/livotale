@@ -1,0 +1,63 @@
+/** Single line in a checklist section (included ✓ or not included ✗) */
+export interface PackageChecklistItem {
+  id: string;
+  label: string;
+  included: boolean;
+  detail?: string | null;
+}
+
+/** Grouped checklist — e.g. "Scan & imaging", "Blood tests", "Consultation" */
+export interface PackageChecklistSection {
+  id: string;
+  title: string;
+  items: PackageChecklistItem[];
+}
+
+export interface PackageHighlight {
+  label: string;
+  value: string;
+}
+
+export interface PackageFaq {
+  question: string;
+  answer: string;
+}
+
+/** @deprecated Prefer checklistSections — kept for backward compat */
+export interface PackageIncludes {
+  bullets: string[];
+}
+
+export interface LiverCarePackage {
+  id: string;
+  code: string;
+  name: string;
+  /** One-line card subtitle */
+  subtitle?: string | null;
+  description: string;
+  /** Marketing tagline on detail page */
+  tagline?: string | null;
+  price: number;
+  discountPrice?: number | null;
+  includes: PackageIncludes;
+  /** Three fixed checklist sections — inclusion toggled via workflow flags */
+  checklistSections: PackageChecklistSection[];
+  /** Quick facts row: TAT, fasting, sample type, etc. */
+  highlights: PackageHighlight[];
+  preparation: string[];
+  whoShouldBook: string[];
+  faqs: PackageFaq[];
+  fibrosisScanIncluded: boolean;
+  pathologyIncluded: boolean;
+  consultationIncluded: boolean;
+  visibilityWeb: boolean;
+  active: boolean;
+  sortOrder: number;
+  termsConditions?: string;
+  recommendedTag?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreatePackageInput = Omit<LiverCarePackage, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdatePackageInput = Partial<CreatePackageInput>;

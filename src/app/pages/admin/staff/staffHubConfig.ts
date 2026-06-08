@@ -15,55 +15,69 @@ export function staffRolePath(key: StaffRoleKey): string {
   return `/admin/staff/${STAFF_ROLE_SLUGS[key]}`;
 }
 
-export function staffRoleFromSlug(slug: string | undefined): StaffRoleKey {
-  const entry = Object.entries(STAFF_ROLE_SLUGS).find(([, s]) => s === slug);
-  return (entry?.[0] as StaffRoleKey | undefined) ?? 'technician';
-}
-
+/** Staff types managed in the liver fibrosis scan clinic UI. */
 export const STAFF_ROLE_CONFIGS: StaffRoleConfig[] = [
   {
     key: 'technician',
     label: 'Technicians',
-    description: 'Field collectors — sample collection, home visits, route coverage.',
+    description: 'Center and home visits — Liver Fibrosis Scan capture and sample collection.',
     appRole: AppRole.TECHNICIAN,
   },
   {
     key: 'doctor',
     label: 'Doctors',
-    description: 'Clinical staff — consultations, Liver Fibrosis Scan review, prescriptions.',
+    description: 'Consultations (clinic & tele), Liver Fibrosis Scan review, prescriptions.',
     appRole: AppRole.DOCTOR,
   },
   {
     key: 'lab_partner',
     label: 'Lab partners',
-    description: 'Partner labs — sample receipt, testing, and report publishing.',
+    description: 'Third-party labs — linked orders; Operations uploads report PDFs.',
     appRole: AppRole.LAB_PARTNER,
   },
   {
+    key: 'operations',
+    label: 'Operations team',
+    description: 'Booking, patient registration, technician and doctor assignment.',
+    appRole: AppRole.OPERATIONS,
+  },
+];
+
+/** Legacy staff types — API may still return users; hidden from staff hub navigation. */
+export const LEGACY_STAFF_ROLE_CONFIGS: StaffRoleConfig[] = [
+  {
     key: 'dietician',
     label: 'Dieticians',
-    description: 'Nutrition care team — diet plans and patient coaching.',
+    description: 'Legacy role — not used in liver fibrosis scan product UI.',
     appRole: AppRole.DIETICIAN,
   },
   {
     key: 'health_coach',
     label: 'Health coaches',
-    description: 'Lifestyle coaching and care journey support.',
+    description: 'Legacy role — not used in liver fibrosis scan product UI.',
     appRole: AppRole.HEALTH_COACH,
   },
   {
     key: 'pharmacy',
     label: 'Pharmacy',
-    description: 'Medication fulfilment and home delivery coordination.',
+    description: 'Legacy role — not used in liver fibrosis scan product UI.',
     appRole: AppRole.PHARMACY,
   },
-  {
-    key: 'operations',
-    label: 'Operations',
-    description: 'Internal ops and city managers — scheduling and oversight.',
-    appRole: AppRole.OPERATIONS,
-  },
 ];
+
+export const ALL_STAFF_ROLE_CONFIGS: StaffRoleConfig[] = [
+  ...STAFF_ROLE_CONFIGS,
+  ...LEGACY_STAFF_ROLE_CONFIGS,
+];
+
+const ACTIVE_STAFF_KEYS = new Set(STAFF_ROLE_CONFIGS.map((c) => c.key));
+
+export function staffRoleFromSlug(slug: string | undefined): StaffRoleKey | null {
+  const entry = Object.entries(STAFF_ROLE_SLUGS).find(([, s]) => s === slug);
+  const key = entry?.[0] as StaffRoleKey | undefined;
+  if (!key || !ACTIVE_STAFF_KEYS.has(key)) return null;
+  return key;
+}
 
 export const STAFF_SECTION_TABS = [
   { key: 'dashboard' as const, label: 'Dashboard' },

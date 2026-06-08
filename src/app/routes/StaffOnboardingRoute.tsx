@@ -6,10 +6,7 @@ import { AppRole } from '@/types';
 const STAFF_ONBOARDING_ROLES: AppRole[] = [
   AppRole.TECHNICIAN,
   AppRole.DOCTOR,
-  AppRole.LAB_PARTNER,
-  AppRole.DIETICIAN,
-  AppRole.HEALTH_COACH,
-  AppRole.PHARMACY,
+  AppRole.OPERATIONS,
 ];
 
 const ALLOWED_WHEN_GATED = ['/staff/onboarding', '/staff/profile', '/settings'];

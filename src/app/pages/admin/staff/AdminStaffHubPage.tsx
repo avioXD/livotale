@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { isAdminRole } from '@/app/config/productRoles';
+import { useUserRole } from '@/store';
 import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StaffRoleWorkspace } from '@/app/pages/admin/staff/components/StaffRoleWorkspace';
@@ -25,10 +27,19 @@ function parseSection(value: string | null): StaffSectionTab {
 }
 
 export function AdminStaffHubPage() {
+  const userRole = useUserRole();
   const { roleSlug } = useParams<{ roleSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeRole = staffRoleFromSlug(roleSlug);
   const activeSection = parseSection(searchParams.get('section'));
+
+  if (!activeRole) {
+    return <Navigate to="/admin/staff/technicians" replace />;
+  }
+
+  if (activeRole === 'operations' && !isAdminRole(userRole)) {
+    return <Navigate to="/admin/staff/technicians" replace />;
+  }
 
   const [period, setPeriod] = useState<AnalyticsPeriod>('monthly');
   const [analytics, setAnalytics] = useState<SampleCollectionAnalytics | null>(null);

@@ -83,7 +83,7 @@ export function PatientsPage() {
         isLoading={isLoading}
         emptyMessage="No patients found. Adjust filters or connect the API."
         getRowKey={(p) => p.id}
-        onRowClick={(p) => navigate(`/patients/${p.id}?tab=dashboard`)}
+        onRowClick={(p) => navigate(`/patients/${p.id}?tab=profile`)}
       />
 
       <PaginationControls

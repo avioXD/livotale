@@ -1,3 +1,4 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   DashboardOverview,
@@ -9,95 +10,95 @@ import type {
   PatientHistory,
   PatientListItem,
   PatientTrendPoint,
-  ReportListItem,
   TimelineEvent,
 } from '@/types';
 import type { PatientAppointmentRecord, PatientVisitRecord } from '@/types/patientProfile';
 import { mapListItemToPatient } from '@/types/patients';
+import { mockGetDashboardOverview } from './dashboard.mock';
+import type { PatientClinicalContext } from '@/types/patientClinical';
+import { getMockPatientClinicalContext } from './patientsClinical.mock';
 import {
   getMockPatientAppointments,
   getMockPatientDashboard,
   getMockPatientDetail,
   getMockPatientHistory,
-  getMockPatientReports,
   getMockPatientTimeline,
   getMockPatientTrends,
   getMockPatientVisits,
   mergeMockPatientDetail,
-} from './patientProfileMockData';
-
-async function withMockFallback<T>(apiCall: () => Promise<T>, mock: () => T): Promise<T> {
-  try {
-    return await apiCall();
-  } catch {
-    return mock();
-  }
-}
+  mockListPatients,
+  mockUpdatePatientHistorySection,
+} from './patients.mock';
 
 class PatientsService extends BaseApiService {
   async list(params: ListFetchParams<Record<string, unknown>>): Promise<PaginatedResponse<Patient>> {
-    const raw = await this.get<{
-      items: PatientListItem[];
-      total: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    }>('/patients', {
-      params: {
-        page: params.page,
-        pageSize: params.pageSize,
-        search: params.search,
-        ...params.filters,
+    return mockOrApi(
+      () => mockListPatients(params),
+      async () => {
+        const raw = await this.get<{
+          items: PatientListItem[];
+          total: number;
+          page: number;
+          pageSize: number;
+          totalPages: number;
+        }>('/patients', {
+          params: {
+            page: params.page,
+            pageSize: params.pageSize,
+            search: params.search,
+            ...params.filters,
+          },
+        });
+        return {
+          data: raw.items.map(mapListItemToPatient),
+          total: raw.total,
+          page: raw.page,
+          pageSize: raw.pageSize,
+          totalPages: raw.totalPages,
+        };
       },
-    });
-    return {
-      data: raw.items.map(mapListItemToPatient),
-      total: raw.total,
-      page: raw.page,
-      pageSize: raw.pageSize,
-      totalPages: raw.totalPages,
-    };
+    );
   }
 
   async getById(id: string): Promise<PatientDetail> {
-    return withMockFallback(
-      () => this.get<PatientDetail>(`/patients/${id}`),
+    return mockOrApi(
       () => getMockPatientDetail(id),
+      () => this.get<PatientDetail>(`/patients/${id}`),
     );
   }
 
   async getTimeline(id: string): Promise<TimelineEvent[]> {
-    return withMockFallback(
-      () => this.get<TimelineEvent[]>(`/patients/${id}/timeline`),
+    return mockOrApi(
       () => getMockPatientTimeline(id),
+      () => this.get<TimelineEvent[]>(`/patients/${id}/timeline`),
     );
   }
 
   async getTrends(id: string): Promise<PatientTrendPoint[]> {
-    return withMockFallback(
-      () => this.get<PatientTrendPoint[]>(`/patients/${id}/trends`),
+    return mockOrApi(
       () => getMockPatientTrends(id),
+      () => this.get<PatientTrendPoint[]>(`/patients/${id}/trends`),
     );
   }
 
   async getDashboard(id: string): Promise<PatientDashboardData> {
-    return withMockFallback(
-      () => this.get<PatientDashboardData>(`/patients/${id}/dashboard`),
+    return mockOrApi(
       () => getMockPatientDashboard(id),
+      () => this.get<PatientDashboardData>(`/patients/${id}/dashboard`),
     );
   }
 
   async getHistory(id: string): Promise<PatientHistory> {
-    return withMockFallback(
-      () => this.get<PatientHistory>(`/patients/${id}/history`),
+    return mockOrApi(
       () => getMockPatientHistory(id),
+      () => this.get<PatientHistory>(`/patients/${id}/history`),
     );
   }
 
   async updateDemographics(id: string, payload: Record<string, unknown>): Promise<PatientDetail> {
-    return withMockFallback(
-      () => this.patch<PatientDetail>(`/patients/${id}/demographics`, payload),
+    return mockOrApi(
       () => mergeMockPatientDetail(id, payload),
+      () => this.patch<PatientDetail>(`/patients/${id}/demographics`, payload),
     );
   }
 
@@ -106,30 +107,30 @@ class PatientsService extends BaseApiService {
     section: string,
     payload: Record<string, unknown>,
   ): Promise<PatientHistory> {
-    return this.patch<PatientHistory>(`/patients/${id}/history/${section}`, payload);
+    return mockOrApi(
+      () => mockUpdatePatientHistorySection(id, section, payload),
+      () => this.patch<PatientHistory>(`/patients/${id}/history/${section}`, payload),
+    );
   }
 
-  /** Appointments tab — API when available, mock fallback for now */
   async getAppointments(id: string): Promise<PatientAppointmentRecord[]> {
-    return withMockFallback(
-      () => this.get<PatientAppointmentRecord[]>(`/patients/${id}/appointments`),
+    return mockOrApi(
       () => getMockPatientAppointments(id),
+      () => this.get<PatientAppointmentRecord[]>(`/patients/${id}/appointments`),
     );
   }
 
-  /** Home visits tab — API when available, mock fallback for now */
   async getVisits(id: string): Promise<PatientVisitRecord[]> {
-    return withMockFallback(
-      () => this.get<PatientVisitRecord[]>(`/patients/${id}/visits`),
+    return mockOrApi(
       () => getMockPatientVisits(id),
+      () => this.get<PatientVisitRecord[]>(`/patients/${id}/visits`),
     );
   }
 
-  /** Clinical reports for staff viewing a patient profile */
-  async getReports(id: string): Promise<ReportListItem[]> {
-    return withMockFallback(
-      () => this.get<ReportListItem[]>(`/patients/${id}/reports`),
-      () => getMockPatientReports(id),
+  async getClinicalContext(id: string): Promise<PatientClinicalContext> {
+    return mockOrApi(
+      () => getMockPatientClinicalContext(id),
+      () => this.get<PatientClinicalContext>(`/patients/${id}/clinical`),
     );
   }
 }
@@ -138,7 +139,10 @@ export const patientsService = new PatientsService();
 
 class DashboardService extends BaseApiService {
   async getOverview(): Promise<DashboardOverview> {
-    return this.get<DashboardOverview>('/dashboard/overview');
+    return mockOrApi(
+      () => mockGetDashboardOverview(),
+      () => this.get<DashboardOverview>('/dashboard/overview'),
+    );
   }
 }
 

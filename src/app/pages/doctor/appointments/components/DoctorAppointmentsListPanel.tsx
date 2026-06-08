@@ -70,7 +70,7 @@ export function DoctorAppointmentsListPanel({
         header: 'Patient',
         render: (r) => (
           <Link
-            to={`/patients/${r.patientId}?tab=dashboard`}
+            to={`/patients/${r.patientId}?tab=profile`}
             className="text-livotale-pink hover:underline"
             onClick={(e) => e.stopPropagation()}
           >

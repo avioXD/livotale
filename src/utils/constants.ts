@@ -10,6 +10,11 @@ export const BRAND = {
 
 export const APP_NAME = 'Livotale';
 
+/** Product name for liver stiffness elastography — use in all user-facing copy. */
+export const LIVER_FIBROSIS_SCAN_LABEL = 'Liver Fibrosis Scan';
+
+export const LIVER_FIBROSIS_SCAN_ROUTE = '/liver-fibrosis-scan';
+
 export const APP_TAGLINE =
   'Tech-enabled liver care ecosystem — Liver Fibrosis Scan, AI treatment plans, and home delivery.';
 

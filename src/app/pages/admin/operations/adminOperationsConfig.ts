@@ -1,5 +1,5 @@
 import type { IconType } from 'react-icons';
-import { FiCalendar, FiCreditCard, FiHome } from 'react-icons/fi';
+import { FiCalendar, FiClipboard, FiCreditCard, FiHome, FiCpu } from 'react-icons/fi';
 import { MdOutlineScience } from 'react-icons/md';
 import type { OperationsTab } from '@/types/adminOperations';
 
@@ -12,9 +12,11 @@ export interface OperationsTabConfig {
 
 export const OPERATIONS_TABS: OperationsTabConfig[] = [
   { key: 'overview', label: 'Overview', description: 'Daily KPIs and quick actions', icon: FiHome },
-  { key: 'appointments', label: 'Appointments', description: 'Doctor, walk-in, tele & home visits', icon: FiCalendar },
-  { key: 'samples', label: 'Sample collections', description: 'Collection requests & technician assignment', icon: MdOutlineScience },
+  { key: 'enquiries', label: 'Enquiries', description: 'CRM queue — website, WhatsApp, and manual leads', icon: FiClipboard },
   { key: 'orders', label: 'Orders & payments', description: 'Collect cash, QR, or online payments', icon: FiCreditCard },
+  { key: 'partner-lab', label: 'Lab reports', description: 'Blood sample dispatch, lab email PDF upload, AI extraction', icon: MdOutlineScience },
+  { key: 'appointments', label: 'Appointments', description: 'Doctor, walk-in, tele & home visits', icon: FiCalendar },
+  { key: 'ai-review', label: 'AI review', description: 'Verify pathology data extracted from lab PDFs', icon: FiCpu },
 ];
 
 export const APPOINTMENT_STATUS_PRESETS = [

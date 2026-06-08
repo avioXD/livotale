@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FiX } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { AppointmentTimeline } from '@/app/pages/appointments/components/AppointmentTimeline';
@@ -91,6 +91,17 @@ export function DoctorAppointmentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={sectionMeta.label} description={sectionMeta.description} />
+
+      {section === 'appointments' && (
+        <div className="rounded-md border border-livotale-pink/30 bg-livotale-pink/5 px-4 py-3 text-sm">
+          <span className="font-medium">Liver care PKG-3 consultations</span>
+          {' '}use the order-based workflow — review scan, pathology, and publish prescriptions from{' '}
+          <Link to="/doctor/consultations" className="font-medium text-primary underline">
+            Liver care Rx
+          </Link>
+          .
+        </div>
+      )}
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

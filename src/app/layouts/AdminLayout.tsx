@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getNavGroupsForRole } from '@/app/config/navigation';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useAuthStore, useUserRole } from '@/store';
 import { cn, getInitialsFromFullName } from '@/utils';
 import { ROLE_LABELS } from '@/rbac';
@@ -34,9 +35,6 @@ function isNavPathActive(pathname: string, search: string, path: string): boolea
     return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
   }
 
-  if (basePath === '/lab/dashboard') {
-    return pathname === '/lab/dashboard';
-  }
 
   if (basePath === '/settings') {
     return pathname === '/settings';
@@ -75,23 +73,24 @@ function isChildActive(pathname: string, search: string, child: NavChildItem): b
   if (child.id === 'doc-patients' || child.id === 'care-patients') {
     return pathname === '/patients' || pathname.startsWith('/patients/');
   }
+  if (child.id === 'ops-enquiries') {
+    return (
+      (pathname === '/admin/operations' && search.includes('tab=enquiries')) ||
+      pathname === '/admin/enquiries' ||
+      pathname.startsWith('/admin/enquiries/')
+    );
+  }
   if (child.id === 'doc-availability') {
     return pathname === '/doctor/appointments' && search.includes('section=availability');
   }
   if (child.id === 'doc-leave') {
     return pathname === '/doctor/appointments' && search.includes('section=leave');
   }
+  if (child.id === 'tech-orders') {
+    return pathname === '/technician/orders' || pathname.startsWith('/technician/orders/');
+  }
   if (child.id === 'tech-schedule') {
     return pathname === '/technician/schedule' || pathname.startsWith('/technician/schedule/');
-  }
-  if (child.id === 'lab-overview') {
-    return pathname === '/lab/dashboard';
-  }
-  if (child.id === 'lab-queue') {
-    return pathname === '/lab-samples' || pathname.startsWith('/lab-samples/');
-  }
-  if (child.id === 'lab-reports-child') {
-    return pathname === '/reports' || pathname.startsWith('/reports/');
   }
   return false;
 }
@@ -327,6 +326,7 @@ export function TopBar() {
         >
           <FiMenu className="h-5 w-5" />
         </Button>
+        <NotificationBell />
         <div>
           <h1 className="text-lg font-semibold">
             Welcome back{user ? `, ${user.fullName.split(' ')[0]}` : ''}

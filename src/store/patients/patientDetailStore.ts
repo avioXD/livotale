@@ -1,24 +1,15 @@
 import { create } from 'zustand';
 import { patientsService } from '@/services';
-import type {
-  PatientDashboardData,
-  PatientDetail,
-  PatientHistory,
-  PatientTrendPoint,
-  ReportListItem,
-  TimelineEvent,
-} from '@/types';
+import type { PatientDetail, PatientHistory } from '@/types';
+import type { PatientClinicalContext } from '@/types/patientClinical';
 import type { PatientAppointmentRecord, PatientVisitRecord } from '@/types/patientProfile';
 
 interface PatientDetailStore {
   detail: PatientDetail | null;
-  dashboard: PatientDashboardData | null;
-  timeline: TimelineEvent[];
-  trends: PatientTrendPoint[];
   history: PatientHistory | null;
   appointments: PatientAppointmentRecord[];
   visits: PatientVisitRecord[];
-  reports: ReportListItem[];
+  clinical: PatientClinicalContext | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -30,13 +21,10 @@ interface PatientDetailStore {
 
 export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
   detail: null,
-  dashboard: null,
-  timeline: [],
-  trends: [],
   history: null,
   appointments: [],
   visits: [],
-  reports: [],
+  clinical: null,
   isLoading: false,
   isSaving: false,
   error: null,
@@ -44,34 +32,19 @@ export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
   loadPatient: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const [
-        detail,
-        dashboard,
-        timeline,
-        trends,
-        history,
-        appointments,
-        visits,
-        reports,
-      ] = await Promise.all([
+      const [detail, history, appointments, visits, clinical] = await Promise.all([
         patientsService.getById(id),
-        patientsService.getDashboard(id),
-        patientsService.getTimeline(id),
-        patientsService.getTrends(id),
         patientsService.getHistory(id),
         patientsService.getAppointments(id),
         patientsService.getVisits(id),
-        patientsService.getReports(id),
+        patientsService.getClinicalContext(id),
       ]);
       set({
         detail,
-        dashboard,
-        timeline,
-        trends,
         history,
         appointments,
         visits,
-        reports,
+        clinical,
         isLoading: false,
       });
     } catch (err) {
@@ -100,8 +73,7 @@ export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
     set({ isSaving: true, error: null });
     try {
       const history = await patientsService.updateHistorySection(id, section, payload);
-      const timeline = await patientsService.getTimeline(id);
-      set({ history, timeline, isSaving: false });
+      set({ history, isSaving: false });
     } catch (err) {
       set({
         isSaving: false,
@@ -114,13 +86,10 @@ export const usePatientDetailStore = create<PatientDetailStore>((set) => ({
   clear: () =>
     set({
       detail: null,
-      dashboard: null,
-      timeline: [],
-      trends: [],
       history: null,
       appointments: [],
       visits: [],
-      reports: [],
+      clinical: null,
       error: null,
     }),
 }));

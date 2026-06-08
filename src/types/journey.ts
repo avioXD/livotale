@@ -156,6 +156,6 @@ export interface TechnicianVisit {
 export interface VisitDetail extends TechnicianVisit {
   checklist: Array<{ code: string; title: string; status: string }>;
   vitals: Record<string, unknown> | null;
-  Liver Fibrosis ScanResults: Array<Record<string, unknown>>;
+  liverFibrosisScanResults: Array<Record<string, unknown>>;
   samples: Array<Record<string, unknown>>;
 }

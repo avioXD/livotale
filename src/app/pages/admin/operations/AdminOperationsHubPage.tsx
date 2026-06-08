@@ -4,14 +4,25 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { OPERATIONS_TABS } from '@/app/pages/admin/operations/adminOperationsConfig';
 import { AdminOperationsOverviewTab } from '@/app/pages/admin/operations/components/AdminOperationsOverviewTab';
 import { AdminOperationsAppointmentsTab } from '@/app/pages/admin/operations/components/AdminOperationsAppointmentsTab';
-import { AdminOperationsSamplesTab } from '@/app/pages/admin/operations/components/AdminOperationsSamplesTab';
+import { AdminOperationsPartnerLabTab } from '@/app/pages/admin/operations/components/AdminOperationsPartnerLabTab';
 import { AdminOperationsOrdersTab } from '@/app/pages/admin/operations/components/AdminOperationsOrdersTab';
+import { AdminOperationsEnquiriesTab } from '@/app/pages/admin/operations/components/AdminOperationsEnquiriesTab';
+import { AdminOperationsAIReviewTab } from '@/app/pages/admin/operations/components/AdminOperationsAIReviewTab';
 import { adminOperationsService } from '@/services/admin/AdminOperationsService';
 import { useAdminAppointmentsStore } from '@/store';
 import type { OperationsOverview, OperationsTab } from '@/types/adminOperations';
 
 function parseTab(value: string | null): OperationsTab {
-  if (value === 'appointments' || value === 'samples' || value === 'orders') return value;
+  if (value === 'samples') return 'partner-lab';
+  if (
+    value === 'enquiries' ||
+    value === 'appointments' ||
+    value === 'partner-lab' ||
+    value === 'orders' ||
+    value === 'ai-review'
+  ) {
+    return value;
+  }
   return 'overview';
 }
 
@@ -57,9 +68,11 @@ export function AdminOperationsHubPage() {
       {tab === 'overview' && (
         <AdminOperationsOverviewTab overview={overview} onNavigateTab={(t, q) => setTab(t as OperationsTab, q)} />
       )}
+      {tab === 'enquiries' && <AdminOperationsEnquiriesTab />}
       {tab === 'appointments' && <AdminOperationsAppointmentsTab />}
-      {tab === 'samples' && <AdminOperationsSamplesTab />}
+      {tab === 'partner-lab' && <AdminOperationsPartnerLabTab />}
       {tab === 'orders' && <AdminOperationsOrdersTab />}
+      {tab === 'ai-review' && <AdminOperationsAIReviewTab />}
     </div>
   );
 }

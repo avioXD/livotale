@@ -4,6 +4,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { isMockMode } from '@/services/mock';
 import { getStoredToken, clearStoredTokens } from '@/rbac';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
@@ -40,7 +41,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isMockMode()) {
       clearStoredTokens();
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';

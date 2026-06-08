@@ -1,3 +1,4 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   AppointmentDetail,
@@ -14,35 +15,69 @@ import type {
   PrescriptionPdfInfo,
   TeleconsultationJoinPayload,
 } from '@/types';
+import {
+  mockBookAppointment,
+  mockCancelAppointment,
+  mockGetAppointment,
+  mockGetDoctorAvailability,
+  mockGetPrescription,
+  mockGetPrescriptionPdf,
+  mockGetSlots,
+  mockGetTeleJoin,
+  mockListAppointmentTypes,
+  mockListAppointments,
+  mockListDoctorSlots,
+  mockListDoctors,
+  mockRescheduleAppointment,
+} from './appointments.mock';
 
 class AppointmentsService extends BaseApiService {
   async listTypes(): Promise<AppointmentTypeOption[]> {
-    return this.get<AppointmentTypeOption[]>('/patient/appointment-types');
+    return mockOrApi(
+      () => mockListAppointmentTypes(),
+      () => this.get<AppointmentTypeOption[]>('/patient/appointment-types'),
+    );
   }
 
   async listMine(): Promise<AppointmentSummary[]> {
-    return this.get<AppointmentSummary[]>('/patient/appointments');
+    return mockOrApi(
+      () => mockListAppointments(),
+      () => this.get<AppointmentSummary[]>('/patient/appointments'),
+    );
   }
 
   async listStaff(): Promise<AppointmentSummary[]> {
-    return this.get<AppointmentSummary[]>('/appointments');
+    return mockOrApi(
+      () => mockListAppointments(),
+      () => this.get<AppointmentSummary[]>('/appointments'),
+    );
   }
 
   async getById(id: string): Promise<AppointmentDetail> {
-    return this.get<AppointmentDetail>(`/patient/appointments/${id}`);
+    return mockOrApi(
+      () => mockGetAppointment(id),
+      () => this.get<AppointmentDetail>(`/patient/appointments/${id}`),
+    );
   }
 
   async getSlots(
     date: string,
     params?: { typeCode?: string; visitMode?: AppointmentVisitMode },
   ): Promise<TimeSlotOption[]> {
-    return this.get<TimeSlotOption[]>('/patient/appointments/slots', {
-      params: { date, ...params },
-    });
+    return mockOrApi(
+      () => mockGetSlots(date, params),
+      () =>
+        this.get<TimeSlotOption[]>('/patient/appointments/slots', {
+          params: { date, ...params },
+        }),
+    );
   }
 
   async listDoctors(): Promise<DoctorOption[]> {
-    return this.get<DoctorOption[]>('/patient/doctors');
+    return mockOrApi(
+      () => mockListDoctors(),
+      () => this.get<DoctorOption[]>('/patient/doctors'),
+    );
   }
 
   async listDoctorSlots(
@@ -50,41 +85,68 @@ class AppointmentsService extends BaseApiService {
     date: string,
     visitMode: AppointmentVisitMode = 'clinic',
   ): Promise<TimeSlotOption[]> {
-    return this.get<TimeSlotOption[]>(`/patient/doctors/${doctorId}/slots`, {
-      params: { date, visitMode },
-    });
+    return mockOrApi(
+      () => mockListDoctorSlots(doctorId, date, visitMode),
+      () =>
+        this.get<TimeSlotOption[]>(`/patient/doctors/${doctorId}/slots`, {
+          params: { date, visitMode },
+        }),
+    );
   }
 
   async getDoctorAvailability(
     doctorId: string,
     params?: { fromDate?: string; toDate?: string },
   ): Promise<DoctorAvailabilityCalendar> {
-    return this.get<DoctorAvailabilityCalendar>(`/patient/doctors/${doctorId}/availability`, { params });
+    return mockOrApi(
+      () => mockGetDoctorAvailability(doctorId, params),
+      () =>
+        this.get<DoctorAvailabilityCalendar>(`/patient/doctors/${doctorId}/availability`, { params }),
+    );
   }
 
   async book(payload: BookAppointmentPayload): Promise<AppointmentSummary> {
-    return this.post<AppointmentSummary>('/patient/appointments', payload);
+    return mockOrApi(
+      () => mockBookAppointment(payload),
+      () => this.post<AppointmentSummary>('/patient/appointments', payload),
+    );
   }
 
   async reschedule(id: string, payload: RescheduleAppointmentPayload): Promise<AppointmentSummary> {
-    return this.patch<AppointmentSummary>(`/patient/appointments/${id}/reschedule`, payload);
+    return mockOrApi(
+      () => mockRescheduleAppointment(id, payload),
+      () => this.patch<AppointmentSummary>(`/patient/appointments/${id}/reschedule`, payload),
+    );
   }
 
   async cancel(id: string, payload: CancelAppointmentPayload = {}): Promise<AppointmentSummary> {
-    return this.post<AppointmentSummary>(`/patient/appointments/${id}/cancel`, payload);
+    return mockOrApi(
+      () => mockCancelAppointment(id, payload),
+      () => this.post<AppointmentSummary>(`/patient/appointments/${id}/cancel`, payload),
+    );
   }
 
   async getPrescription(appointmentId: string): Promise<AppointmentPrescription> {
-    return this.get<AppointmentPrescription>(`/patient/appointments/${appointmentId}/prescription`);
+    return mockOrApi(
+      () => mockGetPrescription(appointmentId),
+      () => this.get<AppointmentPrescription>(`/patient/appointments/${appointmentId}/prescription`),
+    );
   }
 
   async getPrescriptionPdf(appointmentId: string): Promise<PrescriptionPdfInfo> {
-    return this.get<PrescriptionPdfInfo>(`/patient/appointments/${appointmentId}/prescription/pdf`);
+    return mockOrApi(
+      () => mockGetPrescriptionPdf(appointmentId),
+      () => this.get<PrescriptionPdfInfo>(`/patient/appointments/${appointmentId}/prescription/pdf`),
+    );
   }
 
   async getTeleJoin(appointmentId: string) {
-    return this.get<TeleconsultationJoinPayload>(
-      `/patient/appointments/${appointmentId}/teleconsultation/join`,
+    return mockOrApi(
+      () => mockGetTeleJoin(appointmentId),
+      () =>
+        this.get<TeleconsultationJoinPayload>(
+          `/patient/appointments/${appointmentId}/teleconsultation/join`,
+        ),
     );
   }
 }

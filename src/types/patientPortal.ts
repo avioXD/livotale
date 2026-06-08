@@ -1,0 +1,59 @@
+export interface PatientPortalSession {
+  phone: string;
+  patientId: string;
+  patientName: string;
+}
+
+export interface PatientPortalOrderSummary {
+  id: string;
+  orderNumber: string;
+  packageName: string;
+  finalAmount: number;
+  paymentStatus: string;
+  orderStatus: string;
+  createdAt: string;
+}
+
+export interface OrderInvoice {
+  orderId: string;
+  orderNumber: string;
+  patientName: string;
+  amount: number;
+  paidAt?: string | null;
+  pdfUrl: string;
+  fileId: string;
+}
+
+export interface PatientProfile {
+  patientId: string;
+  phone: string;
+  name: string;
+  email?: string | null;
+  city?: string | null;
+  dateOfBirth?: string | null;
+  updatedAt: string;
+}
+
+export type PatientNotificationChannel = 'whatsapp' | 'sms' | 'email' | 'in_app';
+
+export interface PatientNotification {
+  id: string;
+  channel: PatientNotificationChannel;
+  title: string;
+  body: string;
+  orderId?: string | null;
+  read: boolean;
+  sentAt: string;
+}
+
+export type PatientDownloadType = 'invoice' | 'report' | 'prescription';
+
+export interface PatientDownloadItem {
+  id: string;
+  type: PatientDownloadType;
+  label: string;
+  orderId: string;
+  orderNumber: string;
+  pdfUrl: string;
+  availableAt: string;
+}

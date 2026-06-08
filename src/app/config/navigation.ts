@@ -1,72 +1,67 @@
 import {
   FiActivity,
+  FiBell,
   FiCalendar,
   FiClipboard,
-  FiClock,
   FiCreditCard,
   FiHome,
   FiSettings,
   FiShield,
   FiTruck,
   FiUsers,
-  FiFileText,
   FiHeart,
 } from 'react-icons/fi';
 import { MdOutlineHealthAndSafety, MdOutlineScience } from 'react-icons/md';
+import { ADMIN_ROLES, OPS_ROLES } from '@/app/config/productRoles';
 import { AppRole, type NavGroup, type NavGroupId, type NavItem } from '@/types';
 
 const STAFF_ROLES = [
   AppRole.TECHNICIAN,
   AppRole.DOCTOR,
-  AppRole.DIETICIAN,
-  AppRole.HEALTH_COACH,
-  AppRole.PHARMACY,
-  AppRole.LAB_PARTNER,
   AppRole.OPERATIONS,
   AppRole.CITY_MANAGER,
   AppRole.SUPER_ADMIN,
 ] as const;
 
-const ALL_ROLES = [AppRole.PATIENT, ...STAFF_ROLES] as const;
-
-const ADMIN_OPS_ROLES = [AppRole.OPERATIONS, AppRole.CITY_MANAGER, AppRole.SUPER_ADMIN] as const;
-
-const CARE_TEAM_ROLES = [AppRole.DIETICIAN, AppRole.HEALTH_COACH] as const;
-
-const CLINICAL_OVERSIGHT_ROLES = [AppRole.CITY_MANAGER, AppRole.SUPER_ADMIN] as const;
+const ALL_PRODUCT_ROLES = [AppRole.PATIENT, ...STAFF_ROLES] as const;
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
   overview: 'Overview',
   'patient-care': 'My Care',
-  'technician-ops': 'Field Operations',
-  'lab-ops': 'Lab Operations',
+  'technician-ops': 'Field work',
+  'lab-ops': 'Partner lab',
   clinical: 'Clinical',
   fulfillment: 'Fulfillment',
-  'admin-ops': 'Operations',
-  'staff-management': 'People & Staff',
+  'admin-ops': 'Day-to-day ops',
+  'staff-management': 'People & partners',
   account: 'Settings',
 };
 
-/** Order of sidebar sections per role context. */
 const GROUP_ORDER: NavGroupId[] = [
   'overview',
   'patient-care',
   'technician-ops',
-  'lab-ops',
   'clinical',
-  'fulfillment',
   'admin-ops',
   'staff-management',
   'account',
 ];
 
 export const navigationItems: NavItem[] = [
-  // ── Patient overview ──
+  // ── Patient ──
   {
     id: 'patient-journey',
     label: 'Patient Journey',
     path: '/patient-journey',
     icon: MdOutlineHealthAndSafety,
+    roles: [AppRole.PATIENT],
+    group: 'overview',
+  },
+  {
+    id: 'patient-notifications',
+    label: 'Notifications',
+    path: '/patient/notifications',
+    icon: FiBell,
     roles: [AppRole.PATIENT],
     group: 'overview',
   },
@@ -77,58 +72,6 @@ export const navigationItems: NavItem[] = [
     icon: FiCalendar,
     roles: [AppRole.PATIENT],
     group: 'overview',
-  },
-
-  // ── Staff overview (role-specific) ──
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    path: '/dashboard',
-    icon: FiHome,
-    roles: [
-      AppRole.DOCTOR,
-      AppRole.TECHNICIAN,
-      AppRole.DIETICIAN,
-      AppRole.HEALTH_COACH,
-      AppRole.PHARMACY,
-      AppRole.LAB_PARTNER,
-      ...ADMIN_OPS_ROLES,
-    ],
-    group: 'overview',
-  },
-  {
-    id: 'patients-registry',
-    label: 'Patients',
-    path: '/patients',
-    icon: FiUsers,
-    roles: [AppRole.PHARMACY, ...ADMIN_OPS_ROLES],
-    group: 'overview',
-  },
-  {
-    id: 'Liver Fibrosis Scan-oversight',
-    label: 'Liver Fibrosis Scan',
-    path: '/Liver Fibrosis Scan',
-    icon: FiActivity,
-    roles: [...CLINICAL_OVERSIGHT_ROLES],
-    group: 'overview',
-  },
-  {
-    id: 'clinical-reports-oversight',
-    label: 'Clinical reports',
-    path: '/reports',
-    icon: FiFileText,
-    roles: [...CLINICAL_OVERSIGHT_ROLES],
-    group: 'overview',
-  },
-
-  // ── Patient care (consumer) ──
-  {
-    id: 'patient-reports',
-    label: 'Reports',
-    path: '/reports',
-    icon: FiFileText,
-    roles: [AppRole.PATIENT],
-    group: 'patient-care',
   },
   {
     id: 'patient-treatment-plans',
@@ -163,119 +106,115 @@ export const navigationItems: NavItem[] = [
     group: 'patient-care',
   },
 
-  // ── Technician field ops ──
+  // ── All staff: overview ──
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: FiHome,
+    roles: [...STAFF_ROLES],
+    group: 'overview',
+  },
+  {
+    id: 'staff-notifications',
+    label: 'Notifications',
+    path: '/notifications',
+    icon: FiBell,
+    roles: [...STAFF_ROLES],
+    group: 'overview',
+  },
+
+  // ── Admin-only overview ──
+  {
+    id: 'admin-packages',
+    label: 'Packages',
+    path: '/admin/packages',
+    icon: FiCreditCard,
+    roles: [...ADMIN_ROLES],
+    group: 'overview',
+  },
+  {
+    id: 'admin-audit',
+    label: 'Audit log',
+    path: '/admin/audit',
+    icon: FiShield,
+    roles: [...ADMIN_ROLES],
+    group: 'overview',
+  },
+  {
+    id: 'patients-registry',
+    label: 'Patients',
+    path: '/patients',
+    icon: FiUsers,
+    roles: [AppRole.DOCTOR, ...OPS_ROLES],
+    group: 'overview',
+  },
+
+  // ── Technician ──
   {
     id: 'technician-workspace',
-    label: 'Field operations',
-    path: '/technician/schedule',
-    icon: FiCalendar,
+    label: 'Field work',
+    path: '/technician/orders',
+    icon: FiActivity,
     roles: [AppRole.TECHNICIAN],
     group: 'technician-ops',
     childrenOnly: true,
     children: [
+      { id: 'tech-orders', label: 'Liver Fibrosis Scan', path: '/technician/orders', icon: FiActivity },
       { id: 'tech-schedule', label: 'Sample collection', path: '/technician/schedule', icon: MdOutlineScience },
     ],
   },
 
-  // ── Lab ops ──
-  {
-    id: 'lab-workspace',
-    label: 'Lab',
-    path: '/lab/dashboard',
-    icon: MdOutlineScience,
-    roles: [AppRole.LAB_PARTNER],
-    group: 'lab-ops',
-    childrenOnly: true,
-    children: [
-      { id: 'lab-overview', label: 'Dashboard', path: '/lab/dashboard', icon: FiHome },
-      { id: 'lab-queue', label: 'Testing queue', path: '/lab-samples', icon: MdOutlineScience },
-      { id: 'lab-reports-child', label: 'Reports & results', path: '/reports', icon: FiFileText },
-    ],
-  },
-
-  // ── Doctor clinical workspace ──
+  // ── Doctor ──
   {
     id: 'doctor-workspace',
     label: 'Clinical',
-    path: '/doctor/appointments',
+    path: '/doctor/consultations',
     icon: FiActivity,
     roles: [AppRole.DOCTOR],
     group: 'clinical',
     childrenOnly: true,
     children: [
+      { id: 'doc-consultations', label: 'Liver care Rx', path: '/doctor/consultations', icon: FiActivity },
       { id: 'doc-appointments', label: 'Appointments', path: '/doctor/appointments', icon: FiCalendar },
       { id: 'doc-patients', label: 'Patients', path: '/patients', icon: FiUsers },
-      { id: 'doc-availability', label: 'Availability', path: '/doctor/appointments?section=availability', icon: FiClock },
-      { id: 'doc-leave', label: 'Leave requests', path: '/doctor/appointments?section=leave', icon: FiFileText },
     ],
   },
 
-  // ── Allied health care coordination ──
-  {
-    id: 'care-workspace',
-    label: 'Care coordination',
-    path: '/appointments',
-    icon: MdOutlineHealthAndSafety,
-    roles: [...CARE_TEAM_ROLES],
-    group: 'clinical',
-    childrenOnly: true,
-    children: [
-      { id: 'care-appointments', label: 'Appointments', path: '/appointments', icon: FiCalendar },
-      { id: 'care-patients', label: 'Patients', path: '/patients', icon: FiUsers },
-      {
-        id: 'care-plans',
-        label: 'Treatment plans',
-        path: '/treatment-plans',
-        icon: MdOutlineHealthAndSafety,
-        roles: [AppRole.DIETICIAN],
-      },
-      {
-        id: 'care-sessions',
-        label: 'Care sessions',
-        path: '/coaching',
-        icon: FiHeart,
-        roles: [AppRole.HEALTH_COACH, AppRole.DIETICIAN],
-      },
-    ],
-  },
-
-  // ── Pharmacy fulfillment ──
-  {
-    id: 'pharmacy-workspace',
-    label: 'Fulfillment',
-    path: '/prescriptions',
-    icon: FiTruck,
-    roles: [AppRole.PHARMACY],
-    group: 'fulfillment',
-    childrenOnly: true,
-    children: [
-      { id: 'pharmacy-rx', label: 'Prescriptions', path: '/prescriptions', icon: FiClipboard },
-      { id: 'pharmacy-delivery', label: 'Home delivery', path: '/delivery', icon: FiTruck },
-    ],
-  },
-
-  // ── Admin operations ──
+  // ── Operations hub (Operations + Admin) ──
   {
     id: 'admin-operations',
-    label: 'Operations',
+    label: 'Day-to-day ops',
     path: '/admin/operations',
     icon: FiShield,
-    roles: [...ADMIN_OPS_ROLES],
+    roles: [...OPS_ROLES],
     group: 'admin-ops',
     childrenOnly: true,
     children: [
       { id: 'ops-overview', label: 'Overview', path: '/admin/operations', icon: FiHome },
-      { id: 'ops-appointments', label: 'Appointments', path: '/admin/operations?tab=appointments', icon: FiCalendar },
-      { id: 'ops-samples', label: 'Sample collections', path: '/admin/operations?tab=samples', icon: MdOutlineScience },
+      { id: 'ops-enquiries', label: 'Enquiries', path: '/admin/operations?tab=enquiries', icon: FiClipboard },
       { id: 'ops-orders', label: 'Orders & payments', path: '/admin/operations?tab=orders', icon: FiCreditCard },
+      { id: 'ops-partner-lab', label: 'Lab reports', path: '/admin/operations?tab=partner-lab', icon: MdOutlineScience },
+      { id: 'ops-appointments', label: 'Appointments', path: '/admin/operations?tab=appointments', icon: FiCalendar },
+      { id: 'ops-ai-review', label: 'AI review', path: '/admin/operations?tab=ai-review', icon: FiActivity },
     ],
   },
+  {
+    id: 'admin-notifications',
+    label: 'Channel notification log',
+    path: '/admin/notifications',
+    icon: FiClipboard,
+    roles: [...OPS_ROLES],
+    group: 'admin-ops',
+  },
+
+  // ── People & partners ──
   {
     id: 'admin-staff-technicians',
     label: 'Technicians',
     path: '/admin/staff/technicians',
     icon: FiUsers,
-    roles: [...ADMIN_OPS_ROLES],
+    roles: [...OPS_ROLES],
     group: 'staff-management',
   },
   {
@@ -283,57 +222,49 @@ export const navigationItems: NavItem[] = [
     label: 'Doctors',
     path: '/admin/staff/doctors',
     icon: FiActivity,
-    roles: [...ADMIN_OPS_ROLES],
+    roles: [...OPS_ROLES],
+    group: 'staff-management',
+  },
+  {
+    id: 'admin-partner-labs',
+    label: 'Partner lab profiles',
+    path: '/admin/lab-partners',
+    icon: MdOutlineScience,
+    roles: [...OPS_ROLES],
     group: 'staff-management',
   },
   {
     id: 'admin-staff-lab-partners',
-    label: 'Lab partners',
+    label: 'Lab partner users',
     path: '/admin/staff/lab-partners',
     icon: MdOutlineScience,
-    roles: [...ADMIN_OPS_ROLES],
-    group: 'staff-management',
-  },
-  {
-    id: 'admin-staff-dieticians',
-    label: 'Dieticians',
-    path: '/admin/staff/dieticians',
-    icon: MdOutlineHealthAndSafety,
-    roles: [...ADMIN_OPS_ROLES],
-    group: 'staff-management',
-  },
-  {
-    id: 'admin-staff-health-coaches',
-    label: 'Health coaches',
-    path: '/admin/staff/health-coaches',
-    icon: FiHeart,
-    roles: [...ADMIN_OPS_ROLES],
-    group: 'staff-management',
-  },
-  {
-    id: 'admin-staff-pharmacy',
-    label: 'Pharmacy',
-    path: '/admin/staff/pharmacy',
-    icon: FiTruck,
-    roles: [...ADMIN_OPS_ROLES],
+    roles: [...OPS_ROLES],
     group: 'staff-management',
   },
   {
     id: 'admin-staff-operations',
-    label: 'Operations',
+    label: 'Operations team',
     path: '/admin/staff/operations',
     icon: FiShield,
-    roles: [...ADMIN_OPS_ROLES],
+    roles: [...ADMIN_ROLES],
     group: 'staff-management',
   },
 
   // ── Settings ──
   {
+    id: 'admin-integrations',
+    label: 'Integrations',
+    path: '/admin/integrations',
+    icon: FiSettings,
+    roles: [...ADMIN_ROLES],
+    group: 'account',
+  },
+  {
     id: 'settings',
     label: 'Settings',
     path: '/settings',
     icon: FiSettings,
-    roles: [...ALL_ROLES],
+    roles: [...ALL_PRODUCT_ROLES, AppRole.DIETICIAN, AppRole.HEALTH_COACH, AppRole.PHARMACY, AppRole.LAB_PARTNER],
     group: 'account',
   },
 ];
@@ -374,22 +305,25 @@ export function isOpenRoute(pathname: string): boolean {
   return OPEN_ROUTES.some((route) => pathname.startsWith(route));
 }
 
-/** Default landing path after login per role. */
 export function getDefaultHomePath(role: AppRole | null): string {
   switch (role) {
     case AppRole.TECHNICIAN:
-      return '/technician/schedule';
-    case AppRole.LAB_PARTNER:
-      return '/lab/dashboard';
+    case AppRole.DOCTOR:
     case AppRole.OPERATIONS:
     case AppRole.CITY_MANAGER:
     case AppRole.SUPER_ADMIN:
-      return '/admin/operations';
-    case AppRole.DOCTOR:
       return '/dashboard';
     case AppRole.PATIENT:
       return '/patient-journey';
+    case AppRole.DIETICIAN:
+    case AppRole.HEALTH_COACH:
+    case AppRole.PHARMACY:
+    case AppRole.LAB_PARTNER:
+      return '/settings';
     default:
-      return '/dashboard';
+      return '/settings';
   }
 }
+
+/** @deprecated use STAFF_ROLES — kept for imports that expect PRODUCT_STAFF */
+export const PRODUCT_STAFF_ROLES = STAFF_ROLES;

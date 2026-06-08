@@ -1,29 +1,65 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type { TechnicianRouteResponse, TechnicianScheduleItem, TechnicianTrackingResponse } from '@/types';
+import {
+  mockAcceptTechnicianAppointment,
+  mockCaptureTechnicianConsent,
+  mockCaptureTechnicianLiverFibrosisScan,
+  mockCaptureTechnicianVitals,
+  mockCollectTechnicianSample,
+  mockCompleteTechnicianAppointment,
+  mockGetPatientTracking,
+  mockGetTechnicianAppointment,
+  mockGetTechnicianRoute,
+  mockGetTechnicianSchedule,
+  mockMarkTechnicianArrived,
+  mockMarkTechnicianFailed,
+  mockRecordTechnicianGeo,
+  mockReportTechnicianIssue,
+  mockStartTechnicianJourney,
+} from './technicianAppointments.mock';
 
 class TechnicianAppointmentsService extends BaseApiService {
   async getSchedule(date?: string): Promise<TechnicianScheduleItem[]> {
-    return this.get<TechnicianScheduleItem[]>('/technician/schedule', { params: { date } });
+    return mockOrApi(
+      () => mockGetTechnicianSchedule(date),
+      () => this.get<TechnicianScheduleItem[]>('/technician/schedule', { params: { date } }),
+    );
   }
 
   async getRoute(date: string): Promise<TechnicianRouteResponse> {
-    return this.get<TechnicianRouteResponse>(`/technician/routes/${date}`);
+    return mockOrApi(
+      () => mockGetTechnicianRoute(date),
+      () => this.get<TechnicianRouteResponse>(`/technician/routes/${date}`),
+    );
   }
 
   async getById(id: string): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(`/technician/appointments/${id}`);
+    return mockOrApi(
+      () => mockGetTechnicianAppointment(id),
+      () => this.get<Record<string, unknown>>(`/technician/appointments/${id}`),
+    );
   }
 
   async accept(id: string) {
-    return this.post(`/technician/appointments/${id}/accept`);
+    return mockOrApi(
+      () => mockAcceptTechnicianAppointment(id),
+      () => this.post(`/technician/appointments/${id}/accept`),
+    );
   }
 
   async startJourney(id: string) {
-    return this.post(`/technician/appointments/${id}/start-journey`);
+    return mockOrApi(
+      () => mockStartTechnicianJourney(id),
+      () => this.post(`/technician/appointments/${id}/start-journey`),
+    );
   }
 
   async markArrived(id: string) {
-    return this.post(`/technician/appointments/${id}/arrived`);
+    return mockOrApi(
+      () => mockMarkTechnicianArrived(id),
+      () => this.post(`/technician/appointments/${id}/arrived`),
+    );
   }
 
   async recordGeo(payload: {
@@ -32,39 +68,66 @@ class TechnicianAppointmentsService extends BaseApiService {
     longitude: number;
     accuracyM?: number;
   }) {
-    return this.post('/technician/geo', payload);
+    return mockOrApi(
+      () => mockRecordTechnicianGeo(payload),
+      () => this.post('/technician/geo', payload),
+    );
   }
 
   async captureConsent(id: string) {
-    return this.post(`/technician/appointments/${id}/consent`, { consentType: 'home_visit', accepted: true });
+    return mockOrApi(
+      () => mockCaptureTechnicianConsent(id),
+      () => this.post(`/technician/appointments/${id}/consent`, { consentType: 'home_visit', accepted: true }),
+    );
   }
 
   async captureVitals(id: string, payload: Record<string, unknown>) {
-    return this.put(`/technician/appointments/${id}/vitals`, payload);
+    return mockOrApi(
+      () => mockCaptureTechnicianVitals(id, payload),
+      () => this.put(`/technician/appointments/${id}/vitals`, payload),
+    );
   }
 
-  async captureLiver Fibrosis Scan(id: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/appointments/${id}/Liver Fibrosis Scan`, payload);
+  async captureLiverFibrosisScan(id: string, payload: Record<string, unknown>) {
+    return mockOrApi(
+      () => mockCaptureTechnicianLiverFibrosisScan(id, payload),
+      () => this.post(`/technician/appointments/${id}/liver-fibrosis-scan`, payload),
+    );
   }
 
   async collectSample(id: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/appointments/${id}/sample-collected`, payload);
+    return mockOrApi(
+      () => mockCollectTechnicianSample(id, payload),
+      () => this.post(`/technician/appointments/${id}/sample-collected`, payload),
+    );
   }
 
   async complete(id: string) {
-    return this.post(`/technician/appointments/${id}/complete`);
+    return mockOrApi(
+      () => mockCompleteTechnicianAppointment(id),
+      () => this.post(`/technician/appointments/${id}/complete`),
+    );
   }
 
   async markFailed(id: string, payload: { reasonCode?: string; reasonText?: string; note?: string }) {
-    return this.post(`/technician/appointments/${id}/failed`, payload);
+    return mockOrApi(
+      () => mockMarkTechnicianFailed(id, payload),
+      () => this.post(`/technician/appointments/${id}/failed`, payload),
+    );
   }
 
   async reportIssue(id: string, payload: { note: string; escalate?: boolean }) {
-    return this.post(`/technician/appointments/${id}/issue`, payload);
+    return mockOrApi(
+      () => mockReportTechnicianIssue(id, payload),
+      () => this.post(`/technician/appointments/${id}/issue`, payload),
+    );
   }
 
   async getPatientTracking(appointmentId: string): Promise<TechnicianTrackingResponse> {
-    return this.get<TechnicianTrackingResponse>(`/patient/appointments/${appointmentId}/technician-tracking`);
+    return mockOrApi(
+      () => mockGetPatientTracking(appointmentId),
+      () => this.get<TechnicianTrackingResponse>(`/patient/appointments/${appointmentId}/technician-tracking`),
+    );
   }
 }
 

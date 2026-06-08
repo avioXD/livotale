@@ -1,4 +1,4 @@
-export type OperationsTab = 'overview' | 'appointments' | 'samples' | 'orders';
+export type OperationsTab = 'overview' | 'enquiries' | 'appointments' | 'partner-lab' | 'orders' | 'ai-review';
 
 export type ServiceOrderType = 'appointment' | 'pharmacy';
 

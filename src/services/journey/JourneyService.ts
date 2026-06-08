@@ -1,3 +1,4 @@
+import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   AiAssessment,
@@ -14,98 +15,195 @@ import type {
   TechnicianVisit,
   VisitDetail,
 } from '@/types';
+import {
+  mockApprovePrescription,
+  mockBookHomeVisit,
+  mockCaptureConsent,
+  mockCaptureLiverFibrosisScan,
+  mockCaptureVitals,
+  mockCollectSample,
+  mockCompleteOnboarding,
+  mockCompleteVisit,
+  mockEditPrescription,
+  mockGetAssessment,
+  mockGetDashboardAnalytics,
+  mockGetJourney,
+  mockGetOnboardingStatus,
+  mockGetPendingPrescriptions,
+  mockGetPrescription,
+  mockGetQuestionnaire,
+  mockGetTechnicianVisit,
+  mockGetTechnicianVisitsToday,
+  mockListAddresses,
+  mockListHomeVisits,
+  mockRunPreScreen,
+  mockSubmitQuestionnaire,
+  mockUploadReport,
+} from './journey.mock';
 
 class JourneyService extends BaseApiService {
   async getOnboardingStatus(): Promise<{ onboardingComplete: boolean; journeyStatus: string; currentStep: string }> {
-    return this.get('/patient/onboarding/status');
+    return mockOrApi(
+      () => mockGetOnboardingStatus(),
+      () => this.get('/patient/onboarding/status'),
+    );
   }
 
   async getDashboardAnalytics(): Promise<PatientDashboardData> {
-    return this.get<PatientDashboardData>('/patient/dashboard/analytics');
+    return mockOrApi(
+      () => mockGetDashboardAnalytics(),
+      () => this.get<PatientDashboardData>('/patient/dashboard/analytics'),
+    );
   }
 
   async getJourney(): Promise<JourneyState> {
-    return this.get<JourneyState>('/patient/journey');
+    return mockOrApi(
+      () => mockGetJourney(),
+      () => this.get<JourneyState>('/patient/journey'),
+    );
   }
 
   async getQuestionnaire(code: string): Promise<Questionnaire> {
-    return this.get<Questionnaire>(`/patient/questionnaires/${code}`);
+    return mockOrApi(
+      () => mockGetQuestionnaire(code),
+      () => this.get<Questionnaire>(`/patient/questionnaires/${code}`),
+    );
   }
 
   async submitQuestionnaire(code: string, answers: QuestionnaireAnswerInput[]) {
-    return this.post(`/patient/questionnaires/${code}/responses`, { answers });
+    return mockOrApi(
+      () => mockSubmitQuestionnaire(code, answers),
+      () => this.post(`/patient/questionnaires/${code}/responses`, { answers }),
+    );
   }
 
   async completeOnboarding(payload: OnboardingPayload) {
-    return this.post('/patient/onboarding/complete', payload);
+    return mockOrApi(
+      () => mockCompleteOnboarding(payload),
+      () => this.post('/patient/onboarding/complete', payload),
+    );
   }
 
   async uploadReport(payload: ReportUploadPayload) {
-    return this.post('/patient/reports/upload', payload);
+    return mockOrApi(
+      () => mockUploadReport(payload),
+      () => this.post('/patient/reports/upload', payload),
+    );
   }
 
   async runPreScreen() {
-    return this.post('/patient/ai/prescreen');
+    return mockOrApi(
+      () => mockRunPreScreen(),
+      () => this.post('/patient/ai/prescreen'),
+    );
   }
 
   async getAssessment(): Promise<AiAssessment | null> {
-    return this.get<AiAssessment | null>('/patient/ai/assessment');
+    return mockOrApi(
+      () => mockGetAssessment(),
+      () => this.get<AiAssessment | null>('/patient/ai/assessment'),
+    );
   }
 
   async listAddresses(): Promise<PatientAddress[]> {
-    return this.get<PatientAddress[]>('/patient/addresses');
+    return mockOrApi(
+      () => mockListAddresses(),
+      () => this.get<PatientAddress[]>('/patient/addresses'),
+    );
   }
 
   async listHomeVisits(): Promise<HomeVisit[]> {
-    return this.get<HomeVisit[]>('/patient/home-visits');
+    return mockOrApi(
+      () => mockListHomeVisits(),
+      () => this.get<HomeVisit[]>('/patient/home-visits'),
+    );
   }
 
   async bookHomeVisit(payload: BookVisitPayload): Promise<HomeVisit> {
-    return this.post<HomeVisit>('/patient/home-visits', payload);
+    return mockOrApi(
+      () => mockBookHomeVisit(payload),
+      () => this.post<HomeVisit>('/patient/home-visits', payload),
+    );
   }
 
   async getPendingPrescriptions(): Promise<PendingPrescription[]> {
-    return this.get<PendingPrescription[]>('/doctor/prescriptions/pending');
+    return mockOrApi(
+      () => mockGetPendingPrescriptions(),
+      () => this.get<PendingPrescription[]>('/doctor/prescriptions/pending'),
+    );
   }
 
   async getPrescription(id: string) {
-    return this.get<PendingPrescription & { diet_plan: string; exercise_plan: string; monitoring_plan: string; items: unknown[] }>(`/doctor/prescriptions/${id}`);
+    return mockOrApi(
+      () => mockGetPrescription(id),
+      () =>
+        this.get<PendingPrescription & { diet_plan: string; exercise_plan: string; monitoring_plan: string; items: unknown[] }>(
+          `/doctor/prescriptions/${id}`,
+        ),
+    );
   }
 
   async approvePrescription(id: string, doctorNotes?: string) {
-    return this.post(`/doctor/prescriptions/${id}/approve`, { doctorNotes });
+    return mockOrApi(
+      () => mockApprovePrescription(id, doctorNotes),
+      () => this.post(`/doctor/prescriptions/${id}/approve`, { doctorNotes }),
+    );
   }
 
   async editPrescription(id: string, payload: Record<string, unknown>) {
-    return this.put(`/doctor/prescriptions/${id}`, payload);
+    return mockOrApi(
+      () => mockEditPrescription(id, payload),
+      () => this.put(`/doctor/prescriptions/${id}`, payload),
+    );
   }
 
   async getTechnicianVisitsToday(): Promise<TechnicianVisit[]> {
-    return this.get<TechnicianVisit[]>('/technician/visits/today');
+    return mockOrApi(
+      () => mockGetTechnicianVisitsToday(),
+      () => this.get<TechnicianVisit[]>('/technician/visits/today'),
+    );
   }
 
   async getTechnicianVisit(id: string): Promise<VisitDetail> {
-    return this.get<VisitDetail>(`/technician/visits/${id}`);
+    return mockOrApi(
+      () => mockGetTechnicianVisit(id),
+      () => this.get<VisitDetail>(`/technician/visits/${id}`),
+    );
   }
 
   async captureConsent(visitId: string) {
-    return this.post(`/technician/visits/${visitId}/consent`, { consentType: 'home_visit', accepted: true });
+    return mockOrApi(
+      () => mockCaptureConsent(visitId),
+      () => this.post(`/technician/visits/${visitId}/consent`, { consentType: 'home_visit', accepted: true }),
+    );
   }
 
   async captureVitals(visitId: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/visits/${visitId}/vitals`, payload);
+    return mockOrApi(
+      () => mockCaptureVitals(visitId, payload),
+      () => this.post(`/technician/visits/${visitId}/vitals`, payload),
+    );
   }
 
-  async captureLiver Fibrosis Scan(visitId: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/visits/${visitId}/Liver Fibrosis Scan`, payload);
+  async captureLiverFibrosisScan(visitId: string, payload: Record<string, unknown>) {
+    return mockOrApi(
+      () => mockCaptureLiverFibrosisScan(visitId, payload),
+      () => this.post(`/technician/visits/${visitId}/liver-fibrosis-scan`, payload),
+    );
   }
 
   async collectSample(visitId: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/visits/${visitId}/sample-collected`, payload);
+    return mockOrApi(
+      () => mockCollectSample(visitId, payload),
+      () => this.post(`/technician/visits/${visitId}/sample-collected`, payload),
+    );
   }
 
   async completeVisit(visitId: string) {
-    return this.post(`/technician/visits/${visitId}/complete`);
+    return mockOrApi(
+      () => mockCompleteVisit(visitId),
+      () => this.post(`/technician/visits/${visitId}/complete`),
+    );
   }
 }
 

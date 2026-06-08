@@ -256,7 +256,7 @@ export function TechnicianVisitDetailPage() {
                     onSubmit={(e) => {
                       e.preventDefault();
                       void runAction(() =>
-                        technicianAppointmentsService.captureLiver Fibrosis Scan(id, {
+                        technicianAppointmentsService.captureLiverFibrosisScan(id, {
                           liverStiffnessKpa: Number(fibro.liverStiffnessKpa),
                           capDbm: Number(fibro.capDbm),
                           fibrosisStage: fibro.fibrosisStage,

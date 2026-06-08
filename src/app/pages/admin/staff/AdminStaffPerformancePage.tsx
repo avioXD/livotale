@@ -7,6 +7,9 @@ export function AdminStaffPerformancePage() {
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('role') as StaffRoleKey | null;
   const role = staffRoleFromSlug(roleParam ? STAFF_ROLE_SLUGS[roleParam] : undefined);
+  if (!role) {
+    return <Navigate to="/admin/staff/technicians" replace />;
+  }
   let section = searchParams.get('section');
   const member = searchParams.get('member');
   if (section === 'directory' || section === 'profiles' || section === 'performance') section = 'users';

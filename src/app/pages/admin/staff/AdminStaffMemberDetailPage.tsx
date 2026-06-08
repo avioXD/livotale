@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StaffMemberDashboardPanel } from '@/app/pages/admin/staff/components/StaffMemberDashboardPanel';
@@ -24,8 +24,12 @@ export function AdminStaffMemberDetailPage() {
   const { roleSlug, memberId } = useParams<{ roleSlug: string; memberId: string }>();
   const [searchParams] = useSearchParams();
   const roleKey = staffRoleFromSlug(roleSlug);
-  const roleConfig = STAFF_ROLE_CONFIGS.find((r) => r.key === roleKey)!;
+  const roleConfig = roleKey ? STAFF_ROLE_CONFIGS.find((r) => r.key === roleKey) : undefined;
   const defaultTab = (searchParams.get('tab') as DetailTab | null) ?? 'dashboard';
+
+  if (!roleKey || !roleConfig) {
+    return <Navigate to="/admin/staff/technicians" replace />;
+  }
 
   const [technicians, setTechnicians] = useState<StaffTechnicianProfile[]>([]);
   const [labPartners, setLabPartners] = useState<StaffLabPartnerProfile[]>([]);

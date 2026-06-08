@@ -1,8 +1,8 @@
 import { AppRole, type JwtPayload } from '@/types';
 import { mapApiRoleCode, pickPrimaryRole } from '@/utils/authMappers';
 
-const ACCESS_TOKEN_KEY = 'livotel_access_token';
-const REFRESH_TOKEN_KEY = 'livotel_refresh_token';
+const ACCESS_TOKEN_KEY = 'livotale_access_token';
+const REFRESH_TOKEN_KEY = 'livotale_refresh_token';
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
