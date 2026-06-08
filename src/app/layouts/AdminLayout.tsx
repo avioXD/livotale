@@ -332,7 +332,7 @@ export function TopBar() {
             Welcome back{user ? `, ${user.fullName.split(' ')[0]}` : ''}
           </h1>
           <p className="text-xs text-muted-foreground hidden sm:block">
-            Liver care ecosystem — FibroScan, AI plans & home delivery
+            Liver care ecosystem — Liver Fibrosis Scan, AI plans & home delivery
           </p>
         </div>
       </div>

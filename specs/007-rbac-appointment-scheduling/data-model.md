@@ -43,7 +43,7 @@ appointments ──> reminder_logs / notification delivery
 | base_price | numeric | |
 | requires_doctor | bool | |
 | requires_technician | bool | |
-| requires_equipment | jsonb | e.g. `["fibroscan"]` |
+| requires_equipment | jsonb | e.g. `["Liver Fibrosis Scan"]` |
 | allows_home | bool | |
 | allows_clinic | bool | |
 | allows_tele | bool | |

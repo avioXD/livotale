@@ -17,7 +17,7 @@
 - [x] T010 `PatientJourneyPage` — 7-step wizard
 - [x] T011 `AppointmentsPage` — home visit list
 - [x] T012 `PrescriptionsPage` — doctor review & approval
-- [x] T013 `FibroScanPage` — technician consent/vitals/fibroscan/samples
+- [x] T013 `Liver Fibrosis ScanPage` — technician consent/vitals/Liver Fibrosis Scan/samples
 - [x] T014 shadcn: textarea, select, badge, tabs, progress
 - [x] T015 Nav + routes for `/patient-journey`
 

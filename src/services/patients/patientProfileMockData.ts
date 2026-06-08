@@ -57,7 +57,7 @@ export function getMockPatientDetail(patientId: string): PatientDetail {
       diagnosis: '6-Month Liver Care Package',
       diabetes: 'Yes',
       alcohol: 'stopped',
-      latestFibroscanKpa: 8.2,
+      latestLiver Fibrosis ScanKpa: 8.2,
       latestAlt: 68,
       currentPlan: '6-Month Liver Care Package',
       liverScore: 62,
@@ -89,10 +89,10 @@ export function getMockPatientDetail(patientId: string): PatientDetail {
 
 export function getMockPatientDashboard(patientId: string): PatientDashboardData {
   const trends: PatientTrendPoint[] = [
-    { patient_id: patientId, snapshot_date: daysAgo(90).slice(0, 10), weight_kg: 80.2, bmi: 28.4, sgpt: 72, fibroscan_kpa: 8.8, liver_score: 58 },
-    { patient_id: patientId, snapshot_date: daysAgo(60).slice(0, 10), weight_kg: 79.5, bmi: 28.1, sgpt: 70, fibroscan_kpa: 8.5, liver_score: 60 },
-    { patient_id: patientId, snapshot_date: daysAgo(30).slice(0, 10), weight_kg: 78.9, bmi: 27.9, sgpt: 68, fibroscan_kpa: 8.2, liver_score: 62 },
-    { patient_id: patientId, snapshot_date: daysAgo(7).slice(0, 10), weight_kg: 78.4, bmi: 27.8, sgpt: 68, fibroscan_kpa: 8.2, liver_score: 62 },
+    { patient_id: patientId, snapshot_date: daysAgo(90).slice(0, 10), weight_kg: 80.2, bmi: 28.4, sgpt: 72, Liver Fibrosis Scan_kpa: 8.8, liver_score: 58 },
+    { patient_id: patientId, snapshot_date: daysAgo(60).slice(0, 10), weight_kg: 79.5, bmi: 28.1, sgpt: 70, Liver Fibrosis Scan_kpa: 8.5, liver_score: 60 },
+    { patient_id: patientId, snapshot_date: daysAgo(30).slice(0, 10), weight_kg: 78.9, bmi: 27.9, sgpt: 68, Liver Fibrosis Scan_kpa: 8.2, liver_score: 62 },
+    { patient_id: patientId, snapshot_date: daysAgo(7).slice(0, 10), weight_kg: 78.4, bmi: 27.8, sgpt: 68, Liver Fibrosis Scan_kpa: 8.2, liver_score: 62 },
   ];
   return {
     kpis: {
@@ -102,7 +102,7 @@ export function getMockPatientDashboard(patientId: string): PatientDashboardData
       bmi: 27.8,
       weightKg: 78.4,
       heightCm: 168,
-      latestFibroscanKpa: 8.2,
+      latestLiver Fibrosis ScanKpa: 8.2,
       latestCapDbm: 268,
       fibrosisStage: 'F2',
       steatosisGrade: 'S2',
@@ -153,7 +153,7 @@ export function getMockPatientTimeline(_patientId: string): TimelineEvent[] {
       occurred_at: daysAgo(12),
       activity_type: 'home_visit_completed',
       role: 'technician',
-      description: 'FibroScan and blood sample collected at home.',
+      description: 'Liver Fibrosis Scan and blood sample collected at home.',
     },
     {
       id: 'tl-2',
@@ -241,7 +241,7 @@ export function getMockPatientAppointments(_patientId: string): PatientAppointme
       scheduledStart: daysFromNow(5, 14, 0),
       scheduledEnd: daysFromNow(5, 14, 30),
       doctorName: 'Dr. Rajesh Kumar',
-      chiefComplaint: 'Follow-up on FibroScan results',
+      chiefComplaint: 'Follow-up on Liver Fibrosis Scan results',
       paymentStatus: 'paid',
     },
     {
@@ -254,7 +254,7 @@ export function getMockPatientAppointments(_patientId: string): PatientAppointme
       scheduledEnd: daysAgo(12, 11, 30),
       doctorName: 'Dr. Anuradha Iyer',
       technicianName: 'Ravi Sharma',
-      chiefComplaint: 'FibroScan + blood draw',
+      chiefComplaint: 'Liver Fibrosis Scan + blood draw',
       paymentStatus: 'paid',
     },
     {
@@ -287,7 +287,7 @@ export function getMockPatientVisits(_patientId: string): PatientVisitRecord[] {
     },
     {
       id: 'visit-mock-002',
-      visitType: 'fibroscan',
+      visitType: 'Liver Fibrosis Scan',
       status: 'completed',
       scheduledAt: daysAgo(45, 14, 0),
       completedAt: daysAgo(45, 14, 50),
@@ -314,14 +314,14 @@ export function getMockPatientVisits(_patientId: string): PatientVisitRecord[] {
 export function getMockPatientReports(_patientId: string): ReportListItem[] {
   return [
     {
-      reportKey: 'mock-fibroscan-2026-03',
+      reportKey: 'mock-Liver Fibrosis Scan-2026-03',
       reportCode: 'FS-2026-0312',
-      reportKind: 'fibroscan',
-      title: 'FibroScan Liver Stiffness Report',
+      reportKind: 'Liver Fibrosis Scan',
+      title: 'Liver Fibrosis Scan Liver Stiffness Report',
       reportDate: daysAgo(12).slice(0, 10),
       createdAt: daysAgo(12),
       verified: true,
-      fileName: 'fibroscan-report.pdf',
+      fileName: 'Liver Fibrosis Scan-report.pdf',
       metricCount: 4,
       overallCriticality: 'moderate',
       summary: 'Liver stiffness 8.2 kPa — F2 fibrosis. CAP 268 dB/m indicating S2 steatosis.',

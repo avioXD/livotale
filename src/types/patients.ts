@@ -5,7 +5,7 @@ export interface PatientListItem {
   primary_doctor_id?: string | null;
   liver_score?: number | null;
   risk_score?: number | null;
-  latest_fibroscan_kpa?: number | null;
+  latest_Liver Fibrosis Scan_kpa?: number | null;
   sgpt?: number | null;
   active_package_name?: string | null;
   score_calculated_at?: string | null;
@@ -36,7 +36,7 @@ export interface PatientSummaryCard {
   diagnosis: string;
   diabetes: string;
   alcohol: string;
-  latestFibroscanKpa: number | null;
+  latestLiver Fibrosis ScanKpa: number | null;
   latestAlt: number | null;
   currentPlan: string | null;
   liverScore: number | null;
@@ -62,7 +62,7 @@ export interface PatientTrendPoint {
   sgot?: number | null;
   hba1c?: number | null;
   triglycerides?: number | null;
-  fibroscan_kpa?: number | null;
+  Liver Fibrosis Scan_kpa?: number | null;
   cap_dbm?: number | null;
   liver_score?: number | null;
   compliance_score?: number | null;
@@ -75,7 +75,7 @@ export interface PatientDashboardKpis {
   bmi: number | null;
   weightKg: number | null;
   heightCm: number | null;
-  latestFibroscanKpa: number | null;
+  latestLiver Fibrosis ScanKpa: number | null;
   latestCapDbm: number | null;
   fibrosisStage: string | null;
   steatosisGrade: string | null;
@@ -147,7 +147,7 @@ export interface DashboardOverview {
       snapshot_date: string;
       avg_bmi: number | null;
       avg_alt: number | null;
-      avg_fibroscan: number | null;
+      avg_Liver Fibrosis Scan: number | null;
     }[];
   };
 }

@@ -28,7 +28,7 @@ export const TECHNICIAN_PROFILE_DEMO: TechnicianFullProfile = {
     emergencyContactMobile: '+91 98765 00001',
     emergencyContactRelation: 'Spouse',
     qualification: 'B.Sc Medical Lab Technology',
-    certification: 'Phlebotomy certified · FibroScan operator',
+    certification: 'Phlebotomy certified · Liver Fibrosis Scan operator',
     vehicleType: 'Two-wheeler',
     vehicleNumber: 'MH-02-AB-1234',
     joinedOn: '2024-01-10',

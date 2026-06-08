@@ -20,7 +20,7 @@ Fields stored on `operations.technicians` + related tables:
 | `home_collector` | visit_mode = home, blood/sample home collection |
 | `hospital_collector` | collection_location = hospital |
 | `center_collector` | visit_mode = clinic, center collection |
-| `fibroscan_technician` | appointment type FibroScan |
+| `Liver Fibrosis Scan_technician` | appointment type Liver Fibrosis Scan |
 | `multi_role` | Admin-enabled; matches any if skill flag set |
 
 ## Auto-Assignment Algorithm

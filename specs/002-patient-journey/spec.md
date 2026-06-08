@@ -29,10 +29,10 @@ Rule-based engine uses registration + questionnaire data. Outputs risk score, re
 Patient schedules visit; checklist auto-created. Status → `visit_booked`. **Onboarding completes here.**
 
 ### P1 — Technician Field Workflow
-Consent, vitals (BMI auto-calc), FibroScan, blood sample. Uses existing technician APIs.
+Consent, vitals (BMI auto-calc), Liver Fibrosis Scan, blood sample. Uses existing technician APIs.
 
 ### P1 — AI Draft Prescription
-Triggered when FibroScan + lab results exist. Draft hidden from patient.
+Triggered when Liver Fibrosis Scan + lab results exist. Draft hidden from patient.
 
 ### P1 — Doctor Approval
 Doctor reviews/edits/approves/signs. Patient sees only approved prescriptions.

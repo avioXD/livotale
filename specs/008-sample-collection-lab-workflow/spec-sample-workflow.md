@@ -25,7 +25,7 @@ Failure branch: `patient_not_available`, `address_not_found`, `patient_refused`,
 
 Required fields at `sample_collected`:
 
-- sample_type (blood, urine, stool, fibroscan, other)
+- sample_type (blood, urine, stool, Liver Fibrosis Scan, other)
 - tubes_count, container_type, fasting_status
 - collection_remarks, geo lat/lng, timestamp
 - consent_confirmed boolean

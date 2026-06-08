@@ -18,10 +18,10 @@ Demographics extensions, medical conditions, liver history, medications, allergi
 Role-aware dashboard with live KPIs and trend charts (patients, visits, liver metrics).
 
 ### P2 — Longitudinal Trends
-Graph + table for weight, BMI, ALT, FibroScan kPa, HbA1c over time with improved/stable/worsened status.
+Graph + table for weight, BMI, ALT, Liver Fibrosis Scan kPa, HbA1c over time with improved/stable/worsened status.
 
 ### P2 — Auto Timeline
-Chronological events from registration, visits, labs, FibroScan, AI, prescriptions, coaching.
+Chronological events from registration, visits, labs, Liver Fibrosis Scan, AI, prescriptions, coaching.
 
 ## API Endpoints
 

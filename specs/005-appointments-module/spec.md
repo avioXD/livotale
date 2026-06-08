@@ -17,7 +17,7 @@ Patient books from Appointments page with date, time slot, address (default), op
 List all patient visits with status badge, scheduled time, address, technician when assigned.
 
 ### P1 — Booking Progress Stepper
-Each booking shows step-by-step progress: submitted → assigned → in progress → consent → vitals → FibroScan → sample → completed.
+Each booking shows step-by-step progress: submitted → assigned → in progress → consent → vitals → Liver Fibrosis Scan → sample → completed.
 
 ### P2 — Cancel / Reschedule
 Patient can cancel or reschedule while visit is `booked` or `assigned`.

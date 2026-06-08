@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { technicianAppointmentsService } from '@/services';
 import type { TechnicianScheduleItem } from '@/types';
 
-interface FibroScanClinicalPanelProps {
+interface Liver Fibrosis ScanClinicalPanelProps {
   appointmentId: string;
   summary: TechnicianScheduleItem;
   onUpdated?: () => void;
 }
 
-export function FibroScanClinicalPanel({ appointmentId, summary, onUpdated }: FibroScanClinicalPanelProps) {
+export function Liver Fibrosis ScanClinicalPanel({ appointmentId, summary, onUpdated }: Liver Fibrosis ScanClinicalPanelProps) {
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
   const [vitals, setVitals] = useState({ weightKg: '', heightCm: '', bpSystolic: '', bpDiastolic: '', waistCm: '' });
   const [fibro, setFibro] = useState({ liverStiffnessKpa: '', capDbm: '', fibrosisStage: 'F2', steatosisGrade: 'S2' });
@@ -25,7 +25,7 @@ export function FibroScanClinicalPanel({ appointmentId, summary, onUpdated }: Fi
 
   const visit = detail?.visit as Record<string, unknown> | undefined;
   const checklist = (visit?.checklist as Array<{ code: string; title: string; status: string }>) ?? [];
-  const fibroResults = (visit?.fibroscanResults as Array<Record<string, unknown>>) ?? [];
+  const fibroResults = (visit?.Liver Fibrosis ScanResults as Array<Record<string, unknown>>) ?? [];
   const latestFibro = fibroResults[0];
   const vitalsRecord = visit?.vitals as Record<string, unknown> | null | undefined;
 
@@ -116,7 +116,7 @@ export function FibroScanClinicalPanel({ appointmentId, summary, onUpdated }: Fi
       {latestFibro && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Latest FibroScan reading</CardTitle>
+            <CardTitle className="text-base">Latest Liver Fibrosis Scan reading</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm sm:grid-cols-4">
             <div>
@@ -197,13 +197,13 @@ export function FibroScanClinicalPanel({ appointmentId, summary, onUpdated }: Fi
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">FibroScan capture</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Liver Fibrosis Scan capture</CardTitle></CardHeader>
           <CardContent>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 void run(() =>
-                  technicianAppointmentsService.captureFibroscan(appointmentId, {
+                  technicianAppointmentsService.captureLiver Fibrosis Scan(appointmentId, {
                     liverStiffnessKpa: Number(fibro.liverStiffnessKpa),
                     capDbm: Number(fibro.capDbm),
                     fibrosisStage: fibro.fibrosisStage,
@@ -217,7 +217,7 @@ export function FibroScanClinicalPanel({ appointmentId, summary, onUpdated }: Fi
               <Input placeholder="CAP (dB/m)" value={fibro.capDbm} onChange={(e) => setFibro({ ...fibro, capDbm: e.target.value })} />
               <Input placeholder="Fibrosis stage" value={fibro.fibrosisStage} onChange={(e) => setFibro({ ...fibro, fibrosisStage: e.target.value })} />
               <Input placeholder="Steatosis grade" value={fibro.steatosisGrade} onChange={(e) => setFibro({ ...fibro, steatosisGrade: e.target.value })} />
-              <Button type="submit" size="sm" className="col-span-2" disabled={isSaving}>Save FibroScan</Button>
+              <Button type="submit" size="sm" className="col-span-2" disabled={isSaving}>Save Liver Fibrosis Scan</Button>
             </form>
           </CardContent>
         </Card>

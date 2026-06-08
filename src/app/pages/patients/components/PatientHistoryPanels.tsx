@@ -153,7 +153,7 @@ export function LiverHistoryPanel({ history, isSaving, readOnly, onSave }: Panel
             </Select>
           </div>
           <div className="space-y-1">
-            <Label>FibroScan kPa</Label>
+            <Label>Liver Fibrosis Scan kPa</Label>
             <Input
               type="number"
               step="0.1"

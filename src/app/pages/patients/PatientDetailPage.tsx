@@ -114,7 +114,7 @@ export function PatientDetailPage() {
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
             <div><span className="text-muted-foreground">BMI</span><p className="font-medium">{card.bmi ?? '—'}</p></div>
             <div><span className="text-muted-foreground">Diagnosis / Plan</span><p className="font-medium">{card.currentPlan ?? card.diagnosis}</p></div>
-            <div><span className="text-muted-foreground">Latest FibroScan</span><p className="font-medium">{card.latestFibroscanKpa ?? '—'} kPa</p></div>
+            <div><span className="text-muted-foreground">Latest Liver Fibrosis Scan</span><p className="font-medium">{card.latestLiver Fibrosis ScanKpa ?? '—'} kPa</p></div>
             <div><span className="text-muted-foreground">Latest ALT</span><p className="font-medium">{card.latestAlt ?? '—'}</p></div>
             <div><span className="text-muted-foreground">Diabetes</span><p className="font-medium">{card.diabetes}</p></div>
             <div><span className="text-muted-foreground">Alcohol</span><p className="font-medium capitalize">{card.alcohol}</p></div>

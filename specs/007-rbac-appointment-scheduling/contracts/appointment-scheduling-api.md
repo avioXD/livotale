@@ -113,7 +113,7 @@ Full detail + timeline + permissions flags.
 
 ```json
 {
-  "typeCode": "fibroscan",
+  "typeCode": "Liver Fibrosis Scan",
   "visitMode": "clinic",
   "slotId": "uuid",
   "doctorId": "uuid",
@@ -173,7 +173,7 @@ Today's / upcoming / completed / missed filters.
 
 ### GET `/doctor/appointments/:id`
 
-Includes patient summary, reports, FibroScan/lab snippets, internal notes.
+Includes patient summary, reports, Liver Fibrosis Scan/lab snippets, internal notes.
 
 ### PUT `/doctor/availability`
 
@@ -261,9 +261,9 @@ Digital consent capture (existing consent flow).
 
 Height, weight, BP, pulse, SpO2, temperature, waist → BMI auto.
 
-### POST `/technician/appointments/:id/fibroscan`
+### POST `/technician/appointments/:id/Liver Fibrosis Scan`
 
-FibroScan reading + report file.
+Liver Fibrosis Scan reading + report file.
 
 ### POST `/technician/appointments/:id/sample-collected`
 

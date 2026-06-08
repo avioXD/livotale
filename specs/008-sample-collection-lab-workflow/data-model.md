@@ -68,7 +68,7 @@ lab_report_id, approval_stage (admin, doctor), status, reviewer_id, reviewed_at,
 ## Enums
 
 ```sql
-technician_type_enum: home_collector, hospital_collector, center_collector, fibroscan_technician, multi_role
+technician_type_enum: home_collector, hospital_collector, center_collector, Liver Fibrosis Scan_technician, multi_role
 sample_collection_status_enum: (full list from spec)
 sample_rejection_reason_enum: (from spec-lab-report-workflow)
 ```

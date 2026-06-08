@@ -120,7 +120,7 @@ src/
 
 - Schedule + route order UI
 - Geo ping API + patient tracking view
-- Vitals/FibroScan/sample flows wired to appointment_id
+- Vitals/Liver Fibrosis Scan/sample flows wired to appointment_id
 - Failed visit + escalation
 
 **Exit**: End-to-end home visit on unified appointment.

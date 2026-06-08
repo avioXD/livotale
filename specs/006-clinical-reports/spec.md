@@ -24,6 +24,6 @@ Embedded PDF viewer (or fallback preview) for the source document.
 | GET | `/patient/reports` | List with summary |
 | GET | `/patient/reports/:reportKey` | Full insight + PDF metadata |
 
-Report key format: `lab:{id}` | `fibroscan:{id}` | `historical:{id}`
+Report key format: `lab:{id}` | `Liver Fibrosis Scan:{id}` | `historical:{id}`
 
 See [plan.md](./plan.md).

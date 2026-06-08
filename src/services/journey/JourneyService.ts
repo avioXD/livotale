@@ -96,8 +96,8 @@ class JourneyService extends BaseApiService {
     return this.post(`/technician/visits/${visitId}/vitals`, payload);
   }
 
-  async captureFibroscan(visitId: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/visits/${visitId}/fibroscan`, payload);
+  async captureLiver Fibrosis Scan(visitId: string, payload: Record<string, unknown>) {
+    return this.post(`/technician/visits/${visitId}/Liver Fibrosis Scan`, payload);
   }
 
   async collectSample(visitId: string, payload: Record<string, unknown>) {

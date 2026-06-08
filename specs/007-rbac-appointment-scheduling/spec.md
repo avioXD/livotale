@@ -33,7 +33,7 @@ Patient selects appointment type → date → slot → visit mode (home/clinic/o
 
 **Why P1**: Core revenue and care entry point.
 
-**Independent Test**: Patient completes clinic FibroScan booking; appointment appears in list with `booked` status and timeline entry.
+**Independent Test**: Patient completes clinic Liver Fibrosis Scan booking; appointment appears in list with `booked` status and timeline entry.
 
 **Acceptance Scenarios**:
 
@@ -73,7 +73,7 @@ Doctor sets weekly/date availability, blocks slots, adds leave; views day/week/m
 
 ### US4 — Technician field workflow (Priority: P1)
 
-Technician views daily schedule and route order; starts journey; geo updates; marks arrived; captures consent/vitals/FibroScan/sample; completes visit or escalates.
+Technician views daily schedule and route order; starts journey; geo updates; marks arrived; captures consent/vitals/Liver Fibrosis Scan/sample; completes visit or escalates.
 
 **Independent Test**: Technician completes home visit checklist; appointment moves to `report_pending` / `completed` per type rules.
 
@@ -130,7 +130,7 @@ System MUST support these types (admin-configurable duration, price, staff rules
 2. Clinic Visit  
 3. Teleconsultation  
 4. Doctor Consultation  
-5. FibroScan Appointment  
+5. Liver Fibrosis Scan Appointment  
 6. Blood Sample Collection  
 7. Dietician Consultation  
 8. Health Coach Follow-up  
@@ -224,7 +224,7 @@ Grouped by actor: Patient, Doctor, Technician, Dietician/Coach, Admin.
 
 **Doctor**: dashboard, calendar (day/week/month/list), slot & holiday management, appointment detail, patient summary, consultation panel, prescription builder, signature upload, PDF preview.
 
-**Technician**: daily schedule, route map, visit detail, vitals, FibroScan/report upload, sample collection, completion, escalation.
+**Technician**: daily schedule, route map, visit detail, vitals, Liver Fibrosis Scan/report upload, sample collection, completion, escalation.
 
 **Admin**: appointment dashboard, calendar overview, assignment panels, route monitoring, missed management, notification logs, analytics, prescription templates.
 

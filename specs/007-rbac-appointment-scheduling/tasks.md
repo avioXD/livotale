@@ -36,7 +36,7 @@
 - [x] T109 [US1] Policy checks: past slot, payment required, address required
 - [ ] T110 [US1] Manual test script + update seed appointments for multi-type
 
-**Checkpoint**: Patient books clinic FibroScan + home visit; reschedule/cancel with timeline.
+**Checkpoint**: Patient books clinic Liver Fibrosis Scan + home visit; reschedule/cancel with timeline.
 
 ---
 
@@ -48,7 +48,7 @@
 - [x] T204 [P] [US3] `DoctorCalendarView.tsx` — day/week/month/list tabs
 - [x] T205 [US3] `AvailabilityEditor.tsx` + `HolidayForm.tsx`
 - [x] T206 [US3] `ConsultationPanel.tsx` — start/complete/no-show/request reschedule
-- [x] T207 [US3] `PatientSummaryDrawer.tsx` — reports + FibroScan/lab snippets
+- [x] T207 [US3] `PatientSummaryDrawer.tsx` — reports + Liver Fibrosis Scan/lab snippets
 - [x] T208 [US3] Double-booking integration test
 - [x] T209 [US3] Nav + route guards for doctor role
 
@@ -61,7 +61,7 @@
 - [x] T301 [US4] Technician routes: schedule, route, geo, vitals, sample, complete, failed, issue
 - [x] T302 [US4] Link `visit_vitals` / checklist to `appointment_id`
 - [x] T303 [US4] `TechnicianSchedulePage.tsx` + `RouteMapPanel.tsx`
-- [x] T304 [US4] `TechnicianVisitDetailPage.tsx` — consent, vitals form (BMI auto), FibroScan, sample barcode
+- [x] T304 [US4] `TechnicianVisitDetailPage.tsx` — consent, vitals form (BMI auto), Liver Fibrosis Scan, sample barcode
 - [x] T305 [US4] `TechnicianTrackingPage.tsx` (patient) — poll geo endpoint
 - [x] T306 [US4] Escalation creates admin task via `care.care_tasks`
 - [x] T307 [US4] Extend existing technician APIs where overlap exists

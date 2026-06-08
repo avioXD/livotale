@@ -21,7 +21,7 @@ Clinical and operations staff sign in with username/password and land on the das
 **Acceptance Scenarios**:
 
 1. **Given** valid doctor credentials, **When** user submits login, **Then** access token is stored and user role is DOCTOR.
-2. **Given** valid technician credentials, **When** user submits login, **Then** user role is TECHNICIAN and `/fibroscan` route is accessible.
+2. **Given** valid technician credentials, **When** user submits login, **Then** user role is TECHNICIAN and `/Liver Fibrosis Scan` route is accessible.
 3. **Given** invalid password, **When** user submits login, **Then** an error message is shown and no token is stored.
 
 ---

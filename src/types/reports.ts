@@ -93,8 +93,8 @@ export function reportKindLabel(kind: string) {
   switch (kind) {
     case 'lab_report':
       return 'Lab Panel';
-    case 'fibroscan_report':
-      return 'FibroScan';
+    case 'Liver Fibrosis Scan_report':
+      return 'Liver Fibrosis Scan';
     case 'historical_report':
       return 'Historical';
     default:

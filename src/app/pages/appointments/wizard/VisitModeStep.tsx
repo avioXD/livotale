@@ -13,7 +13,7 @@ interface VisitModeStepProps {
 }
 
 const MODE_LABELS: Record<AppointmentVisitMode, { title: string; description: string }> = {
-  home: { title: 'Home visit', description: 'Technician visits your address for sample collection or FibroScan.' },
+  home: { title: 'Home visit', description: 'Technician visits your address for sample collection or Liver Fibrosis Scan.' },
   clinic: { title: 'Clinic visit', description: 'Visit a LIVGASTRO clinic at your chosen time.' },
   tele: { title: 'Teleconsultation', description: 'Online video consultation with your care team.' },
 };

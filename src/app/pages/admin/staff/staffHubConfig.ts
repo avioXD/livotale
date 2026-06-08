@@ -30,7 +30,7 @@ export const STAFF_ROLE_CONFIGS: StaffRoleConfig[] = [
   {
     key: 'doctor',
     label: 'Doctors',
-    description: 'Clinical staff — consultations, FibroScan review, prescriptions.',
+    description: 'Clinical staff — consultations, Liver Fibrosis Scan review, prescriptions.',
     appRole: AppRole.DOCTOR,
   },
   {

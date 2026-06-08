@@ -34,7 +34,7 @@ const DEMO_ORDERS: Omit<AvailableRouteOrder, 'scheduledStart' | 'scheduledEnd' |
     pincode: '400013',
     line1: '44 Turner Road, Bandra',
     cityName: 'Mumbai',
-    typeName: 'FibroScan + blood draw',
+    typeName: 'Liver Fibrosis Scan + blood draw',
   },
 ];
 

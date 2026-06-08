@@ -37,7 +37,7 @@ export function DetailsStep({
           <Label htmlFor="chief-complaint">Chief complaint *</Label>
           <Textarea
             id="chief-complaint"
-            placeholder="e.g. Fatigue, abdominal discomfort, follow-up FibroScan"
+            placeholder="e.g. Fatigue, abdominal discomfort, follow-up Liver Fibrosis Scan"
             value={chiefComplaint}
             onChange={(e) => onChiefComplaintChange(e.target.value)}
             rows={2}

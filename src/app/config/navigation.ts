@@ -105,9 +105,9 @@ export const navigationItems: NavItem[] = [
     group: 'overview',
   },
   {
-    id: 'fibroscan-oversight',
-    label: 'FibroScan',
-    path: '/fibroscan',
+    id: 'Liver Fibrosis Scan-oversight',
+    label: 'Liver Fibrosis Scan',
+    path: '/Liver Fibrosis Scan',
     icon: FiActivity,
     roles: [...CLINICAL_OVERSIGHT_ROLES],
     group: 'overview',

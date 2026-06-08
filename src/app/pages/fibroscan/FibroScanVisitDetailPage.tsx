@@ -3,7 +3,7 @@ import { useUserRole } from '@/store';
 import { AppRole } from '@/types';
 
 /** Technicians use unified detail at /technician/schedule/:id */
-export function FibroScanVisitDetailPage() {
+export function Liver Fibrosis ScanVisitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const role = useUserRole();
 
@@ -12,8 +12,8 @@ export function FibroScanVisitDetailPage() {
   }
 
   if (id) {
-    return <Navigate to="/fibroscan" replace />;
+    return <Navigate to="/Liver Fibrosis Scan" replace />;
   }
 
-  return <Navigate to="/fibroscan" replace />;
+  return <Navigate to="/Liver Fibrosis Scan" replace />;
 }

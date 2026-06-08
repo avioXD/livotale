@@ -330,11 +330,11 @@ export interface DoctorAppointmentDetail extends DoctorAppointmentSummary {
   noteHistory: Array<{ id: string; note: string; created_at: string; author_name: string | null }>;
   patientSummary: {
     risk_score: number | null;
-    latest_fibroscan_kpa: number | null;
+    latest_Liver Fibrosis Scan_kpa: number | null;
     latest_sgpt: number | null;
     journey_status: string | null;
   } | null;
-  fibroscanSnippets: Array<{
+  Liver Fibrosis ScanSnippets: Array<{
     id: string;
     liver_stiffness_kpa: number;
     cap_dbm: number | null;

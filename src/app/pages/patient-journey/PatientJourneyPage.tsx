@@ -297,7 +297,7 @@ export function PatientJourneyPage() {
         <Card>
           <CardHeader>
             <CardTitle>Book Home Visit</CardTitle>
-            <CardDescription>Schedule a technician visit for vitals, FibroScan, and blood sample collection.</CardDescription>
+            <CardDescription>Schedule a technician visit for vitals, Liver Fibrosis Scan, and blood sample collection.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => void handleBookVisit(e)} className="space-y-4">
@@ -327,7 +327,7 @@ export function PatientJourneyPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Your home visit is booked. A technician will collect vitals, FibroScan, and blood samples.
+              Your home visit is booked. A technician will collect vitals, Liver Fibrosis Scan, and blood samples.
               After lab reports are uploaded, an AI draft prescription will be generated for doctor review.
             </p>
             {journey?.visits[0] && (

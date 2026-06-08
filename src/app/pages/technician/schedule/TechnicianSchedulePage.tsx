@@ -381,7 +381,7 @@ export function TechnicianSchedulePage() {
 
         <TabsContent value="clinical" className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Consent, vitals, FibroScan, and visit status — same home appointment, clinical view.
+            Consent, vitals, Liver Fibrosis Scan, and visit status — same home appointment, clinical view.
           </p>
           <DataTable
             columns={clinicalColumns}

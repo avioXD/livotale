@@ -16,7 +16,7 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
     { label: 'History', path: `/patients/${pid}?tab=timeline` },
     { label: 'Reports', path: `/patients/${pid}?tab=reports` },
     { label: 'Visits', path: `/patients/${pid}?tab=visits` },
-    { label: 'FibroScan', path: `/patients/${pid}?tab=liver` },
+    { label: 'Liver Fibrosis Scan', path: `/patients/${pid}?tab=liver` },
     { label: 'Medications', path: `/patients/${pid}?tab=medications` },
   ];
 
@@ -53,8 +53,8 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
                 {summary.risk_score ?? '—'}
               </p>
               <p>
-                <span className="text-muted-foreground">Latest FibroScan: </span>
-                {summary.latest_fibroscan_kpa != null ? `${summary.latest_fibroscan_kpa} kPa` : '—'}
+                <span className="text-muted-foreground">Latest Liver Fibrosis Scan: </span>
+                {summary.latest_Liver Fibrosis Scan_kpa != null ? `${summary.latest_Liver Fibrosis Scan_kpa} kPa` : '—'}
               </p>
               <p>
                 <span className="text-muted-foreground">Latest SGPT: </span>
@@ -75,13 +75,13 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
         </CardContent>
       </Card>
 
-      {appointment.fibroscanSnippets.length > 0 && (
+      {appointment.Liver Fibrosis ScanSnippets.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent FibroScan</CardTitle>
+            <CardTitle className="text-base">Recent Liver Fibrosis Scan</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {appointment.fibroscanSnippets.map((row) => (
+            {appointment.Liver Fibrosis ScanSnippets.map((row) => (
               <div key={row.id} className="rounded-md border px-3 py-2">
                 <p>{row.liver_stiffness_kpa} kPa · Stage {row.fibrosis_stage}</p>
                 <p className="text-xs text-muted-foreground">

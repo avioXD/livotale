@@ -43,8 +43,8 @@ class TechnicianAppointmentsService extends BaseApiService {
     return this.put(`/technician/appointments/${id}/vitals`, payload);
   }
 
-  async captureFibroscan(id: string, payload: Record<string, unknown>) {
-    return this.post(`/technician/appointments/${id}/fibroscan`, payload);
+  async captureLiver Fibrosis Scan(id: string, payload: Record<string, unknown>) {
+    return this.post(`/technician/appointments/${id}/Liver Fibrosis Scan`, payload);
   }
 
   async collectSample(id: string, payload: Record<string, unknown>) {

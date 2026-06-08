@@ -25,8 +25,8 @@ import { AdminAnalyticsPage } from '@/app/pages/admin/appointments/AdminAnalytic
 import { AdminBookAppointmentPage } from '@/app/pages/admin/appointments/AdminBookAppointmentPage';
 import { AdminAppointmentDetailPage } from '@/app/pages/admin/appointments/AdminAppointmentDetailPage';
 import { TeleconsultationJoinPage } from '@/app/pages/appointments/TeleconsultationJoinPage';
-import { FibroScanPage } from '@/app/pages/fibroscan/FibroScanPage';
-import { FibroScanVisitDetailPage } from '@/app/pages/fibroscan/FibroScanVisitDetailPage';
+import { Liver Fibrosis ScanPage } from '@/app/pages/Liver Fibrosis Scan/Liver Fibrosis ScanPage';
+import { Liver Fibrosis ScanVisitDetailPage } from '@/app/pages/Liver Fibrosis Scan/Liver Fibrosis ScanVisitDetailPage';
 import { ReportsPage } from '@/app/pages/reports/ReportsPage';
 import { ReportDetailPage } from '@/app/pages/reports/ReportDetailPage';
 import { TreatmentPlansPage } from '@/app/pages/treatment-plans/TreatmentPlansPage';
@@ -168,8 +168,8 @@ export function AppRoutes() {
                 />
               }
             >
-              <Route path="/fibroscan" element={<FibroScanPage />} />
-              <Route path="/fibroscan/:id" element={<FibroScanVisitDetailPage />} />
+              <Route path="/Liver Fibrosis Scan" element={<Liver Fibrosis ScanPage />} />
+              <Route path="/Liver Fibrosis Scan/:id" element={<Liver Fibrosis ScanVisitDetailPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[AppRole.LAB_PARTNER]} />}>

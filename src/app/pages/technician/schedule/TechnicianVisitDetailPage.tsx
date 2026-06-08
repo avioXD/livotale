@@ -250,13 +250,13 @@ export function TechnicianVisitDetailPage() {
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="text-base">FibroScan</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">Liver Fibrosis Scan</CardTitle></CardHeader>
                 <CardContent>
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       void runAction(() =>
-                        technicianAppointmentsService.captureFibroscan(id, {
+                        technicianAppointmentsService.captureLiver Fibrosis Scan(id, {
                           liverStiffnessKpa: Number(fibro.liverStiffnessKpa),
                           capDbm: Number(fibro.capDbm),
                           fibrosisStage: fibro.fibrosisStage,
@@ -268,7 +268,7 @@ export function TechnicianVisitDetailPage() {
                   >
                     <Input placeholder="Liver stiffness (kPa)" value={fibro.liverStiffnessKpa} onChange={(e) => setFibro({ ...fibro, liverStiffnessKpa: e.target.value })} />
                     <Input placeholder="CAP (dB/m)" value={fibro.capDbm} onChange={(e) => setFibro({ ...fibro, capDbm: e.target.value })} />
-                    <Button type="submit" className="col-span-2" disabled={isSaving}>Save FibroScan</Button>
+                    <Button type="submit" className="col-span-2" disabled={isSaving}>Save Liver Fibrosis Scan</Button>
                   </form>
                 </CardContent>
               </Card>

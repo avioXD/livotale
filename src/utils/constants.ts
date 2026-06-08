@@ -11,7 +11,7 @@ export const BRAND = {
 export const APP_NAME = 'Livotel';
 
 export const APP_TAGLINE =
-  'Tech-enabled liver care ecosystem — FibroScan, AI treatment plans, and home delivery.';
+  'Tech-enabled liver care ecosystem — Liver Fibrosis Scan, AI treatment plans, and home delivery.';
 
 export const DEFAULT_PAGE_SIZE = 10;
 
