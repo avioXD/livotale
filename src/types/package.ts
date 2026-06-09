@@ -30,6 +30,13 @@ export interface PackageIncludes {
   bullets: string[];
 }
 
+/** Organ-category test breakdown for public pathology panels */
+export interface PackageTestCategory {
+  id: string;
+  name: string;
+  tests: string[];
+}
+
 export interface LiverCarePackage {
   id: string;
   code: string;
@@ -59,6 +66,8 @@ export interface LiverCarePackage {
   sortOrder: number;
   termsConditions?: string;
   recommendedTag?: boolean;
+  testCountTotal?: number | null;
+  testCategories?: PackageTestCategory[];
   createdAt: string;
   updatedAt: string;
 }

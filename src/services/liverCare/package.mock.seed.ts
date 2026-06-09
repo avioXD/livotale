@@ -1,8 +1,37 @@
-import type { LiverCarePackage } from '@/types/package';
+import type { LiverCarePackage, PackageTestCategory } from '@/types/package';
 import { bulletsFromSections, defaultChecklistSections, defaultHighlights } from './package.utils';
 
 const days = (n: number, base = Date.now()) => new Date(base - n * 86400000).toISOString();
 const seededAt = days(30);
+
+export const PATHOLOGY_TEST_CATEGORIES: PackageTestCategory[] = [
+  { id: 'tc-heart', name: 'HEART', tests: ['Lipid Profile'] },
+  { id: 'tc-diabetes', name: 'DIABETES', tests: ['FBS', 'HbA1c'] },
+  {
+    id: 'tc-kidney',
+    name: 'KIDNEY',
+    tests: ['Urea', 'BUN', 'Creatinine', 'Bun/Creatinine Ratio', 'Uric Acid', 'Electrolytes'],
+  },
+  { id: 'tc-bones', name: 'BONES', tests: ['Calcium', 'Phosphorus'] },
+  { id: 'tc-thyroid', name: 'THYROID', tests: ['T3', 'T4', 'TSH'] },
+  {
+    id: 'tc-liver',
+    name: 'LIVER',
+    tests: [
+      'Bilirubin (Total, Direct, Indirect)',
+      'SGOT',
+      'SGPT',
+      'AST/ALT Ratio',
+      'ALP',
+      'GGT',
+      'Protein',
+      'Albumin',
+      'Globulin',
+      'A:G Ratio',
+    ],
+  },
+  { id: 'tc-infection', name: 'INFECTION', tests: ['CBC'] },
+];
 
 function seedPkg(
   partial: Omit<LiverCarePackage, 'checklistSections' | 'highlights' | 'preparation' | 'whoShouldBook' | 'faqs' | 'subtitle' | 'tagline'> & {
@@ -13,6 +42,8 @@ function seedPkg(
     faqs: LiverCarePackage['faqs'];
     checklistSections?: LiverCarePackage['checklistSections'];
     highlights?: LiverCarePackage['highlights'];
+    testCountTotal?: number | null;
+    testCategories?: PackageTestCategory[];
   },
 ): LiverCarePackage {
   const flags = {
@@ -102,6 +133,8 @@ export function buildSeedPackages(): LiverCarePackage[] {
         { question: 'Who processes the blood tests?', answer: 'Samples are sent to our partner NABL-accredited lab. Reports are merged into your Livotale final letterhead PDF.' },
         { question: 'Can I do scan and blood test on different days?', answer: 'Yes — ops will coordinate if you prefer separate visits.' },
       ],
+      testCountTotal: 56,
+      testCategories: PATHOLOGY_TEST_CATEGORIES,
     }),
     seedPkg({
       id: 'pkg-3',
@@ -138,6 +171,8 @@ export function buildSeedPackages(): LiverCarePackage[] {
         { question: 'When is the doctor consultation scheduled?', answer: 'After your final merged report is ready — typically 5–7 business days from sample collection.' },
         { question: 'Will I get a prescription?', answer: 'Yes, if clinically indicated. Digital prescription is available on the patient portal.' },
       ],
+      testCountTotal: 56,
+      testCategories: PATHOLOGY_TEST_CATEGORIES,
     }),
   ];
 }

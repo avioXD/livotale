@@ -4,7 +4,6 @@ import { OnboardingShell } from '@/app/layouts/OnboardingShell';
 import { ProtectedRoute, PublicRoute } from '@/app/routes/ProtectedRoute';
 import { PatientOnboardingRoute } from '@/app/routes/PatientOnboardingRoute';
 import { StaffOnboardingRoute } from '@/app/routes/StaffOnboardingRoute';
-import { PostAuthRedirect } from '@/app/routes/PostAuthRedirect';
 import { LoginPage } from '@/app/pages/auth/LoginPage';
 import { RegisterPage } from '@/app/pages/auth/RegisterPage';
 import { ResetPasswordPage } from '@/app/pages/auth/ResetPasswordPage';
@@ -44,6 +43,7 @@ import { SettingsPage } from '@/app/pages/settings/SettingsPage';
 import { PatientJourneyPage } from '@/app/pages/patient-journey/PatientJourneyPage';
 import { NotFoundPage } from '@/app/pages/not-found/NotFoundPage';
 import { PublicLayout } from '@/app/layouts/PublicLayout';
+import { LandingPage } from '@/app/pages/public/LandingPage';
 import { PackagesPage } from '@/app/pages/public/PackagesPage';
 import { PackageDetailPage } from '@/app/pages/public/PackageDetailPage';
 import { EnquirePage } from '@/app/pages/public/EnquirePage';
@@ -79,6 +79,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/packages" element={<PackagesPage />} />
         <Route path="/packages/:code" element={<PackageDetailPage />} />
         <Route path="/enquire" element={<EnquirePage />} />
@@ -117,7 +118,6 @@ export function AppRoutes() {
         <Route element={<PatientOnboardingRoute requireComplete />}>
           <Route element={<StaffOnboardingRoute />}>
             <Route element={<AdminShell />}>
-              <Route index element={<PostAuthRedirect />} />
               <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.dashboard]} />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Route>

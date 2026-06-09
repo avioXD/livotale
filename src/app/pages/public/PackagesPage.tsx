@@ -1,20 +1,13 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { bulletsFromSections } from '@/services/liverCare/package.utils';
+import { PublicPackageCard } from '@/app/pages/public/components/PublicPackageCard';
+import { WhatsAppButton } from '@/components/common/WhatsAppButton';
+import { WHATSAPP_MESSAGES } from '@/app/config/whatsappMessages';
 import { usePublicPackagesStore } from '@/store/packages';
-import type { LiverCarePackage } from '@/types/package';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-
-function formatPrice(pkg: LiverCarePackage): string {
-  const price = pkg.discountPrice ?? pkg.price;
-  return `₹${price.toLocaleString('en-IN')}`;
-}
 
 export function PackagesPage() {
   const packages = usePublicPackagesStore((s) => s.packages);
   const isLoadingList = usePublicPackagesStore((s) => s.isLoadingList);
+  const packagesError = usePublicPackagesStore((s) => s.error);
   const fetchPublicList = usePublicPackagesStore((s) => s.fetchPublicList);
 
   useEffect(() => {
@@ -25,60 +18,32 @@ export function PackagesPage() {
     return <p className="text-muted-foreground">Loading packages…</p>;
   }
 
+  if (packagesError) {
+    return <p className="text-destructive">{packagesError}</p>;
+  }
+
+  if (packages.length === 0) {
+    return <p className="text-muted-foreground">No packages available right now.</p>;
+  }
+
+  const recommended = packages.find((p) => p.recommendedTag);
+
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Liver Fibrosis Scan Packages</h1>
-        <p className="mt-2 text-muted-foreground">
-          Non-invasive liver assessment at home. Choose the package that fits your needs.
+    <div className="space-y-10">
+      <div className="rounded-2xl bg-gradient-to-r from-livotale-pink/10 to-livotale-teal/10 px-6 py-10 text-center">
+        <p className="text-sm font-semibold uppercase tracking-widest text-livotale-teal">Our packages</p>
+        <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Liver Fibrosis Scan Packages</h1>
+        <p className="mx-auto mt-3 max-w-xl text-slate-600">
+          Non-invasive liver assessment at home. Compare plans, see every test included, and book on WhatsApp.
         </p>
+        <div className="mt-6 flex justify-center">
+          <WhatsAppButton label="Get help choosing" message={WHATSAPP_MESSAGES.general} />
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid items-stretch gap-6 lg:grid-cols-3">
         {packages.map((pkg) => (
-          <Card key={pkg.id} className={pkg.recommendedTag ? 'border-livotale-pink shadow-md' : ''}>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                {pkg.recommendedTag && <Badge>Recommended</Badge>}
-              </div>
-              <CardDescription>{pkg.subtitle ?? pkg.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <span className="text-2xl font-bold">{formatPrice(pkg)}</span>
-                {pkg.discountPrice && (
-                  <span className="ml-2 text-sm text-muted-foreground line-through">
-                    ₹{pkg.price.toLocaleString('en-IN')}
-                  </span>
-                )}
-              </div>
-              {pkg.highlights.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {pkg.highlights.slice(0, 3).map((h) => (
-                    <Badge key={`${h.label}-${h.value}`} variant="secondary" className="font-normal">
-                      {h.label}: {h.value}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {(pkg.includes.bullets.length ? pkg.includes.bullets : bulletsFromSections(pkg.checklistSections))
-                  .slice(0, 5)
-                  .map((b) => (
-                    <li key={b}>• {b}</li>
-                  ))}
-              </ul>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button asChild variant="outline" className="w-full">
-                <Link to={`/packages/${pkg.code}`}>View details</Link>
-              </Button>
-              <Button asChild className="w-full">
-                <Link to={`/enquire?package=${pkg.code}`}>Enquire now</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+          <PublicPackageCard key={pkg.id} pkg={pkg} featured={pkg.id === recommended?.id} />
         ))}
       </div>
     </div>

@@ -1,0 +1,347 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "L Livotale" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: L
+        - generic [ref=e8]: Livotale
+      - navigation [ref=e9]:
+        - link "Packages" [ref=e10] [cursor=pointer]:
+          - /url: /#packages
+        - link "How it works" [ref=e11] [cursor=pointer]:
+          - /url: /#how-it-works
+        - link "Patient login" [ref=e12] [cursor=pointer]:
+          - /url: /patient/login
+        - link "Staff login" [ref=e13] [cursor=pointer]:
+          - /url: /login
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - paragraph [ref=e22]: Healthcare finally came home
+          - heading "LiverScan At Home" [level=1] [ref=e23]:
+            - text: LiverScan
+            - text: At Home
+          - paragraph [ref=e24]: Professional liver screening delivered to your door. No queues, no hospitals, no stress — just fast, comfortable care from certified specialists.
+          - generic [ref=e25]:
+            - link "Book a Scan" [ref=e26] [cursor=pointer]:
+              - /url: https://wa.me/918282012929?text=Hi%2C%20I'd%20like%20to%20book%20a%20liver%20scan%20at%20home.
+              - img [ref=e27]
+              - text: Book a Scan
+            - link "See packages" [ref=e29] [cursor=pointer]:
+              - /url: "#packages"
+              - text: See packages
+              - img [ref=e30]
+          - paragraph [ref=e32]: Free to enquire · Home visit within 48 hours · Results in 24h
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: Sample report
+            - generic [ref=e37]: SCANNING
+          - generic [ref=e38]:
+            - generic [ref=e39]: "98"
+            - generic [ref=e40]: Health Score
+          - paragraph [ref=e41]: Liver — Healthy
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - generic [ref=e44]: ALT
+              - generic [ref=e45]: 32 U/L✓
+            - generic [ref=e46]:
+              - generic [ref=e47]: AST
+              - generic [ref=e48]: 28 U/L✓
+            - generic [ref=e49]:
+              - generic [ref=e50]: Bilirubin
+              - generic [ref=e51]: 0.8 mg/dL✓
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - paragraph [ref=e58]: Choose your package
+            - heading "Liver care packages at your doorstep" [level=2] [ref=e59]
+            - paragraph [ref=e60]: Compare plans, see every test included, and book in one tap on WhatsApp — no hospital visit required.
+          - link "Get a free quote" [ref=e61] [cursor=pointer]:
+            - /url: https://wa.me/918282012929?text=Hi%2C%20I'd%20like%20to%20book%20a%20liver%20scan%20at%20home.
+            - img [ref=e62]
+            - text: Get a free quote
+        - generic [ref=e65]:
+          - article [ref=e232]:
+            - generic [ref=e234]:
+              - generic [ref=e235]: PKG-1
+              - heading "Liver Fibrosis Scan" [level=3] [ref=e236]
+              - paragraph [ref=e237]: Essential liver stiffness assessment at home
+              - generic [ref=e239]: ₹5,500
+              - generic [ref=e240]:
+                - generic [ref=e241]: "Visit type: Home visit"
+                - generic [ref=e242]: "Report delivery: Digital PDF"
+                - generic [ref=e243]: "Turnaround: 24–48 hours"
+              - list [ref=e244]:
+                - listitem [ref=e245]:
+                  - img [ref=e246]
+                  - generic [ref=e248]: Liver Fibrosis Scan (LSM, CAP, F-stage)
+                - listitem [ref=e249]:
+                  - img [ref=e250]
+                  - generic [ref=e252]: Technician home visit
+                - listitem [ref=e253]:
+                  - img [ref=e254]
+                  - generic [ref=e256]: Scan interpretation in final report
+                - listitem [ref=e257]:
+                  - img [ref=e258]
+                  - generic [ref=e260]: Livotale letterhead final report
+              - generic [ref=e261]:
+                - link "Book on WhatsApp" [ref=e262] [cursor=pointer]:
+                  - /url: https://wa.me/918282012929?text=Hi%2C%20I'm%20interested%20in%20the%20Liver%20Fibrosis%20Scan%20package%20(PKG-1).
+                  - img [ref=e263]
+                  - text: Book on WhatsApp
+                - link "View full details" [ref=e265] [cursor=pointer]:
+                  - /url: /packages/PKG-1
+          - article [ref=e266]:
+            - generic [ref=e269]:
+              - img [ref=e270]
+              - text: Most Popular
+            - generic [ref=e272]:
+              - generic [ref=e273]: PKG-2
+              - heading "Liver Fibrosis Scan + Pathological Test" [level=3] [ref=e274]
+              - paragraph [ref=e275]: Scan plus comprehensive blood panel
+              - generic [ref=e276]:
+                - generic [ref=e277]: ₹7,500
+                - generic [ref=e278]: ₹8,000
+              - generic [ref=e279]: 56 pathology tests included
+              - generic [ref=e280]:
+                - generic [ref=e281]: "Visit type: Home visit"
+                - generic [ref=e282]: "Report delivery: Digital PDF"
+                - generic [ref=e283]: "Sample: Blood — home collection"
+              - generic [ref=e285]:
+                - paragraph [ref=e286]: 56 Tests
+                - generic [ref=e287]:
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: HEART
+                    - generic [ref=e290]: Lipid Profile
+                  - generic [ref=e291]:
+                    - generic [ref=e292]: DIABETES
+                    - generic [ref=e293]: FBS, HbA1c
+                  - generic [ref=e294]:
+                    - generic [ref=e295]: KIDNEY
+                    - generic [ref=e296]: Urea, BUN, Creatinine, Bun/Creatinine Ratio, Uric Acid, Electrolytes
+                  - paragraph [ref=e297]: + 4 more categories
+              - list [ref=e298]:
+                - listitem [ref=e299]:
+                  - img [ref=e300]
+                  - generic [ref=e302]: Liver Fibrosis Scan (LSM, CAP, F-stage)
+                - listitem [ref=e303]:
+                  - img [ref=e304]
+                  - generic [ref=e306]: Technician home visit
+                - listitem [ref=e307]:
+                  - img [ref=e308]
+                  - generic [ref=e310]: Scan interpretation in final report
+                - listitem [ref=e311]:
+                  - img [ref=e312]
+                  - generic [ref=e314]: Liver function panel (SGOT, SGPT, bilirubin)
+              - generic [ref=e315]:
+                - link "Book on WhatsApp" [active] [ref=e316] [cursor=pointer]:
+                  - /url: https://wa.me/918282012929?text=Hi%2C%20I'm%20interested%20in%20the%20Liver%20Fibrosis%20Scan%20%2B%20Pathological%20Test%20package%20(PKG-2).
+                  - img [ref=e317]
+                  - text: Book on WhatsApp
+                - link "View full details" [ref=e319] [cursor=pointer]:
+                  - /url: /packages/PKG-2
+          - article [ref=e320]:
+            - generic [ref=e322]:
+              - generic [ref=e323]: PKG-3
+              - heading "Liver Fibrosis Scan + Pathological Test + Doctor Consultation" [level=3] [ref=e324]
+              - paragraph [ref=e325]: Full care pathway with specialist review
+              - generic [ref=e327]: ₹9,500
+              - generic [ref=e328]: 56 pathology tests included
+              - generic [ref=e329]:
+                - generic [ref=e330]: "Visit type: Home visit"
+                - generic [ref=e331]: "Report delivery: Digital PDF"
+                - generic [ref=e332]: "Sample: Blood — home collection"
+              - generic [ref=e334]:
+                - paragraph [ref=e335]: 56 Tests
+                - generic [ref=e336]:
+                  - generic [ref=e337]:
+                    - generic [ref=e338]: HEART
+                    - generic [ref=e339]: Lipid Profile
+                  - generic [ref=e340]:
+                    - generic [ref=e341]: DIABETES
+                    - generic [ref=e342]: FBS, HbA1c
+                  - generic [ref=e343]:
+                    - generic [ref=e344]: KIDNEY
+                    - generic [ref=e345]: Urea, BUN, Creatinine, Bun/Creatinine Ratio, Uric Acid, Electrolytes
+                  - paragraph [ref=e346]: + 4 more categories
+              - list [ref=e347]:
+                - listitem [ref=e348]:
+                  - img [ref=e349]
+                  - generic [ref=e351]: Liver Fibrosis Scan (LSM, CAP, F-stage)
+                - listitem [ref=e352]:
+                  - img [ref=e353]
+                  - generic [ref=e355]: Technician home visit
+                - listitem [ref=e356]:
+                  - img [ref=e357]
+                  - generic [ref=e359]: Scan interpretation in final report
+                - listitem [ref=e360]:
+                  - img [ref=e361]
+                  - generic [ref=e363]: Liver function panel (SGOT, SGPT, bilirubin)
+              - generic [ref=e364]:
+                - link "Book on WhatsApp" [ref=e365] [cursor=pointer]:
+                  - /url: https://wa.me/918282012929?text=Hi%2C%20I'm%20interested%20in%20the%20Liver%20Fibrosis%20Scan%20%2B%20Pathological%20Test%20%2B%20Doctor%20Consultation%20package%20(PKG-3).
+                  - img [ref=e366]
+                  - text: Book on WhatsApp
+                - link "View full details" [ref=e368] [cursor=pointer]:
+                  - /url: /packages/PKG-3
+        - link "Compare all packages" [ref=e370] [cursor=pointer]:
+          - /url: /packages
+          - text: Compare all packages
+          - img [ref=e371]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - paragraph [ref=e71]: 10,000+
+          - paragraph [ref=e72]: Scans completed
+        - generic [ref=e73]:
+          - paragraph [ref=e74]: 98%
+          - paragraph [ref=e75]: Patient satisfaction
+        - generic [ref=e76]:
+          - paragraph [ref=e77]: 24h
+          - paragraph [ref=e78]: Result turnaround
+        - generic [ref=e79]:
+          - paragraph [ref=e80]: 1+
+          - paragraph [ref=e81]: Cities covered
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - paragraph [ref=e85]: How it works
+          - heading "From hospital queues to your living room" [level=2] [ref=e86]
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: "01"
+            - heading "The Problem" [level=3] [ref=e90]
+            - paragraph [ref=e91]: Overflowing hospital waiting rooms, long queues, exhausted patients waiting hours just for a basic liver test.
+          - generic [ref=e93]:
+            - generic [ref=e94]: "02"
+            - heading "The Solution" [level=3] [ref=e95]
+            - paragraph [ref=e96]: Person relaxing at home. A professional gastroenterologist arrives at the door with a medical bag, smiling warmly.
+            - paragraph [ref=e97]: “Now your liver test can come to you.”
+          - generic [ref=e99]:
+            - generic [ref=e100]: "03"
+            - heading "Liver Ultrasound" [level=3] [ref=e101]
+            - paragraph [ref=e102]: A certified specialist performs a painless liver ultrasound scan at your home — the same equipment used in top hospitals.
+            - paragraph [ref=e103]: “No hospital queues.”
+          - generic [ref=e105]:
+            - generic [ref=e106]: "04"
+            - heading "Comfortable Experience" [level=3] [ref=e107]
+            - paragraph [ref=e108]: Patient sits relaxed on their sofa while the specialist gently performs an abdominal scan — comfortable, quick, and stress-free.
+            - paragraph [ref=e109]: “No painful procedures.”
+          - generic [ref=e111]:
+            - generic [ref=e112]: "05"
+            - heading "For Everyone" [level=3] [ref=e113]
+            - paragraph [ref=e114]: Elderly patients, young professionals, busy parents — anyone who needs liver screening without leaving home.
+            - paragraph [ref=e115]: “Just fast, comfortable liver screening… from your home.”
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - paragraph [ref=e120]: Why Livotale
+          - heading "Everything you need. Nothing you don't." [level=2] [ref=e121]
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - heading "At-Home Service" [level=3] [ref=e128]
+            - paragraph [ref=e129]: A certified healthcare professional comes directly to your door with all necessary equipment.
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - heading "Fast Results" [level=3] [ref=e135]
+            - paragraph [ref=e136]: Get your liver health report within 24 hours, reviewed by specialist physicians.
+          - generic [ref=e137]:
+            - img [ref=e139]
+            - heading "Comfortable & Painless" [level=3] [ref=e143]
+            - paragraph [ref=e144]: No needles, no discomfort. Our non-invasive ultrasound-based scan is completely painless.
+          - generic [ref=e145]:
+            - img [ref=e147]
+            - heading "Clinical Accuracy" [level=3] [ref=e149]
+            - paragraph [ref=e150]: Hospital-grade diagnostic accuracy in the comfort of your own home.
+          - generic [ref=e151]:
+            - img [ref=e153]
+            - heading "Digital Health Record" [level=3] [ref=e155]
+            - paragraph [ref=e156]: All results securely stored in your personal health dashboard, accessible anywhere.
+          - generic [ref=e157]:
+            - img [ref=e159]
+            - heading "Follow-up Support" [level=3] [ref=e161]
+            - paragraph [ref=e162]: Post-scan consultation included. Our team guides you through your results and next steps.
+      - generic [ref=e164]:
+        - generic [ref=e165]:
+          - paragraph [ref=e166]: Meet your doctor
+          - heading "In expert hands, at your doorstep" [level=2] [ref=e167]
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - heading "Dr. Vijay Kumar Rai" [level=3] [ref=e170]
+            - paragraph [ref=e171]: DM · MD · MBBS
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - heading "Memberships & Fellowships" [level=4] [ref=e174]
+              - list [ref=e175]:
+                - listitem [ref=e176]:
+                  - generic [ref=e177]: •
+                  - text: Fellow — American College of Gastroenterology
+                - listitem [ref=e178]:
+                  - generic [ref=e179]: •
+                  - text: Fellow — American Society of GI Endoscopy
+                - listitem [ref=e180]:
+                  - generic [ref=e181]: •
+                  - text: Member — Indian Society of Gastroenterology
+                - listitem [ref=e182]:
+                  - generic [ref=e183]: •
+                  - text: Member — Society of GI Endoscopy of India
+            - generic [ref=e184]:
+              - heading "Procedures & Expertise" [level=4] [ref=e185]
+              - list [ref=e186]:
+                - listitem [ref=e187]:
+                  - generic [ref=e188]: •
+                  - text: ERCP (Endoscopic Retrograde Cholangiopancreatography)
+                - listitem [ref=e189]:
+                  - generic [ref=e190]: •
+                  - text: EUS (Endoscopic Ultrasound)
+                - listitem [ref=e191]:
+                  - generic [ref=e192]: •
+                  - text: Spy Glass & Confocal Laser Endomicroscopy
+                - listitem [ref=e193]:
+                  - generic [ref=e194]: •
+                  - text: Gastroduodenoscopy & Colonoscopy — APC, RFA, PEG Tube
+                - listitem [ref=e195]:
+                  - generic [ref=e196]: •
+                  - text: Double Balloon & Single Balloon Enteroscopy
+                - listitem [ref=e197]:
+                  - generic [ref=e198]: •
+                  - text: Capsule Endoscopy
+                - listitem [ref=e199]:
+                  - generic [ref=e200]: •
+                  - text: High Resolution Manometry & Motility Study
+                - listitem [ref=e201]:
+                  - generic [ref=e202]: •
+                  - text: Esophageal Stricture Dilatation & Achalasia Management
+      - generic [ref=e204]:
+        - heading "Healthcare finally decided to come home." [level=2] [ref=e205]
+        - paragraph [ref=e206]: Book your scan today. A Livotale healthcare professional will be with you within 48 hours.
+        - generic [ref=e207]:
+          - link "Book Now — It's Free to Enquire" [ref=e208] [cursor=pointer]:
+            - /url: https://wa.me/918282012929?text=Hi%2C%20I'd%20like%20to%20book%20a%20liver%20scan%20at%20home.
+            - img [ref=e209]
+            - text: Book Now — It's Free to Enquire
+          - link "Browse packages" [ref=e211] [cursor=pointer]:
+            - /url: /packages
+        - paragraph [ref=e212]: No commitment. Cancel anytime.
+        - paragraph [ref=e213]:
+          - link "82 8201 2929" [ref=e214] [cursor=pointer]:
+            - /url: tel:8282012929
+          - text: ·
+          - link "support@livotale.com" [ref=e215] [cursor=pointer]:
+            - /url: mailto:support@livotale.com
+  - contentinfo [ref=e216]:
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - generic [ref=e219]:
+          - paragraph [ref=e220]: Livotale
+          - paragraph [ref=e221]: Professional liver screening delivered to your door.
+        - generic [ref=e222]:
+          - paragraph [ref=e223]:
+            - link "82 8201 2929" [ref=e224] [cursor=pointer]:
+              - /url: tel:8282012929
+          - paragraph [ref=e225]:
+            - link "support@livotale.com" [ref=e226] [cursor=pointer]:
+              - /url: mailto:support@livotale.com
+      - paragraph [ref=e227]: © 2026 Livotale. All rights reserved.
+  - link "Chat on WhatsApp" [ref=e229] [cursor=pointer]:
+    - /url: https://wa.me/918282012929?text=Hi%2C%20I'd%20like%20to%20know%20more%20about%20Livotale%20liver%20scan%20at%20home.
+    - img [ref=e230]

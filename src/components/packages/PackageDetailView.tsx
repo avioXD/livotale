@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
+import { WHATSAPP_MESSAGES } from '@/app/config/whatsappMessages';
+import { PackageTestPanel } from '@/components/packages/PackageTestPanel';
+import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import type { LiverCarePackage } from '@/types/package';
 import { ALWAYS_INCLUDED_DELIVERY_ITEMS, bulletsFromSections } from '@/services/liverCare/package.utils';
 import { Badge } from '@/components/ui/badge';
@@ -22,11 +25,13 @@ interface PackageDetailViewProps {
   pkg: LiverCarePackage;
   /** Show enquire CTA (public). Omit for admin preview. */
   showEnquire?: boolean;
+  /** Read-only public view — WhatsApp CTA instead of enquire form */
+  readOnly?: boolean;
   /** Compact mode for admin side panel */
   compact?: boolean;
 }
 
-export function PackageDetailView({ pkg, showEnquire = true, compact = false }: PackageDetailViewProps) {
+export function PackageDetailView({ pkg, showEnquire = true, readOnly = false, compact = false }: PackageDetailViewProps) {
   const price = formatPrice(pkg);
   const bullets = pkg.includes.bullets.length ? pkg.includes.bullets : bulletsFromSections(pkg.checklistSections);
 
@@ -48,12 +53,29 @@ export function PackageDetailView({ pkg, showEnquire = true, compact = false }: 
           <span className={compact ? 'text-2xl font-bold' : 'text-4xl font-bold'}>{price.display}</span>
           {price.strike && <span className="text-lg text-muted-foreground line-through">{price.strike}</span>}
         </div>
-        {showEnquire && (
+        {readOnly && (
+          <WhatsAppButton
+            size={compact ? 'default' : 'lg'}
+            label="Enquire on WhatsApp"
+            message={WHATSAPP_MESSAGES.packageDetail(pkg.name, pkg.code)}
+          />
+        )}
+        {showEnquire && !readOnly && (
           <Button asChild size={compact ? 'default' : 'lg'}>
             <Link to={`/enquire?package=${pkg.code}`}>Book / Enquire</Link>
           </Button>
         )}
       </div>
+
+      {pkg.testCategories && pkg.testCategories.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold">Tests included</h2>
+          <PackageTestPanel
+            categories={pkg.testCategories}
+            totalCount={pkg.testCountTotal}
+          />
+        </div>
+      )}
 
       {pkg.highlights.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
