@@ -7,6 +7,7 @@ export { partnerLabService } from './PartnerLabService';
 export { pathologyService } from './PathologyService';
 export { aiExtractionOrderService } from './AIExtractionOrderService';
 export { finalReportService } from './FinalReportService';
+export { liverHealthReportService } from './LiverHealthReportService';
 export { doctorConsultationService } from './DoctorConsultationService';
 export { consultationOpsService } from './ConsultationOpsService';
 export { prescriptionOrderService } from './PrescriptionOrderService';

@@ -6,3 +6,4 @@ export { dummyFibrosisScanDeviceService } from './DummyFibrosisScanDeviceService
 export { dummyAIExtractionService } from './DummyAIExtractionService';
 export { dummyNotificationService } from './DummyNotificationService';
 export { dummyPDFGenerationService } from './DummyPDFGenerationService';
+export { dummyLiverHealthAIService } from './DummyLiverHealthAIService';

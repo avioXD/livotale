@@ -13,6 +13,8 @@
 
 ## Report content
 
+**Patient/doctor UI** also renders the [AI-Hybrid Liver Health Dashboard](./19-liver-health-dashboard-report.md) (gauges, roadmap, biomarkers, action plan). PDF letterhead remains the downloadable artifact.
+
 - Company letterhead (template)
 - Patient & order details
 - Package summary

@@ -1,6 +1,7 @@
 import type {
   IAIExtractionService,
   IFibrosisScanDeviceService,
+  ILiverHealthAIService,
   INotificationService,
   IPaymentService,
   IPDFGenerationService,
@@ -12,6 +13,7 @@ import { dummyFibrosisScanDeviceService } from './DummyFibrosisScanDeviceService
 import { dummyAIExtractionService } from './DummyAIExtractionService';
 import { dummyNotificationService } from './DummyNotificationService';
 import { dummyPDFGenerationService } from './DummyPDFGenerationService';
+import { dummyLiverHealthAIService } from './DummyLiverHealthAIService';
 
 export type ExternalServicesMode = 'dummy' | 'live';
 
@@ -50,4 +52,9 @@ export function getNotificationService(): INotificationService {
 export function getPDFGenerationService(): IPDFGenerationService {
   if (mode === 'live') throw new Error('Live PDF generation service not configured');
   return dummyPDFGenerationService;
+}
+
+export function getLiverHealthAIService(): ILiverHealthAIService {
+  if (mode === 'live') throw new Error('Live liver health AI service not configured');
+  return dummyLiverHealthAIService;
 }

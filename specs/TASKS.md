@@ -1,6 +1,6 @@
 # Global Development Tasks — Livotale Liver Care Platform
 
-**Last updated**: 2026-06-07  
+**Last updated**: 2026-06-09  
 **Specs**: [README](./README.md) · **Plan**: [PLAN.md](./PLAN.md)  
 **Legend**: `[ ]` pending · `[~]` in progress · `[x]` done · `[—]` deferred (API / E2E / stakeholder)
 
@@ -175,6 +175,19 @@
 
 ---
 
+## Phase 20 — AI-Hybrid Liver Health Dashboard → [19](./features/19-liver-health-dashboard-report.md)
+
+- [x] H201 Spec — visual report layout, clinical foundations, visibility gates
+- [x] H202 `LiverHealthReport` types + FIB-4 / score utilities
+- [x] H203 `ILiverHealthAIService` + `DummyLiverHealthAIService`
+- [x] H204 Dashboard components — gauges, roadmap, biomarkers, action plan
+- [x] H205 Doctor consultation clinical tab integration
+- [x] H206 Patient portal published report dashboard
+- [ ] H207 Admin order detail dashboard preview
+- [—] H208 Live AI liver-health API endpoint
+
+---
+
 ## Phase 19 — QA & API docs
 
 - [—] Q101–Q103 E2E PKG-1/2/3 flows
@@ -195,5 +208,6 @@
 | 17 Patients | 5/5 | Complete |
 | 18 Enquiries CRM | 6/6 | Complete |
 | 19 QA/API | 2/6 | Deferred |
+| 20 Liver dashboard | 6/8 | UI complete; admin preview + live API pending |
 
-**Overall**: 130 / 149 tasks (87%) · **12 API/E2E tasks deferred**
+**Overall**: 136 / 157 tasks (87%) · **13 API/E2E tasks deferred**

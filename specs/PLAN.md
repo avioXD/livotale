@@ -1,6 +1,6 @@
 # Livotale Liver Care — Delivery Plan
 
-**Last updated**: 2026-06-07
+**Last updated**: 2026-06-09
 
 ---
 
@@ -31,6 +31,15 @@
 - Role dashboards (admin, ops, technician, doctor)
 - Push notification inbox (bell + `/notifications`)
 - Admin audit, channel notification log, integrations stub
+
+## Phase G — AI-Hybrid Liver Health Dashboard (in progress)
+
+Visual dashboard report shared by doctor and patient portals:
+
+- `ILiverHealthAIService` + dummy implementation (FIB-4, LSM/CAP, composite scores)
+- Circular gauges, liver roadmap SVG, risk matrix, biomarker tables
+- Doctor consultation clinical tab + patient published report view
+- Spec: [features/19-liver-health-dashboard-report.md](./features/19-liver-health-dashboard-report.md)
 
 ## Phase E — API integration (deferred)
 

@@ -26,7 +26,7 @@
 
 | Asset | Visible when |
 |-------|--------------|
-| Final report | `final_report.published_at` set |
+| Final report | `final_report.published_at` set — visual AI-hybrid dashboard + PDF download |
 | Prescription | `prescription.status === published` |
 | Invoice | payment success |
 | Raw scan JSON | never (patient sees report PDF only) |

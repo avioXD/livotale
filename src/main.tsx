@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from '@/app/routes/AppRoutes';
 import { useAuthStore } from '@/store';
+import 'react-circular-progressbar/dist/styles.css';
 import './index.css';
 
 function AppBootstrap() {

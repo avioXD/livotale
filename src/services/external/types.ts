@@ -2,6 +2,7 @@ import type { CreateEnquiryInput } from '@/types/enquiry';
 import type { PaymentLink, PaymentOrder, PaymentResult } from '@/types/payment';
 import type { AIExtractionJob } from '@/types/aiExtraction';
 import type { ExtractedField } from '@/types/aiExtraction';
+import type { LiverHealthAIInput, LiverHealthReport } from '@/types/liverHealthReport';
 
 export interface IPaymentService {
   createOrder(orderId: string, amount: number): Promise<PaymentOrder>;
@@ -82,4 +83,8 @@ export interface IPDFGenerationService {
   generateInvoicePdf(data: Record<string, unknown>): Promise<PDFGenerationResult>;
 }
 
-export type { ExtractedField };
+export interface ILiverHealthAIService {
+  generateReport(input: LiverHealthAIInput): Promise<LiverHealthReport>;
+}
+
+export type { ExtractedField, LiverHealthAIInput };

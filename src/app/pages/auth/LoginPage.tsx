@@ -228,6 +228,16 @@ export function LoginPage() {
         </TabsContent>
       </Tabs>
 
+      <div className="mt-6 rounded-lg border border-livotale-teal/30 bg-livotale-teal/5 p-4 text-center">
+        <p className="text-sm font-medium text-foreground">Are you a patient?</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          View orders, liver health reports, prescriptions, and payments.
+        </p>
+        <Button variant="outline" className="mt-3 w-full border-livotale-teal text-livotale-teal hover:bg-livotale-teal/10" asChild>
+          <Link to="/patient/login">Patient portal login</Link>
+        </Button>
+      </div>
+
       {!isMockMode() && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}

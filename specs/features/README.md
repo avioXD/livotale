@@ -19,5 +19,6 @@ Read in product-flow order:
 13. [14-rbac-navigation.md](./14-rbac-navigation.md)
 14. [15-dummy-services.md](./15-dummy-services.md)
 15. [16-data-model.md](./16-data-model.md)
+16. [19-liver-health-dashboard-report.md](./19-liver-health-dashboard-report.md) — AI-hybrid visual report
 
 Implementation tracker: [../TASKS.md](../TASKS.md)
