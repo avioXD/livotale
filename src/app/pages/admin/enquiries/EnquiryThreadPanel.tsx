@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
 import { getLatestThreadEnquiry } from '@/utils/enquiryThread';
 import type { Enquiry } from '@/types/enquiry';
+import { orgPath } from '@/app/config/orgRoutes';
 
-const DETAIL_PATH = '/admin/enquiries';
+const DETAIL_PATH = orgPath('/admin/enquiries');
 
 interface EnquiryThreadPanelProps {
   threadEnquiries: Enquiry[];

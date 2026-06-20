@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { technicianAppointmentsService } from '@/services';
+import { orgPath } from '@/app/config/orgRoutes';
 import type { TechnicianTrackingResponse } from '@/types';
 
 const POLL_MS = 30_000;
@@ -51,7 +52,7 @@ export function TechnicianTrackingPage() {
         title="Technician tracking"
         description="Live location updates every 30 seconds while your technician is on the way."
         actions={
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate(`/appointments/${id}`)}>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate(orgPath(`/appointments/${id}`))}>
             <FiArrowLeft className="h-4 w-4" />
             Appointment
           </Button>

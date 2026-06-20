@@ -1,22 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { inboxNotificationService } from '@/services/notifications/InboxNotificationService';
 import { useUserRole } from '@/store';
 import type { InboxNotification } from '@/types/inboxNotification';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function StaffNotificationsPage() {
   const role = useUserRole();
   const [items, setItems] = useState<InboxNotification[]>([]);
 
-  const load = async () => setItems(await inboxNotificationService.listForRole(role));
+  const load = useCallback(async () => {
+    setItems(await inboxNotificationService.listForRole(role));
+  }, [role]);
 
   useEffect(() => {
     void load();
-  }, [role]);
+  }, [load]);
+
+  useRealtimeNotifications(() => {
+    void load();
+  });
 
   const markRead = (id: string) => {
     void inboxNotificationService.markRead(id).then(() => load());
@@ -63,7 +71,7 @@ export function StaffNotificationsPage() {
                     {n.orderId && (
                       <>
                         {' · '}
-                        <Link to={`/admin/orders/${n.orderId}`} className="text-primary underline">Order</Link>
+                        <Link to={orgPath(`/admin/orders/${n.orderId}`)} className="text-primary underline">Order</Link>
                       </>
                     )}
                   </p>

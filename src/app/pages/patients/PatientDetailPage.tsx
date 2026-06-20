@@ -1,31 +1,36 @@
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  PatientAppointmentsPanel,
   PatientOrdersPanel,
   PatientPaymentsPanel,
+  PatientReportsPanel,
+  PatientScansPanel,
+  PatientTestsPanel,
 } from '@/app/pages/patients/components/PatientClinicalPanels';
 import { PatientProfilePanel } from '@/app/pages/patients/components/PatientProfilePanel';
 import { usePatientDetailStore, useAuthStore, useUserRole } from '@/store';
 import { canEditPatientProfile } from '@/types/patientProfile';
 import { PATIENT_DETAIL_TABS, type PatientDetailTab } from '@/types/patientClinical';
+import { orgPath } from '@/app/config/orgRoutes';
+import { useUrlTabState } from '@/hooks/useUrlTabState';
 
-const VALID_TABS = new Set(PATIENT_DETAIL_TABS.map((t) => t.value));
+const PATIENT_TABS = PATIENT_DETAIL_TABS.map((t) => t.value);
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useUrlTabState({
+    defaultValue: 'profile',
+    validValues: PATIENT_TABS,
+    omitDefault: true,
+  });
   const userRole = useUserRole();
   const userRoles = useAuthStore((s) => s.user?.roles ?? []);
   const canEdit = canEditPatientProfile(userRole, userRoles);
-
-  const tabParam = searchParams.get('tab') as PatientDetailTab | null;
-  const activeTab: PatientDetailTab =
-    tabParam && VALID_TABS.has(tabParam) ? tabParam : 'profile';
-
   const detail = usePatientDetailStore((s) => s.detail);
   const history = usePatientDetailStore((s) => s.history);
   const clinical = usePatientDetailStore((s) => s.clinical);
@@ -42,12 +47,6 @@ export function PatientDetailPage() {
     return () => clear();
   }, [id, loadPatient, clear]);
 
-  const setTab = (tab: PatientDetailTab) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('tab', tab);
-    setSearchParams(next, { replace: true });
-  };
-
   const card = detail?.summaryCard;
   const patientId = id ?? '';
 
@@ -60,7 +59,7 @@ export function PatientDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/patients" aria-label="Back to patients">
+          <Link to={orgPath('/patients')} aria-label="Back to patients">
             <FiArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -91,7 +90,7 @@ export function PatientDetailPage() {
       )}
 
       {detail && history && (
-        <Tabs value={activeTab} onValueChange={(v) => setTab(v as PatientDetailTab)}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PatientDetailTab)}>
           <TabsList className="flex h-auto w-full flex-wrap justify-start">
             {PATIENT_DETAIL_TABS.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>
@@ -118,6 +117,22 @@ export function PatientDetailPage() {
 
           <TabsContent value="payments" className="mt-4">
             <PatientPaymentsPanel payments={clinical?.payments ?? []} />
+          </TabsContent>
+
+          <TabsContent value="appointments" className="mt-4">
+            <PatientAppointmentsPanel appointments={clinical?.appointments ?? []} />
+          </TabsContent>
+
+          <TabsContent value="tests" className="mt-4">
+            <PatientTestsPanel reports={clinical?.pathologyReports ?? []} />
+          </TabsContent>
+
+          <TabsContent value="scans" className="mt-4">
+            <PatientScansPanel scans={clinical?.scans ?? []} />
+          </TabsContent>
+
+          <TabsContent value="reports" className="mt-4">
+            <PatientReportsPanel reports={clinical?.reports ?? []} />
           </TabsContent>
         </Tabs>
       )}

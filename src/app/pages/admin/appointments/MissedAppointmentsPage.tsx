@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAdminAppointmentsStore } from '@/store';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function MissedAppointmentsPage() {
   const missed = useAdminAppointmentsStore((s) => s.missed);
@@ -26,7 +27,7 @@ export function MissedAppointmentsPage() {
         description="Review no-shows and mark follow-up or close the case."
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/appointments">
+            <Link to={orgPath('/admin/appointments')}>
               <FiArrowLeft className="h-4 w-4" />
               Dashboard
             </Link>

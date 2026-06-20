@@ -1,4 +1,5 @@
-import { FiFilter, FiRefreshCw, FiSearch } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiFilter, FiRefreshCw, FiSearch } from 'react-icons/fi';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,9 @@ interface ListToolbarProps {
   onApplyFilters: () => void;
   onResetFilters: () => void;
   isLoading?: boolean;
+  filtersExpanded?: boolean;
+  onFiltersExpandedChange?: (expanded: boolean) => void;
+  activeFilterCount?: number;
   children?: React.ReactNode;
 }
 
@@ -20,8 +24,13 @@ export function ListToolbar({
   onApplyFilters,
   onResetFilters,
   isLoading,
+  filtersExpanded = false,
+  onFiltersExpandedChange,
+  activeFilterCount = 0,
   children,
 }: ListToolbarProps) {
+  const hasFilters = Boolean(children);
+
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -36,6 +45,26 @@ export function ListToolbar({
           />
         </div>
         <div className="flex flex-wrap gap-2">
+          {hasFilters && onFiltersExpandedChange && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onFiltersExpandedChange(!filtersExpanded)}
+              aria-expanded={filtersExpanded}
+            >
+              {filtersExpanded ? (
+                <FiChevronUp className="h-4 w-4" />
+              ) : (
+                <FiChevronDown className="h-4 w-4" />
+              )}
+              {filtersExpanded ? 'Hide filters' : 'Show filters'}
+              {!filtersExpanded && activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          )}
           <Button type="button" variant="default" onClick={onApplyFilters} disabled={isLoading}>
             <FiFilter className="h-4 w-4" />
             Apply Filters
@@ -47,7 +76,7 @@ export function ListToolbar({
         </div>
       </div>
 
-      {children && (
+      {hasFilters && filtersExpanded && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
       )}
     </div>

@@ -25,7 +25,6 @@ interface TechnicianVisitProgressCardProps {
   acting: boolean;
   onStartVisit: () => void;
   onMarkReached: () => void;
-  onCompleteScan: () => void;
   canCompleteScan: boolean;
 }
 
@@ -39,7 +38,6 @@ export function TechnicianVisitProgressCard({
   acting,
   onStartVisit,
   onMarkReached,
-  onCompleteScan,
   canCompleteScan,
 }: TechnicianVisitProgressCardProps) {
   const currentIdx = stepIndex(currentStep);
@@ -81,23 +79,17 @@ export function TechnicianVisitProgressCard({
               Mark reached location
             </Button>
           )}
-          {(currentStep === 'reached_location' ||
-            currentStep === 'scan_in_progress' ||
-            currentStep === 'scan_completed') && (
-            <Button
-              className="w-full sm:w-auto"
-              size="sm"
-              variant={currentStep === 'scan_completed' ? 'secondary' : 'default'}
-              disabled={acting || currentStep === 'scan_completed' || !canCompleteScan}
-              onClick={onCompleteScan}
-            >
-              {currentStep === 'scan_completed' ? 'Visit completed' : 'Complete visit'}
-            </Button>
-          )}
         </div>
         {!canCompleteScan && currentStep !== 'scan_completed' && currentIdx >= 2 && (
           <p className="text-xs text-muted-foreground">
-            Save scan data and finish blood collection (if required) before completing the visit.
+            Finish steps 1–3 (intake, FibroScan intake, scan + report proof), then complete step 4 below with a
+            patient OTP.
+          </p>
+        )}
+        {canCompleteScan && currentStep !== 'scan_completed' && currentIdx >= 2 && (
+          <p className="text-xs text-muted-foreground">
+            Steps 1–3 are done. Use step 4 below to send a completion OTP to the patient and verify it to close
+            the visit.
           </p>
         )}
       </CardContent>

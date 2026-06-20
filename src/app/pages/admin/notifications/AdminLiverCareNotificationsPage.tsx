@@ -1,85 +1,193 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { PageHeader } from '@/components/common/PageHeader';
+import { useShallow } from 'zustand/react/shallow';
+import {
+  DataTable,
+  FilterField,
+  ListToolbar,
+  PageHeader,
+  PaginationControls,
+} from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { getNotificationService } from '@/services/external';
+import {
+  DEFAULT_NOTIFICATION_LOG_FILTERS,
+  useNotificationLogStore,
+} from '@/store';
 import type { NotificationLogEntry } from '@/services/external/types';
+import type { TableColumn } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
+import { countActiveFilters } from '@/utils/listFilters';
+import { useStorePaged } from '@/hooks/useStorePaged';
 
 export function AdminLiverCareNotificationsPage() {
-  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
-  const [orderFilter, setOrderFilter] = useState('');
+  const {
+    searchInput,
+    draftFilters,
+    appliedFilters,
+    appliedSearch,
+    pageSize,
+    filtersExpanded,
+    isLoading,
+    error,
+    fetchItems,
+    setSearchInput,
+    setDraftFilter,
+    applyFilters,
+    resetFilters,
+    setPage,
+    setPageSize,
+    setFiltersExpanded,
+  } = useNotificationLogStore(
+    useShallow((s) => ({
+      searchInput: s.searchInput,
+      draftFilters: s.draftFilters,
+      appliedFilters: s.appliedFilters,
+      appliedSearch: s.appliedSearch,
+      pageSize: s.pageSize,
+      filtersExpanded: s.filtersExpanded,
+      isLoading: s.isLoading,
+      error: s.error,
+      fetchItems: s.fetchItems,
+      setSearchInput: s.setSearchInput,
+      setDraftFilter: s.setDraftFilter,
+      applyFilters: s.applyFilters,
+      resetFilters: s.resetFilters,
+      setPage: s.setPage,
+      setPageSize: s.setPageSize,
+      setFiltersExpanded: s.setFiltersExpanded,
+    })),
+  );
 
   useEffect(() => {
-    const rows = getNotificationService().listLogs(
-      orderFilter ? { orderId: orderFilter } : undefined,
-    );
-    setLogs(rows);
-  }, [orderFilter]);
+    void fetchItems();
+  }, [fetchItems]);
+
+  const paged = useStorePaged(
+    useNotificationLogStore,
+    (s) => ({ items: s.items, page: s.page, pageSize: s.pageSize }),
+    (s) => s.setPage,
+  );
+  const activeFilterCount = countActiveFilters(
+    appliedFilters,
+    DEFAULT_NOTIFICATION_LOG_FILTERS,
+    appliedSearch,
+  );
+
+  const columns: TableColumn<NotificationLogEntry>[] = useMemo(
+    () => [
+      {
+        key: 'when',
+        header: 'When',
+        render: (log) => (log.sentAt ? new Date(log.sentAt).toLocaleString() : '—'),
+      },
+      {
+        key: 'channel',
+        header: 'Channel',
+        render: (log) => <span className="capitalize">{log.channel}</span>,
+      },
+      {
+        key: 'recipient',
+        header: 'Recipient',
+        render: (log) => log.recipient,
+      },
+      {
+        key: 'template',
+        header: 'Template',
+        render: (log) => <span className="max-w-xs truncate">{log.template}</span>,
+      },
+      {
+        key: 'order',
+        header: 'Order',
+        render: (log) =>
+          log.orderId ? (
+            <Link to={orgPath(`/admin/orders/${log.orderId}`)} className="text-primary underline">
+              {log.orderId}
+            </Link>
+          ) : (
+            '—'
+          ),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (log) => <Badge variant="outline">{log.status}</Badge>,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Notification log"
-        description="Dummy WhatsApp, SMS, email, and in-app dispatch history for liver care orders."
+        description="WhatsApp, SMS, email, and in-app dispatch history for liver care orders."
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link to="/admin/operations">Operations hub</Link>
+            <Link to={orgPath('/admin/operations')}>Operations hub</Link>
           </Button>
         }
       />
 
-      <div className="max-w-xs space-y-1">
-        <Label htmlFor="order-filter">Filter by order ID</Label>
-        <Input
-          id="order-filter"
-          placeholder="e.g. lco-3"
-          value={orderFilter}
-          onChange={(e) => setOrderFilter(e.target.value)}
-        />
-      </div>
-
-      {logs.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No notifications logged yet. Actions like payment links, report publish, and Rx publish create entries.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-muted/40 text-left text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2">When</th>
-                <th className="px-3 py-2">Channel</th>
-                <th className="px-3 py-2">Recipient</th>
-                <th className="px-3 py-2">Template</th>
-                <th className="px-3 py-2">Order</th>
-                <th className="px-3 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="border-t">
-                  <td className="px-3 py-2">{log.sentAt ? new Date(log.sentAt).toLocaleString() : '—'}</td>
-                  <td className="px-3 py-2 capitalize">{log.channel}</td>
-                  <td className="px-3 py-2">{log.recipient}</td>
-                  <td className="px-3 py-2 max-w-xs truncate">{log.template}</td>
-                  <td className="px-3 py-2">
-                    {log.orderId ? (
-                      <Link to={`/admin/orders/${log.orderId}`} className="text-primary underline">{log.orderId}</Link>
-                    ) : '—'}
-                  </td>
-                  <td className="px-3 py-2"><Badge variant="outline">{log.status}</Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
         </div>
       )}
+
+      <ListToolbar
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        searchPlaceholder="Search recipient, template, order…"
+        onApplyFilters={applyFilters}
+        onResetFilters={resetFilters}
+        isLoading={isLoading}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
+      >
+        <FilterField label="Order ID" htmlFor="notif-order-id">
+          <input
+            id="notif-order-id"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            placeholder="UUID"
+            value={draftFilters.orderId}
+            onChange={(e) => setDraftFilter('orderId', e.target.value)}
+          />
+        </FilterField>
+        <FilterField label="Channel" htmlFor="notif-channel">
+          <select
+            id="notif-channel"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={draftFilters.channel}
+            onChange={(e) => setDraftFilter('channel', e.target.value)}
+          >
+            <option value="">All channels</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="sms">SMS</option>
+            <option value="email">Email</option>
+            <option value="in_app">In-app</option>
+          </select>
+        </FilterField>
+      </ListToolbar>
+
+      <DataTable
+        columns={columns}
+        data={paged.items}
+        isLoading={isLoading}
+        emptyMessage="No notifications logged yet. Enquiry intake, payment links, and report publish events appear here."
+        getRowKey={(log) => log.id}
+      />
+
+      <PaginationControls
+        page={paged.page}
+        pageSize={pageSize}
+        total={paged.total}
+        totalPages={paged.totalPages}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

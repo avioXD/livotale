@@ -69,7 +69,7 @@
 
 ### Doctor
 - Consultations
-- Patients (assigned)
+- Patients (assigned + order-linked; multi-role staff also see zone union from `/patients`)
 - Reports
 - Prescriptions
 - Settings

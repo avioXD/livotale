@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   DataTable,
   FilterField,
@@ -10,10 +10,10 @@ import {
   PageHeader,
   PaginationControls,
 } from '@/components/common';
+import { orgPath } from '@/app/config/orgRoutes';
 import { RouteMapPanel } from '@/app/pages/technician/schedule/components/RouteMapPanel';
 import { TechnicianRouteRequestPanel } from '@/app/pages/technician/schedule/components/TechnicianRouteRequestPanel';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { sampleCollectionService } from '@/services/sampleCollection';
@@ -21,7 +21,11 @@ import { technicianAppointmentsService } from '@/services';
 import type { SampleCollection } from '@/types/sampleCollection';
 import type { TableColumn, TechnicianRouteResponse, TechnicianScheduleItem } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
+import { countActiveFilters } from '@/utils/listFilters';
 import { paginateList } from '@/utils/pagination';
+import { useUrlTabState } from '@/hooks/useUrlTabState';
+
+const SCHEDULE_TABS = ['clinical', 'samples', 'route'] as const;
 
 const TERMINAL_STATUSES = new Set([
   'published_to_patient',
@@ -33,6 +37,11 @@ const TERMINAL_STATUSES = new Set([
 type SampleStatusFilter = 'all' | 'active' | 'completed' | 'failed';
 type ClinicalStatusFilter = 'all' | 'pending' | 'in_progress' | 'completed';
 type HomeVisitTab = 'clinical' | 'samples' | 'route';
+
+const DEFAULT_SCHEDULE_FILTERS = {
+  sampleStatus: 'all' as SampleStatusFilter,
+  clinicalStatus: 'all' as ClinicalStatusFilter,
+};
 
 function formatSampleAddress(row: SampleCollection): string {
   return [row.line1, row.line2, row.cityName, row.pincode].filter(Boolean).join(', ') || '—';
@@ -49,10 +58,11 @@ function formatTime(value: string | null): string {
 
 export function TechnicianSchedulePage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab') as HomeVisitTab | null;
-  const activeTab: HomeVisitTab =
-    tabParam === 'clinical' || tabParam === 'samples' || tabParam === 'route' ? tabParam : 'clinical';
+  const [activeTab, setActiveTab] = useUrlTabState({
+    defaultValue: 'clinical',
+    validValues: SCHEDULE_TABS,
+    omitDefault: true,
+  });
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [samples, setSamples] = useState<SampleCollection[]>([]);
@@ -71,10 +81,7 @@ export function TechnicianSchedulePage() {
   const [samplesPage, setSamplesPage] = useState(1);
   const [clinicalPage, setClinicalPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
-  const setActiveTab = (tab: HomeVisitTab) => {
-    setSearchParams(tab === 'clinical' ? {} : { tab });
-  };
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -152,6 +159,19 @@ export function TechnicianSchedulePage() {
 
   const pagedSamples = paginateList(filteredSamples, samplesPage, pageSize);
   const pagedClinical = paginateList(filteredClinical, clinicalPage, pageSize);
+  const activeFilterCount = countActiveFilters(
+    { sampleStatus: appliedSampleStatus, clinicalStatus: appliedClinicalStatus },
+    DEFAULT_SCHEDULE_FILTERS,
+    appliedSearch,
+  );
+
+  useEffect(() => {
+    if (pagedSamples.page !== samplesPage) setSamplesPage(pagedSamples.page);
+  }, [pagedSamples.page, samplesPage]);
+
+  useEffect(() => {
+    if (pagedClinical.page !== clinicalPage) setClinicalPage(pagedClinical.page);
+  }, [pagedClinical.page, clinicalPage]);
 
   const activeSamples = samples.filter((v) => !TERMINAL_STATUSES.has(v.status)).length;
   const inProgressClinical = clinicalVisits.filter((v) =>
@@ -293,14 +313,14 @@ export function TechnicianSchedulePage() {
 
   const openDetail = (appointmentId: string, tab?: 'clinical' | 'samples') => {
     const query = tab === 'samples' ? '?tab=samples' : '';
-    navigate(`/technician/schedule/${appointmentId}${query}`);
+    navigate(orgPath(`/technician/schedule/${appointmentId}${query}`));
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sample collection"
-        description="Clinical work, sample collection workflow, and route planning — click any row to open the full visit detail."
+        description="Clinical field visits and route planning — click any row to open the full visit detail."
       />
 
       {error && (
@@ -326,6 +346,9 @@ export function TechnicianSchedulePage() {
         onApplyFilters={applyFilters}
         onResetFilters={resetFilters}
         isLoading={isLoading}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
       >
         <FilterField label="Date" htmlFor="home-date">
           <Input id="home-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />

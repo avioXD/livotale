@@ -3,13 +3,14 @@ import { PageHeader } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUserRole } from '@/store';
 import { AppRole } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
-/** Technicians manage field visits from /technician/orders */
+/** Technicians manage field visits from /org/technician/orders */
 export function LiverFibrosisScanPage() {
   const role = useUserRole();
 
   if (role === AppRole.TECHNICIAN) {
-    return <Navigate to="/technician/orders" replace />;
+    return <Navigate to={orgPath('/technician/orders')} replace />;
   }
 
   return (

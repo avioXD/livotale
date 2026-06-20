@@ -17,5 +17,6 @@ export * from './aiExtraction';
 export * from './finalReport';
 export * from './patientPortal';
 export * from './fibrosisScan';
+export * from './scanPatientIntake';
 export * from './partnerLab';
 export * from './labReport';

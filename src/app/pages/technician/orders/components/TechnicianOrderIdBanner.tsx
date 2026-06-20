@@ -37,7 +37,7 @@ export function TechnicianOrderIdBanner({ order, packageCode }: TechnicianOrderI
         </Button>
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        Use this ID on sample labels, device session, and proof photos.
+        Use this ID for the FibroScan device session and report proof upload.
       </p>
       <div className="mt-3">
         <Badge>{packageCode}</Badge>

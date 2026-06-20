@@ -5,20 +5,18 @@ import { useUserRole } from '@/store';
 import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StaffRoleWorkspace } from '@/app/pages/admin/staff/components/StaffRoleWorkspace';
-import { STAFF_ROLE_CONFIGS, staffRoleFromSlug } from '@/app/pages/admin/staff/staffHubConfig';
+import { PLATFORM_ADMIN_STAFF_KEYS, STAFF_ROLE_CONFIGS, staffRoleFromSlug } from '@/app/pages/admin/staff/staffHubConfig';
+import { orgPath } from '@/app/config/orgRoutes';
 import { Button } from '@/components/ui/button';
 import { adminAppointmentsService } from '@/services/appointments';
-import { opsAnalyticsService, type AnalyticsPeriod } from '@/services/opsAnalytics';
+import { opsAnalyticsService } from '@/services/opsAnalytics';
 import { staffDirectoryService } from '@/services/staff/StaffDirectoryService';
-import type { SampleCollectionAnalytics, StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
+import type { StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
 import type { DoctorOption } from '@/types/appointments';
 import type { StaffMemberRow, StaffRoleDashboard, StaffSectionTab } from '@/types/staffHub';
+import { useUrlTabState } from '@/hooks/useUrlTabState';
 
-const PERIODS: { value: AnalyticsPeriod; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'yearly', label: 'Yearly' },
-];
+const STAFF_SECTIONS = ['dashboard', 'users'] as const;
 
 function parseSection(value: string | null): StaffSectionTab {
   if (value === 'users') return 'users';
@@ -29,57 +27,95 @@ function parseSection(value: string | null): StaffSectionTab {
 export function AdminStaffHubPage() {
   const userRole = useUserRole();
   const { roleSlug } = useParams<{ roleSlug: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const activeRole = staffRoleFromSlug(roleSlug);
   const activeSection = parseSection(searchParams.get('section'));
 
   if (!activeRole) {
-    return <Navigate to="/admin/staff/technicians" replace />;
+    return <Navigate to={orgPath('/admin/staff/technicians')} replace />;
   }
 
-  if (activeRole === 'operations' && !isAdminRole(userRole)) {
-    return <Navigate to="/admin/staff/technicians" replace />;
+  if (activeRole === 'lab_partner') {
+    return <Navigate to={orgPath('/admin/staff/lab-partners')} replace />;
   }
 
-  const [period, setPeriod] = useState<AnalyticsPeriod>('monthly');
-  const [analytics, setAnalytics] = useState<SampleCollectionAnalytics | null>(null);
+  if (PLATFORM_ADMIN_STAFF_KEYS.has(activeRole) && !isAdminRole(userRole)) {
+    return <Navigate to={orgPath('/admin/staff/technicians')} replace />;
+  }
+
   const [technicians, setTechnicians] = useState<StaffTechnicianProfile[]>([]);
   const [labPartners, setLabPartners] = useState<StaffLabPartnerProfile[]>([]);
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMemberRow[]>([]);
   const [staffDashboard, setStaffDashboard] = useState<StaffRoleDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const setSection = (section: StaffSectionTab) => {
-    setSearchParams(section === 'dashboard' ? {} : { section });
-  };
+  const [, setSection] = useUrlTabState({
+    param: 'section',
+    defaultValue: 'dashboard',
+    validValues: STAFF_SECTIONS,
+    omitDefault: true,
+  });
 
   const load = useCallback(async () => {
     setError(null);
-    try {
-      const [a, t, l, d, staffRows, staffSummary] = await Promise.all([
-        opsAnalyticsService.getAdminSampleAnalytics(period),
-        opsAnalyticsService.listTechnicians(),
-        opsAnalyticsService.listLabPartners(),
-        adminAppointmentsService.listDoctors(),
+    const needsTechnicians = activeRole === 'technician';
+    const needsDoctors = activeRole === 'doctor';
+    const needsLabPartners = activeRole === 'lab_partner';
+
+    const [techniciansResult, labPartnersResult, doctorsResult, staffRowsResult, staffSummaryResult] =
+      await Promise.allSettled([
+        needsTechnicians ? opsAnalyticsService.listTechnicians() : Promise.resolve([]),
+        needsLabPartners ? opsAnalyticsService.listLabPartners() : Promise.resolve([]),
+        needsDoctors ? adminAppointmentsService.listDoctors() : Promise.resolve([]),
         staffDirectoryService.listUsers(activeRole),
         staffDirectoryService.getDashboard(activeRole),
       ]);
-      setAnalytics(a);
-      setTechnicians(t);
-      setLabPartners(l);
-      setDoctors(d);
-      setStaffMembers(staffRows);
-      setStaffDashboard(staffSummary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load staff data');
-      try {
-        setAnalytics(await opsAnalyticsService.getAdminSampleAnalytics(period));
-      } catch {
-        // ignore
-      }
+
+    const failures: string[] = [];
+
+    if (techniciansResult.status === 'fulfilled') {
+      setTechnicians(techniciansResult.value);
+    } else {
+      setTechnicians([]);
+      failures.push('technicians');
     }
-  }, [activeRole, period]);
+
+    if (labPartnersResult.status === 'fulfilled') {
+      setLabPartners(labPartnersResult.value);
+    } else {
+      setLabPartners([]);
+      failures.push('lab partners');
+    }
+
+    if (doctorsResult.status === 'fulfilled') {
+      setDoctors(doctorsResult.value);
+    } else {
+      setDoctors([]);
+      failures.push('doctors');
+    }
+
+    if (staffRowsResult.status === 'fulfilled') {
+      setStaffMembers(staffRowsResult.value);
+    } else {
+      setStaffMembers([]);
+      failures.push('staff directory');
+    }
+
+    if (staffSummaryResult.status === 'fulfilled') {
+      setStaffDashboard(staffSummaryResult.value);
+    } else {
+      setStaffDashboard(null);
+      failures.push('staff dashboard');
+    }
+
+    const criticalFailed = staffRowsResult.status === 'rejected';
+    if (criticalFailed) {
+      const reason = staffRowsResult.reason;
+      setError(reason instanceof Error ? reason.message : 'Failed to load staff directory');
+    } else if (failures.length > 0) {
+      console.warn(`Staff hub partial load failures: ${failures.join(', ')}`);
+    }
+  }, [activeRole]);
 
   useEffect(() => {
     void load();
@@ -94,7 +130,7 @@ export function AdminStaffHubPage() {
         description={`${activeRoleConfig.description} Open Dashboard for team reports or Users to browse staff.`}
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/operations">
+            <Link to={orgPath('/admin/operations')}>
               <FiArrowLeft className="h-4 w-4" />
               Ops dashboard
             </Link>
@@ -108,25 +144,10 @@ export function AdminStaffHubPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {PERIODS.map((p) => (
-          <Button
-            key={p.value}
-            size="sm"
-            variant={period === p.value ? 'default' : 'outline'}
-            onClick={() => setPeriod(p.value)}
-          >
-            {p.label}
-          </Button>
-        ))}
-      </div>
-
       <StaffRoleWorkspace
         role={activeRoleConfig}
         section={activeSection}
         onSectionChange={setSection}
-        period={period}
-        analytics={analytics}
         technicians={technicians}
         labPartners={labPartners}
         doctors={doctors}
@@ -138,5 +159,5 @@ export function AdminStaffHubPage() {
 }
 
 export function AdminStaffHubRedirect() {
-  return <Navigate to="/admin/staff/technicians" replace />;
+  return <Navigate to={orgPath('/admin/staff/technicians')} replace />;
 }

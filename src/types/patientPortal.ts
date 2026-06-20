@@ -2,6 +2,22 @@ export interface PatientPortalSession {
   phone: string;
   patientId: string;
   patientName: string;
+  needsOnboarding?: boolean;
+}
+
+export interface PatientOnboardingStatus {
+  needsOnboarding: boolean;
+  patientId: string;
+  patientName: string;
+}
+
+export interface PatientOnboardingPayload {
+  phone: string;
+  fullName: string;
+  email?: string | null;
+  city?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
 }
 
 export interface PatientPortalOrderSummary {

@@ -28,6 +28,26 @@ export function isAdminRole(role: AppRole | null): boolean {
   return role != null && (ADMIN_ROLES as readonly AppRole[]).includes(role);
 }
 
+/** Super Admin only — platform-wide config (service zones, integrations). */
+export function isSuperAdmin(role: AppRole | null): boolean {
+  return role === AppRole.SUPER_ADMIN;
+}
+
+/** Super Admin / City Manager — full staff CRUD (add, edit profiles, documents). */
+export function canManageStaff(role: AppRole | null): boolean {
+  return isAdminRole(role);
+}
+
+/** Super Admin and Operations — archive staff after assignment checks pass. */
+export function canArchiveStaff(role: AppRole | null): boolean {
+  return role === AppRole.SUPER_ADMIN || role === AppRole.OPERATIONS;
+}
+
+/** Super Admin and Operations — manage doctor weekly schedules and leave. */
+export function canManageDoctorSchedule(role: AppRole | null): boolean {
+  return isOpsRole(role);
+}
+
 export function isOpsRole(role: AppRole | null): boolean {
   return role != null && (OPS_ROLES as readonly AppRole[]).includes(role);
 }

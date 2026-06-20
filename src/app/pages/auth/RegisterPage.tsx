@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from '@/app/pages/auth/components/AuthLayout';
+import { ORG_LOGIN_PATH } from '@/app/config/orgRoutes';
+import { getDefaultHomePath } from '@/app/config/navigation';
 import { useAuthStore } from '@/store';
 
 export function RegisterPage() {
@@ -32,7 +34,10 @@ export function RegisterPage() {
         email: form.email || undefined,
         mobile: form.mobile || undefined,
       });
-      navigate('/', { replace: true });
+      if (useAuthStore.getState().requiresRoleSelection) {
+        return;
+      }
+      navigate(getDefaultHomePath(useAuthStore.getState().user?.role ?? null), { replace: true });
     } catch {
       // Error handled in store
     }
@@ -42,6 +47,7 @@ export function RegisterPage() {
     <AuthLayout
       title="Patient registration"
       subtitle="Create a patient account. Staff accounts are provisioned by your clinic administrator."
+      onRoleSelected={() => navigate(getDefaultHomePath(useAuthStore.getState().user?.role ?? null), { replace: true })}
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && (
@@ -111,7 +117,7 @@ export function RegisterPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">
+          <Link to={ORG_LOGIN_PATH} className="text-primary hover:underline">
             Sign in
           </Link>
         </p>

@@ -21,7 +21,7 @@ export type OrderStatus =
   | 'completed'
   | 'cancelled';
 
-export type ScanVisitMode = 'clinic' | 'home';
+export type ScanVisitMode = 'home';
 
 export type PaymentMode = 'offline' | 'online_link' | 'patient_portal' | null;
 
@@ -40,6 +40,8 @@ export interface LiverCareOrder {
   patientId: string;
   patientName: string;
   patientPhone: string;
+  patientEmail?: string | null;
+  patientPreferredLanguage?: string | null;
   enquiryId?: string | null;
   packageId: string;
   packageCode: string;
@@ -62,6 +64,20 @@ export interface LiverCareOrder {
   /** Patient-selected preferred date/time before operations confirms the schedule. */
   scanPatientPreferredAt?: string | null;
   scanScheduledAt?: string | null;
+  /** Lab partner order reference created by operations on behalf of the patient. */
+  pathologyLabOrderRef?: string | null;
+  /** Appointment ID from 3rd-party lab partner site (ops-entered). */
+  pathologyExternalAppointmentId?: string | null;
+  /** Lab collector visit outcome: visited | no_show */
+  pathologyVisitOutcome?: 'visited' | 'no_show' | null;
+  pathologyVisitConfirmedAt?: string | null;
+  pathologyTimeSlot?: string | null;
+  /** Patient-selected preferred pathology visit before operations confirms. */
+  pathologyPatientPreferredAt?: string | null;
+  pathologyScheduledAt?: string | null;
+  /** Patient-selected preferred consult slot before operations confirms. */
+  consultationPatientPreferredAt?: string | null;
+  consultationTimeSlot?: string | null;
   consultationScheduledAt?: string | null;
   createdBy?: string | null;
   createdAt: string;
@@ -69,7 +85,10 @@ export interface LiverCareOrder {
 }
 
 export interface CreateOrderInput {
-  patientId: string;
+  patientId?: string;
+  patientName?: string;
+  patientPhone?: string;
+  patientIntake?: Record<string, unknown>;
   enquiryId?: string;
   /** When true, patient record already exists (repeat order from converted enquiry). */
   skipPatientCreation?: boolean;
@@ -84,12 +103,26 @@ export interface ScheduleScanInput {
   scheduledAt: string;
   visitMode: ScanVisitMode;
   timeSlot: string;
-  clinicLocation?: string;
 }
 
 export interface PatientScanDateRequest {
   preferredAt: string;
   visitMode: ScanVisitMode;
+  timeSlot: string;
+}
+
+export interface SchedulePathologyInput {
+  scheduledAt: string;
+  timeSlot: string;
+}
+
+export interface PatientPathologyDateRequest {
+  preferredAt: string;
+  timeSlot: string;
+}
+
+export interface PatientConsultDateRequest {
+  preferredAt: string;
   timeSlot: string;
 }
 

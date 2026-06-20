@@ -19,6 +19,8 @@ export interface ConsultationQueueRow {
   doctorId: string | null;
   doctorName: string | null;
   consultationScheduledAt: string | null;
+  consultationPatientPreferredAt?: string | null;
+  consultationTimeSlot?: string | null;
   orderStatus: OrderStatus;
   stage: ConsultationQueueStage;
   prescriptionStatus: PrescriptionStatus | null;

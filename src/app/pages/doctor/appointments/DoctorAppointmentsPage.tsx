@@ -12,6 +12,7 @@ import { PatientSummaryDrawer } from '@/app/pages/doctor/appointments/components
 import { PrescriptionBuilderPanel } from '@/app/pages/doctor/appointments/components/PrescriptionBuilderPanel';
 import { SignatureUploadPanel } from '@/app/pages/doctor/appointments/components/SignatureUploadPanel';
 import { DOCTOR_SECTIONS, type DoctorSection } from '@/app/pages/doctor/doctorHubConfig';
+import { orgPath } from '@/app/config/orgRoutes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +97,7 @@ export function DoctorAppointmentsPage() {
         <div className="rounded-md border border-livotale-pink/30 bg-livotale-pink/5 px-4 py-3 text-sm">
           <span className="font-medium">Liver care PKG-3 consultations</span>
           {' '}use the order-based workflow — review scan, pathology, and publish prescriptions from{' '}
-          <Link to="/doctor/consultations" className="font-medium text-primary underline">
+          <Link to={orgPath('/doctor/consultations')} className="font-medium text-primary underline">
             Liver care Rx
           </Link>
           .

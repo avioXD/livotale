@@ -1,80 +1,121 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   DataTable,
   FilterField,
   ListToolbar,
   PaginationControls,
+  StatusBadge,
+  ActiveFilterBanner,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
-import { liverCareOrderService } from '@/services/liverCare';
 import {
-  ORDER_ASSIGNED_TO_PRESETS,
   ORDER_CREATED_BY_PRESETS,
+  ORDER_PAYMENT_PRESETS,
   ORDER_STATUS_PRESETS,
   assignedToLabel,
 } from '@/app/pages/admin/orders/orderDetailConfig';
-import type { LiverCareOrder, OrderStatus } from '@/types/serviceOrder';
+import { orgPath } from '@/app/config/orgRoutes';
+import {
+  DEFAULT_OPS_ORDERS_FILTERS,
+  useOpsOrdersStore,
+} from '@/store/operations/opsOrdersStore';
+import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { TableColumn } from '@/types';
-import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
-import { paginateList } from '@/utils/pagination';
-
-function readFilterParam(params: URLSearchParams, key: string): string {
-  return params.get(key) ?? '';
-}
-
-function orderStatusBadgeVariant(status: OrderStatus): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (status === 'completed') return 'secondary';
-  if (status === 'cancelled') return 'destructive';
-  if (status === 'payment_pending' || status === 'created') return 'outline';
-  return 'default';
-}
+import { countActiveFilters } from '@/utils/listFilters';
+import { useStorePaged } from '@/hooks/useStorePaged';
 
 export function AdminOperationsOrdersTab() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [orders, setOrders] = useState<LiverCareOrder[]>([]);
-  const [searchInput, setSearchInput] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [draftOrderStatus, setDraftOrderStatus] = useState(readFilterParam(searchParams, 'orderStatus'));
-  const [appliedOrderStatus, setAppliedOrderStatus] = useState(readFilterParam(searchParams, 'orderStatus'));
-  const [draftCreatedBy, setDraftCreatedBy] = useState(readFilterParam(searchParams, 'createdBy'));
-  const [appliedCreatedBy, setAppliedCreatedBy] = useState(readFilterParam(searchParams, 'createdBy'));
-  const [draftAssignedTo, setDraftAssignedTo] = useState(readFilterParam(searchParams, 'assignedTo'));
-  const [appliedAssignedTo, setAppliedAssignedTo] = useState(readFilterParam(searchParams, 'assignedTo'));
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const technicians = useOpsOrdersStore((s) => s.technicians);
+  const searchInput = useOpsOrdersStore((s) => s.searchInput);
+  const draftFilters = useOpsOrdersStore((s) => s.draftFilters);
+  const appliedFilters = useOpsOrdersStore((s) => s.appliedFilters);
+  const appliedSearch = useOpsOrdersStore((s) => s.appliedSearch);
+  const pageSize = useOpsOrdersStore((s) => s.pageSize);
+  const filtersExpanded = useOpsOrdersStore((s) => s.filtersExpanded);
+  const isLoading = useOpsOrdersStore((s) => s.isLoading);
+  const error = useOpsOrdersStore((s) => s.error);
+  const fetchItems = useOpsOrdersStore((s) => s.fetchItems);
+  const fetchTechnicians = useOpsOrdersStore((s) => s.fetchTechnicians);
+  const syncFromUrl = useOpsOrdersStore((s) => s.syncFromUrl);
+  const setSearchInput = useOpsOrdersStore((s) => s.setSearchInput);
+  const setDraftFilter = useOpsOrdersStore((s) => s.setDraftFilter);
+  const applyFiltersStore = useOpsOrdersStore((s) => s.applyFilters);
+  const resetFiltersStore = useOpsOrdersStore((s) => s.resetFilters);
+  const setPage = useOpsOrdersStore((s) => s.setPage);
+  const setPageSize = useOpsOrdersStore((s) => s.setPageSize);
+  const setFiltersExpanded = useOpsOrdersStore((s) => s.setFiltersExpanded);
 
-  const openOrder = useCallback((orderId: string) => navigate(`/admin/orders/${orderId}`), [navigate]);
+  const assignedToPresets = useMemo(
+    () => [
+      { value: '', label: 'All assignees' },
+      { value: 'unassigned', label: 'Unassigned' },
+      ...technicians.map((t) => ({ value: t.id, label: t.name })),
+    ],
+    [technicians],
+  );
 
-  const load = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setOrders(
-        await liverCareOrderService.list({
-          orderStatus: appliedOrderStatus || undefined,
-          createdBy: appliedCreatedBy || undefined,
-          assignedTo: appliedAssignedTo || undefined,
-          search: appliedSearch || undefined,
-        }),
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load orders');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const openOrder = useCallback((orderId: string) => navigate(orgPath(`/admin/orders/${orderId}`)), [navigate]);
 
   useEffect(() => {
-    void load();
-  }, [appliedOrderStatus, appliedCreatedBy, appliedAssignedTo, appliedSearch]);
+    syncFromUrl(searchParams);
+    void fetchTechnicians();
+    void fetchItems();
+  }, [searchParams, syncFromUrl, fetchTechnicians, fetchItems]);
 
-  const paged = paginateList(orders, page, pageSize);
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    const payment = ORDER_PAYMENT_PRESETS.find((p) => p.value === appliedFilters.paymentStatus);
+    if (payment?.value) labels.push(`Payment: ${payment.label}`);
+    const orderStatus = ORDER_STATUS_PRESETS.find((p) => p.value === appliedFilters.orderStatus);
+    if (orderStatus?.value) labels.push(`Stage: ${orderStatus.label}`);
+    const createdBy = ORDER_CREATED_BY_PRESETS.find((p) => p.value === appliedFilters.createdBy);
+    if (createdBy?.value) labels.push(`Created by: ${createdBy.label}`);
+    if (appliedFilters.assignedTo === 'unassigned') {
+      labels.push('Assigned to: Unassigned');
+    } else if (appliedFilters.assignedTo) {
+      const tech = technicians.find((t) => t.id === appliedFilters.assignedTo);
+      labels.push(`Assigned to: ${tech?.name ?? appliedFilters.assignedTo}`);
+    }
+    if (appliedSearch) labels.push(`Search: "${appliedSearch}"`);
+    return labels;
+  }, [appliedFilters, appliedSearch, technicians]);
+
+  const paged = useStorePaged(
+    useOpsOrdersStore,
+    (s) => ({ items: s.items, page: s.page, pageSize: s.pageSize }),
+    (s) => s.setPage,
+  );
+  const activeFilterCount = countActiveFilters(appliedFilters, DEFAULT_OPS_ORDERS_FILTERS, appliedSearch);
+
+  const applyFilters = () => {
+    const applied = applyFiltersStore();
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'orders');
+    const setOrDelete = (key: string, value: string) => {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    };
+    setOrDelete('orderStatus', applied.orderStatus);
+    setOrDelete('paymentStatus', applied.paymentStatus);
+    setOrDelete('createdBy', applied.createdBy);
+    setOrDelete('assignedTo', applied.assignedTo);
+    setSearchParams(next, { replace: true });
+  };
+
+  const resetFilters = () => {
+    resetFiltersStore();
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'orders');
+    next.delete('orderStatus');
+    next.delete('paymentStatus');
+    next.delete('createdBy');
+    next.delete('assignedTo');
+    setSearchParams(next, { replace: true });
+  };
 
   const columns: TableColumn<LiverCareOrder>[] = useMemo(
     () => [
@@ -102,9 +143,7 @@ export function AdminOperationsOrdersTab() {
         key: 'status',
         header: 'Status',
         render: (r) => (
-          <Badge variant={orderStatusBadgeVariant(r.orderStatus)}>
-            {ORDER_STATUS_LABELS[r.orderStatus]}
-          </Badge>
+          <StatusBadge status={r.orderStatus} domain="order" label={ORDER_STATUS_LABELS[r.orderStatus]} />
         ),
       },
       {
@@ -134,46 +173,6 @@ export function AdminOperationsOrdersTab() {
     [],
   );
 
-  const applyFilters = () => {
-    setAppliedSearch(searchInput.trim());
-    setAppliedOrderStatus(draftOrderStatus);
-    setAppliedCreatedBy(draftCreatedBy);
-    setAppliedAssignedTo(draftAssignedTo);
-    setPage(1);
-
-    const next = new URLSearchParams(searchParams);
-    next.set('tab', 'orders');
-    const setOrDelete = (key: string, value: string) => {
-      if (value) next.set(key, value);
-      else next.delete(key);
-    };
-    setOrDelete('orderStatus', draftOrderStatus);
-    setOrDelete('createdBy', draftCreatedBy);
-    setOrDelete('assignedTo', draftAssignedTo);
-    next.delete('paymentStatus');
-    setSearchParams(next, { replace: true });
-  };
-
-  const resetFilters = () => {
-    setSearchInput('');
-    setDraftOrderStatus('');
-    setDraftCreatedBy('');
-    setDraftAssignedTo('');
-    setAppliedSearch('');
-    setAppliedOrderStatus('');
-    setAppliedCreatedBy('');
-    setAppliedAssignedTo('');
-    setPage(1);
-
-    const next = new URLSearchParams(searchParams);
-    next.set('tab', 'orders');
-    next.delete('orderStatus');
-    next.delete('createdBy');
-    next.delete('assignedTo');
-    next.delete('paymentStatus');
-    setSearchParams(next, { replace: true });
-  };
-
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
@@ -187,21 +186,41 @@ export function AdminOperationsOrdersTab() {
         </div>
       )}
 
+      <ActiveFilterBanner labels={activeFilterLabels} onClear={resetFilters} />
+
       <ListToolbar
         searchValue={searchInput}
         onSearchChange={setSearchInput}
         searchPlaceholder="Search order #, patient, phone…"
         onApplyFilters={applyFilters}
         onResetFilters={resetFilters}
+        isLoading={isLoading}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
       >
         <FilterField label="Workflow status" htmlFor="ops-order-status">
           <select
             id="ops-order-status"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={draftOrderStatus}
-            onChange={(e) => setDraftOrderStatus(e.target.value)}
+            value={draftFilters.orderStatus}
+            onChange={(e) => setDraftFilter('orderStatus', e.target.value)}
           >
             {ORDER_STATUS_PRESETS.map((o) => (
+              <option key={o.value || 'all'} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Payment status" htmlFor="ops-order-payment">
+          <select
+            id="ops-order-payment"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={draftFilters.paymentStatus}
+            onChange={(e) => setDraftFilter('paymentStatus', e.target.value)}
+          >
+            {ORDER_PAYMENT_PRESETS.map((o) => (
               <option key={o.value || 'all'} value={o.value}>
                 {o.label}
               </option>
@@ -212,8 +231,8 @@ export function AdminOperationsOrdersTab() {
           <select
             id="ops-order-created-by"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={draftCreatedBy}
-            onChange={(e) => setDraftCreatedBy(e.target.value)}
+            value={draftFilters.createdBy}
+            onChange={(e) => setDraftFilter('createdBy', e.target.value)}
           >
             {ORDER_CREATED_BY_PRESETS.map((o) => (
               <option key={o.value || 'all'} value={o.value}>
@@ -226,10 +245,10 @@ export function AdminOperationsOrdersTab() {
           <select
             id="ops-order-assigned-to"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={draftAssignedTo}
-            onChange={(e) => setDraftAssignedTo(e.target.value)}
+            value={draftFilters.assignedTo}
+            onChange={(e) => setDraftFilter('assignedTo', e.target.value)}
           >
-            {ORDER_ASSIGNED_TO_PRESETS.map((o) => (
+            {assignedToPresets.map((o) => (
               <option key={o.value || 'all'} value={o.value}>
                 {o.label}
               </option>
@@ -253,10 +272,8 @@ export function AdminOperationsOrdersTab() {
         total={paged.total}
         totalPages={paged.totalPages}
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={setPageSize}
+        isLoading={isLoading}
       />
     </div>
   );

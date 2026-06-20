@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppointmentsStore, useUserRole } from '@/store';
 import { AppRole } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const ADMIN_OPS_ROLES = new Set<AppRole>([
   AppRole.OPERATIONS,
@@ -36,15 +37,15 @@ export function AppointmentsPage() {
   }, [loadAppointments, isPatient]);
 
   if (userRole === AppRole.DOCTOR) {
-    return <Navigate to="/doctor/appointments" replace />;
+    return <Navigate to={orgPath('/doctor/appointments')} replace />;
   }
 
   if (userRole && ADMIN_OPS_ROLES.has(userRole)) {
-    return <Navigate to="/admin/operations?tab=appointments" replace />;
+    return <Navigate to={orgPath('/admin/operations?tab=appointments')} replace />;
   }
 
   if (userRole && !isPatient) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={orgPath('/dashboard')} replace />;
   }
 
   const upcoming = appointments.filter((a) => !['completed', 'cancelled'].includes(a.status));
@@ -57,7 +58,7 @@ export function AppointmentsPage() {
         title="My Appointments"
         description="Book home visits, clinic appointments, or teleconsultations and track progress."
         actions={
-          <Button onClick={() => navigate('/appointments/book')} className="gap-2">
+          <Button onClick={() => navigate(orgPath('/appointments/book'))} className="gap-2">
             <FiPlus className="h-4 w-4" />
             Book now
           </Button>
@@ -78,7 +79,7 @@ export function AppointmentsPage() {
             <p className="max-w-sm text-sm text-muted-foreground">
               No appointments yet. Book a home visit, clinic slot, or online consultation.
             </p>
-            <Button onClick={() => navigate('/appointments/book')} className="gap-2">
+            <Button onClick={() => navigate(orgPath('/appointments/book'))} className="gap-2">
               <FiPlus className="h-4 w-4" />
               Book your first appointment
             </Button>
@@ -97,7 +98,7 @@ export function AppointmentsPage() {
                     key={appt.id}
                     appointment={appt}
                     showPatient={false}
-                    onOpen={() => navigate(`/appointments/${appt.id}`)}
+                    onOpen={() => navigate(orgPath(`/appointments/${appt.id}`))}
                     onReschedule={() => setRescheduleAppt(appt)}
                     onCancel={() => setCancelId(appt.id)}
                   />
@@ -117,7 +118,7 @@ export function AppointmentsPage() {
                     key={appt.id}
                     appointment={appt}
                     showPatient={false}
-                    onOpen={() => navigate(`/appointments/${appt.id}`)}
+                    onOpen={() => navigate(orgPath(`/appointments/${appt.id}`))}
                   />
                 ))}
               </div>

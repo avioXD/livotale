@@ -27,16 +27,67 @@ export function deriveConsultationStage(
   order: LiverCareOrder,
   prescription?: LiverCarePrescription | null,
 ): ConsultationQueueStage {
-  if (order.orderStatus === 'completed') return 'completed';
-  if (order.orderStatus === 'prescription_generated' || prescription?.status === 'published') {
+  return deriveConsultationStageFromFields({
+    orderStatus: order.orderStatus,
+    doctorId: order.doctorId ?? null,
+    consultationScheduledAt: order.consultationScheduledAt ?? null,
+    prescriptionStatus: prescription?.status ?? null,
+  });
+}
+
+export function deriveConsultationStageFromFields(input: {
+  orderStatus: OrderStatus;
+  doctorId?: string | null;
+  consultationScheduledAt?: string | null;
+  prescriptionStatus?: LiverCarePrescription['status'] | null;
+}): ConsultationQueueStage {
+  if (input.orderStatus === 'completed') return 'completed';
+  if (input.orderStatus === 'prescription_generated' || input.prescriptionStatus === 'published') {
     return 'prescription_ready';
   }
-  if (order.orderStatus === 'prescription_pending') return 'prescription_pending';
-  if (order.orderStatus === 'consultation_pending' || order.consultationScheduledAt) return 'scheduled';
-  if (order.orderStatus === 'doctor_assigned' || (order.doctorId && !order.consultationScheduledAt)) {
+  if (input.orderStatus === 'prescription_pending') return 'prescription_pending';
+  if (input.orderStatus === 'consultation_pending' || input.consultationScheduledAt) return 'scheduled';
+  if (input.orderStatus === 'doctor_assigned' || (input.doctorId && !input.consultationScheduledAt)) {
     return 'doctor_assigned';
   }
   return 'awaiting_doctor';
+}
+
+/** Maps `/admin/consultations/queue` API rows into UI queue rows. */
+export function mapConsultationQueueApiRow(raw: {
+  orderId: string;
+  orderNumber: string;
+  patientId: string;
+  patientName: string;
+  packageCode?: string | null;
+  orderStatus: OrderStatus;
+  doctorId?: string | null;
+  doctorName?: string | null;
+  consultationScheduledAt?: string | null;
+  consultationPatientPreferredAt?: string | null;
+  consultationTimeSlot?: string | null;
+  prescriptionStatus?: LiverCarePrescription['status'] | null;
+  updatedAt: string;
+}): ConsultationQueueRow {
+  const stage = deriveConsultationStageFromFields(raw);
+
+  return {
+    id: raw.orderId,
+    orderId: raw.orderId,
+    orderNumber: raw.orderNumber,
+    patientId: raw.patientId,
+    patientName: raw.patientName,
+    packageCode: raw.packageCode ?? '—',
+    doctorId: raw.doctorId ?? null,
+    doctorName: raw.doctorName ?? null,
+    consultationScheduledAt: raw.consultationScheduledAt ?? null,
+    consultationPatientPreferredAt: raw.consultationPatientPreferredAt ?? null,
+    consultationTimeSlot: raw.consultationTimeSlot ?? null,
+    orderStatus: raw.orderStatus,
+    stage,
+    prescriptionStatus: raw.prescriptionStatus ?? null,
+    updatedAt: raw.updatedAt,
+  };
 }
 
 export function buildConsultationQueueRow(

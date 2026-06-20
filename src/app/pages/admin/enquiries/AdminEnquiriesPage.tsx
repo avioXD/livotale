@@ -1,14 +1,16 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DataTable, FilterField, ListPageShell, ListToolbar, PaginationControls } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { DataTable, FilterField, ListPageShell, ListToolbar, PaginationControls, StatusBadge } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { useEnquiriesAdminStore } from '@/store/enquiries';
 import type { Enquiry } from '@/types/enquiry';
 import type { TableColumn } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
+import { countActiveFilters } from '@/utils/listFilters';
+import { useStorePaged } from '@/hooks/useStorePaged';
 
-const OPS_ENQUIRIES_PATH = '/admin/operations?tab=enquiries';
-const DETAIL_PATH = '/admin/enquiries';
+const OPS_ENQUIRIES_PATH = orgPath('/admin/operations?tab=enquiries');
+const DETAIL_PATH = orgPath('/admin/enquiries');
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -35,11 +37,9 @@ interface AdminEnquiriesPageProps {
 
 export function AdminEnquiriesPage({ embedded = false }: AdminEnquiriesPageProps) {
   const navigate = useNavigate();
-  const items = useEnquiriesAdminStore((s) => s.items);
   const searchInput = useEnquiriesAdminStore((s) => s.searchInput);
   const draftStatus = useEnquiriesAdminStore((s) => s.draftStatus);
   const draftSource = useEnquiriesAdminStore((s) => s.draftSource);
-  const page = useEnquiriesAdminStore((s) => s.page);
   const pageSize = useEnquiriesAdminStore((s) => s.pageSize);
   const isLoading = useEnquiriesAdminStore((s) => s.isLoading);
   const error = useEnquiriesAdminStore((s) => s.error);
@@ -51,13 +51,26 @@ export function AdminEnquiriesPage({ embedded = false }: AdminEnquiriesPageProps
   const resetFilters = useEnquiriesAdminStore((s) => s.resetFilters);
   const setPage = useEnquiriesAdminStore((s) => s.setPage);
   const setPageSize = useEnquiriesAdminStore((s) => s.setPageSize);
-  const getPaged = useEnquiriesAdminStore((s) => s.getPaged);
+  const setFiltersExpanded = useEnquiriesAdminStore((s) => s.setFiltersExpanded);
+  const appliedStatus = useEnquiriesAdminStore((s) => s.appliedStatus);
+  const appliedSource = useEnquiriesAdminStore((s) => s.appliedSource);
+  const appliedSearch = useEnquiriesAdminStore((s) => s.appliedSearch);
+  const filtersExpanded = useEnquiriesAdminStore((s) => s.filtersExpanded);
 
   useEffect(() => {
     void fetchEnquiries();
   }, [fetchEnquiries]);
 
-  const paged = getPaged();
+  const paged = useStorePaged(
+    useEnquiriesAdminStore,
+    (s) => ({ items: s.items, page: s.page, pageSize: s.pageSize }),
+    (s) => s.setPage,
+  );
+  const activeFilterCount = countActiveFilters(
+    { status: appliedStatus, source: appliedSource },
+    { status: '', source: '' },
+    appliedSearch,
+  );
 
   const columns: TableColumn<Enquiry>[] = useMemo(
     () => [
@@ -91,9 +104,7 @@ export function AdminEnquiriesPage({ embedded = false }: AdminEnquiriesPageProps
         key: 'status',
         header: 'Status',
         render: (r) => (
-          <Badge variant={r.status === 'new' ? 'default' : 'outline'} className="capitalize">
-            {r.status.replace(/_/g, ' ')}
-          </Badge>
+          <StatusBadge status={r.status} domain="enquiry" />
         ),
       },
       {
@@ -117,7 +128,7 @@ export function AdminEnquiriesPage({ embedded = false }: AdminEnquiriesPageProps
             </Button>
             {r.status === 'converted' && r.orderId && (
               <Button size="sm" variant="outline" asChild>
-                <Link to={`/admin/orders/${r.orderId}`}>Open order</Link>
+                <Link to={orgPath(`/admin/orders/${r.orderId}`)}>Open order</Link>
               </Button>
             )}
           </div>
@@ -139,6 +150,9 @@ export function AdminEnquiriesPage({ embedded = false }: AdminEnquiriesPageProps
           onApplyFilters={applyFilters}
           onResetFilters={resetFilters}
           isLoading={isLoading}
+          filtersExpanded={filtersExpanded}
+          onFiltersExpandedChange={setFiltersExpanded}
+          activeFilterCount={activeFilterCount}
         >
           <FilterField label="Status" htmlFor="enq-filter-status">
             <select

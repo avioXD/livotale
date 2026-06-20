@@ -47,7 +47,7 @@ const FIXED_CHECKLIST_SECTION_DEFS: FixedSectionDef[] = [
       { id: 'ci-path-cbc', label: 'Complete blood count' },
       { id: 'ci-path-viral', label: 'Viral markers (HBsAg, Anti-HCV)' },
       { id: 'ci-path-lab', label: 'Lab partner processing' },
-      { id: 'ci-path-ai', label: 'AI-assisted report merge' },
+      { id: 'ci-path-ai', label: 'Combined scan & pathology report' },
     ],
   },
   {
@@ -132,13 +132,28 @@ export function bulletsFromSections(sections: PackageChecklistSection[]): string
   return [...fromSections, ...ALWAYS_INCLUDED_DELIVERY_ITEMS];
 }
 
+/** Patient-facing copy — hide internal AI terminology on the public website. */
+export function publicPackageCopy(text: string): string {
+  if (/^AI-assisted report merge$/i.test(text)) {
+    return 'Combined scan & pathology report';
+  }
+  return text;
+}
+
+export function publicBulletsForPackage(pkg: LiverCarePackage): string[] {
+  const raw = pkg.includes.bullets.length
+    ? pkg.includes.bullets
+    : bulletsFromSections(pkg.checklistSections);
+  return raw.map(publicPackageCopy);
+}
+
 export function normalizePackageDraft(draft: CreatePackageDraft): CreatePackageDraft {
   const flags: PackageWorkflowFlags = {
     fibrosisScanIncluded: draft.fibrosisScanIncluded,
     pathologyIncluded: draft.pathologyIncluded,
     consultationIncluded: draft.consultationIncluded,
   };
-  const synced = syncPackageFromFlags(flags, draft);
+  const synced = syncPackageFromFlags(flags);
   return {
     ...draft,
     ...synced,

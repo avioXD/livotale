@@ -21,6 +21,8 @@ Follow `specs/platform/ui-page-patterns.md`.
 - Title = entity name; description = secondary id/meta
 - Header **actions** (delete, preview) align right in `PageHeader`
 - View/Edit tabs: `EntityDetailShell` + `?tab=view|edit`
+- **All tabs**: sync URL via `useUrlTabState` (`?tab=`, `?section=`, `?profileSection=`, `?mode=` on public routes)
+- **Log-style fields** (remarks, notes, call logs): `LogTextarea` + limits from `@/utils/fieldLimits`
 
 ## Primary vs secondary fields
 

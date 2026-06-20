@@ -50,7 +50,6 @@ export function DoctorConsultationPrescriptionTab({
   }
 
   const visitLocked = ['completed', 'prescription_draft', 'prescription_published'].includes(selectedVisit.status);
-  const canComplete = !visitLocked;
   const latestPublished = [...visitLogs].reverse().find((v) => v.status === 'prescription_published');
   const canScheduleFollowUp = latestPublished && selectedVisit.status === 'prescription_published';
 
@@ -179,7 +178,7 @@ export function DoctorConsultationPrescriptionTab({
           <div className="rounded-lg border border-dashed p-4 space-y-3">
             <h3 className="font-medium">Schedule follow-up visit</h3>
             <p className="text-sm text-muted-foreground">
-              After publishing a prescription, schedule the next follow-up. A new visit log and prescription will be created.
+              After publishing a prescription, schedule the next follow-up. A new visit log will be created. You can write a prescription after completing the visit.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">

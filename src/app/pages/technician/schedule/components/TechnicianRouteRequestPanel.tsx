@@ -22,7 +22,7 @@ export function TechnicianRouteRequestPanel({ date, onAssigned }: TechnicianRout
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const [usingDemo, setUsingDemo] = useState(false);
+  const [usingDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -35,7 +35,6 @@ export function TechnicianRouteRequestPanel({ date, onAssigned }: TechnicianRout
       ]);
       setAvailable(orders);
       setRequests(mine);
-      setUsingDemo(orders.some((o) => o.sampleCollectionId.startsWith('demo-route-')));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load available orders');
     } finally {

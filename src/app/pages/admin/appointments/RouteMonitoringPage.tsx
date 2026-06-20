@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAdminAppointmentsStore } from '@/store';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const POLL_MS = 30_000;
 
@@ -30,7 +31,7 @@ export function RouteMonitoringPage() {
         description="Live technician positions for active home visits (refreshes every 30s)."
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/appointments">
+            <Link to={orgPath('/admin/appointments')}>
               <FiArrowLeft className="h-4 w-4" />
               Dashboard
             </Link>

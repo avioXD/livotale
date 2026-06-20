@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import { LandingSectionHeading } from '@/app/pages/public/components/LandingSectionHeading';
 import { PublicPackageCard } from '@/app/pages/public/components/PublicPackageCard';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { WHATSAPP_MESSAGES } from '@/app/config/whatsappMessages';
@@ -28,18 +29,18 @@ export function LandingPackagesSection({ packages, isLoading, error }: LandingPa
         />
         <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-livotale-teal">
-                Choose your package
-              </p>
-              <h2 className="mt-2 text-3xl font-bold text-white sm:text-4xl">
-                Liver care packages
-                <span className="text-livotale-pink"> at your doorstep</span>
-              </h2>
-              <p className="mt-3 max-w-xl text-slate-300">
-                Compare plans, see every test included, and book in one tap on WhatsApp — no hospital visit required.
-              </p>
-            </div>
+            <LandingSectionHeading
+              variant="bar"
+              accent="teal"
+              eyebrow="Choose your package"
+              title={
+                <>
+                  Liver fibrosis scan packages
+                  <span className="text-livotale-pink"> at your doorstep</span>
+                </>
+              }
+              description="Compare FibroScan plans, see every test included, and book in one tap on WhatsApp — no hospital visit required."
+            />
             <WhatsAppButton
               label="Get a free quote"
               message={WHATSAPP_MESSAGES.bookScan}

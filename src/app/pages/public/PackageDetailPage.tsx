@@ -46,7 +46,7 @@ export function PackageDetailPage() {
       <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to="/packages">← All packages</Link>
       </Button>
-      <PackageDetailView pkg={selected} readOnly showEnquire={false} />
+      <PackageDetailView pkg={selected} readOnly showEnquire />
     </div>
   );
 }

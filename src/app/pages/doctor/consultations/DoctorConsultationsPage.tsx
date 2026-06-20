@@ -6,14 +6,16 @@ import {
   ListToolbar,
   PageHeader,
   PaginationControls,
+  StatusBadge,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { doctorConsultationService } from '@/services/liverCare';
 import type { Consultation } from '@/types/consultation';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
+import { orgPath } from '@/app/config/orgRoutes';
 import type { TableColumn } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
+import { countActiveFilters } from '@/utils/listFilters';
 import { paginateList } from '@/utils/pagination';
 
 const STATUS_FILTERS = [
@@ -52,6 +54,7 @@ export function DoctorConsultationsPage() {
   const [appliedStatus, setAppliedStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -89,6 +92,11 @@ export function DoctorConsultationsPage() {
   }, [orders, consultations, appliedSearch, appliedStatus]);
 
   const paged = paginateList(filtered, page, pageSize);
+  const activeFilterCount = countActiveFilters({ status: appliedStatus }, { status: '' }, appliedSearch);
+
+  useEffect(() => {
+    if (paged.page !== page) setPage(paged.page);
+  }, [paged.page, page]);
 
   const columns: TableColumn<LiverCareOrder>[] = useMemo(
     () => [
@@ -126,11 +134,13 @@ export function DoctorConsultationsPage() {
         header: 'Status',
         render: (order) => (
           <div className="flex flex-wrap gap-1">
-            <Badge variant="outline">{ORDER_STATUS_LABELS[order.orderStatus]}</Badge>
+            <StatusBadge
+              status={order.orderStatus}
+              domain="order"
+              label={ORDER_STATUS_LABELS[order.orderStatus]}
+            />
             {consultations[order.id] && (
-              <Badge variant="secondary" className="capitalize">
-                {consultations[order.id]!.status.replaceAll('_', ' ')}
-              </Badge>
+              <StatusBadge status={consultations[order.id]!.status} />
             )}
           </div>
         ),
@@ -163,9 +173,13 @@ export function DoctorConsultationsPage() {
           setPage(1);
         }}
         isLoading={loading}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
       >
-        <FilterField label="Status">
+        <FilterField label="Status" htmlFor="consult-status-filter">
           <select
+            id="consult-status-filter"
             className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             value={draftStatus}
             onChange={(e) => setDraftStatus(e.target.value)}
@@ -183,7 +197,7 @@ export function DoctorConsultationsPage() {
         isLoading={loading}
         emptyMessage="No consultations match your filters."
         getRowKey={(order) => order.id}
-        onRowClick={(order) => navigate(`/doctor/consultations/${order.id}?tab=patient`)}
+        onRowClick={(order) => navigate(orgPath(`/doctor/consultations/${order.id}?tab=patient`))}
       />
 
       <PaginationControls

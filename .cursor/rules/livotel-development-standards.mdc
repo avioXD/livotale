@@ -53,3 +53,11 @@ Each route page under `src/app/pages/<name>/`:
 ## Package Manager
 
 Use **pnpm** only.
+
+## Unit Tests
+
+- **Location**: all unit tests live under `tests/`, grouped by feature — never co-located next to source files.
+- **Layout** mirrors `src/` domains, e.g. `tests/hooks/`, `tests/utils/`, `tests/components/`, `tests/rbac/`.
+- **Naming**: `<module>.test.ts` or `<module>.test.tsx`.
+- **Imports**: use `@/` path aliases to reach source modules (e.g. `@/hooks/useUrlTabState`).
+- **Only meaningful tests**: skip trivial or obvious behavior; prefer integration-relevant edge cases.

@@ -1,32 +1,42 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { KpiCard, KpiGrid, kpiAccentAt } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { DashboardErrorState, KpiCard, KpiGrid, kpiAccentAt, StatusBadge } from '@/components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { doctorConsultationService } from '@/services/liverCare';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function DoctorLiverCareDashboardPanel() {
-  const [orders, setOrders] = useState<LiverCareOrder[]>([]);
+  const ordersQuery = useAsyncData(() => doctorConsultationService.listAssignedOrders(), []);
 
-  useEffect(() => {
-    void doctorConsultationService.listAssignedOrders().then(setOrders);
-  }, []);
+  if (ordersQuery.status === 'loading' && !ordersQuery.data) {
+    return <p className="text-sm text-muted-foreground">Loading consultation queue…</p>;
+  }
 
-  const awaitingConsult = orders.filter((o) =>
+  if (ordersQuery.status === 'error') {
+    return (
+      <DashboardErrorState
+        message={ordersQuery.error ?? 'Failed to load consultation queue'}
+        onRetry={ordersQuery.retry}
+      />
+    );
+  }
+
+  const orders = ordersQuery.data ?? [];
+  const awaitingConsult = orders.filter((o: LiverCareOrder) =>
     ['doctor_assigned', 'consultation_pending'].includes(o.orderStatus),
   ).length;
-  const rxPending = orders.filter((o) => o.orderStatus === 'prescription_pending').length;
-  const reportReady = orders.filter((o) =>
+  const rxPending = orders.filter((o: LiverCareOrder) => o.orderStatus === 'prescription_pending').length;
+  const reportReady = orders.filter((o: LiverCareOrder) =>
     ['final_report_generated', 'doctor_assignment_pending', 'doctor_assigned'].includes(o.orderStatus),
   ).length;
 
   const kpis = [
-    { label: 'Assigned liver care orders', value: orders.length, href: '/doctor/consultations' },
-    { label: 'Reports ready for review', value: reportReady, href: '/doctor/consultations' },
-    { label: 'Consultations pending', value: awaitingConsult, href: '/doctor/consultations' },
-    { label: 'Prescriptions to publish', value: rxPending, href: '/doctor/consultations' },
+    { label: 'Assigned liver care orders', value: orders.length, href: orgPath('/doctor/consultations') },
+    { label: 'Reports ready for review', value: reportReady, href: orgPath('/doctor/consultations') },
+    { label: 'Consultations pending', value: awaitingConsult, href: orgPath('/doctor/consultations') },
+    { label: 'Prescriptions to publish', value: rxPending, href: orgPath('/doctor/consultations') },
   ];
 
   return (
@@ -45,14 +55,18 @@ export function DoctorLiverCareDashboardPanel() {
           {orders.length === 0 ? (
             <p className="text-muted-foreground">No assigned consultations.</p>
           ) : (
-            orders.slice(0, 6).map((o) => (
+            orders.slice(0, 6).map((o: LiverCareOrder) => (
               <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0">
                 <div>
                   <p className="font-medium">{o.patientName}</p>
                   <p className="text-xs text-muted-foreground">{o.packageName}</p>
                 </div>
-                <Badge variant="outline">{ORDER_STATUS_LABELS[o.orderStatus]}</Badge>
-                <Link to={`/doctor/consultations/${o.id}`} className="text-primary underline">Open</Link>
+                <StatusBadge
+                  status={o.orderStatus}
+                  domain="order"
+                  label={ORDER_STATUS_LABELS[o.orderStatus]}
+                />
+                <Link to={orgPath(`/doctor/consultations/${o.id}`)} className="text-primary underline">Open</Link>
               </div>
             ))
           )}

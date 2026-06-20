@@ -1,8 +1,10 @@
-import { FiActivity, FiRefreshCw } from 'react-icons/fi';
+import { FiActivity, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { fibroScanReliability } from '@/app/pages/shared/components/fibroScanKpiConfig';
 import type { FibrosisScanRecord } from '@/types/fibrosisScan';
+import { cn } from '@/utils';
 
 interface TechnicianScanResultsPanelProps {
   scan: FibrosisScanRecord;
@@ -31,6 +33,8 @@ export function TechnicianScanResultsPanel({
   onRescan,
   onEdit,
 }: TechnicianScanResultsPanelProps) {
+  const reliability = fibroScanReliability(scan.iqrMedianPercent);
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -38,67 +42,67 @@ export function TechnicianScanResultsPanel({
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <FiActivity className="h-4 w-4 text-indigo-500" aria-hidden />
-              Scan results
+              3. FibroScan results
             </CardTitle>
             <CardDescription className="mt-1">
-              Review captured data for order <span className="font-mono font-medium">{orderNumber}</span>
+              Machine KPIs for order <span className="font-mono font-medium">{orderNumber}</span>
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="outline" className="capitalize">
               {scan.source}
             </Badge>
-            {(scan.rescanCount ?? 0) > 0 && (
-              <Badge variant="secondary">Rescan #{scan.rescanCount}</Badge>
-            )}
+            <Badge
+              variant={reliability.reliable ? 'default' : 'secondary'}
+              className={cn(reliability.reliable && 'bg-emerald-600')}
+            >
+              {reliability.label}
+            </Badge>
+            {(scan.rescanCount ?? 0) > 0 && <Badge variant="secondary">Rescan #{scan.rescanCount}</Badge>}
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <MetricTile label="LSM" value={scan.liverStiffnessKpa} unit="kPa" />
-          <MetricTile label="CAP" value={scan.capDbm} unit="dB/m" />
-          <MetricTile label="Fibrosis" value={scan.fibrosisStage} />
-          <MetricTile label="Steatosis" value={scan.steatosisGrade} />
-          <MetricTile label="IQR/Median" value={`${scan.iqrMedianPercent}%`} />
-          <MetricTile label="Success rate" value={`${scan.successRatePercent}%`} />
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Primary clinical KPIs
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <MetricTile label="Liver stiffness E" value={scan.liverStiffnessKpa} unit="kPa" />
+            <MetricTile label="CAP score" value={scan.capDbm} unit="dB/m" />
+            <MetricTile label="METAVIR" value={scan.fibrosisStage} />
+            <MetricTile label="Steatosis" value={scan.steatosisGrade} />
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Quality control
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <MetricTile label="IQR (kPa)" value={scan.iqr} />
+            <MetricTile label="IQR / Median" value={`${scan.iqrMedianPercent}%`} />
+            <MetricTile
+              label="Valid / total"
+              value={`${scan.validMeasurements}/${scan.totalMeasurements}`}
+            />
+          </div>
         </div>
 
         <div className="rounded-lg border-l-4 border-l-indigo-500 bg-indigo-500/5 px-3 py-2.5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Interpretation</p>
           <p className="mt-1 text-sm font-medium leading-snug">{scan.interpretation || '—'}</p>
-          {scan.remarks && (
-            <p className="mt-2 text-xs text-muted-foreground">{scan.remarks}</p>
-          )}
+          {scan.remarks && <p className="mt-2 text-xs text-muted-foreground">{scan.remarks}</p>}
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground">
-          <div>
-            <dt>Probe</dt>
-            <dd className="font-medium text-foreground">{scan.probeType}</dd>
-          </div>
-          <div>
-            <dt>BMI</dt>
-            <dd className="font-medium text-foreground">{scan.bmi}</dd>
-          </div>
-          <div>
-            <dt>Valid / total</dt>
-            <dd className="font-medium text-foreground">
-              {scan.validMeasurements}/{scan.totalMeasurements}
-            </dd>
-          </div>
-          <div>
-            <dt>Captured</dt>
-            <dd className="font-medium text-foreground">
-              {new Date(scan.scanAt).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </dd>
-          </div>
-        </dl>
+        {scan.scanFileUrl && (
+          <Button size="sm" variant="outline" className="gap-2" asChild>
+            <a href={scan.scanFileUrl} target="_blank" rel="noreferrer">
+              <FiExternalLink className="h-4 w-4" aria-hidden />
+              View machine report proof
+            </a>
+          </Button>
+        )}
 
         {!scan.locked && (
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">

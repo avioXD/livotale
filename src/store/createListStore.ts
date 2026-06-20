@@ -12,6 +12,7 @@ export interface ListStoreActions<TFilters extends Record<string, unknown>> {
   resetFilters: () => void;
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
+  setFiltersExpanded: (expanded: boolean) => void;
   clearError: () => void;
 }
 
@@ -26,6 +27,7 @@ export interface ListStoreFullState<TItem, TFilters extends Record<string, unkno
   appliedSearch: string;
   draftFilters: TFilters;
   appliedFilters: TFilters;
+  filtersExpanded: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -84,6 +86,7 @@ export function createListStore<TItem, TFilters extends Record<string, unknown>>
     appliedSearch: '',
     draftFilters: { ...defaultFilters },
     appliedFilters: { ...defaultFilters },
+    filtersExpanded: false,
     isLoading: false,
     error: null,
 
@@ -154,6 +157,8 @@ export function createListStore<TItem, TFilters extends Record<string, unknown>>
       set({ pageSize, page: 1 });
       debouncedFetch(get, set);
     },
+
+    setFiltersExpanded: (filtersExpanded) => set({ filtersExpanded }),
 
     clearError: () => set({ error: null }),
   }));

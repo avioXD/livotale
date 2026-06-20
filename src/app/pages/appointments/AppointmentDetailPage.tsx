@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiCalendar, FiMapPin } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common';
 import { AppointmentStatusStepper } from '@/app/pages/appointments/components/AppointmentStatusStepper';
 import { AppointmentTimeline } from '@/app/pages/appointments/components/AppointmentTimeline';
 import { CancelAppointmentDialog } from '@/app/pages/appointments/components/CancelAppointmentDialog';
@@ -11,16 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppointmentsStore } from '@/store';
-
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  booked: 'secondary',
-  assigned: 'default',
-  in_progress: 'default',
-  completed: 'outline',
-  cancelled: 'destructive',
-  rescheduled: 'secondary',
-  no_show: 'destructive',
-};
+import { orgPath } from '@/app/config/orgRoutes';
 
 function titleFor(appt: { typeName?: string; visitType: string; visitMode?: string }) {
   const name = appt.typeName ?? appt.visitType.replace(/_/g, ' ');
@@ -80,7 +72,7 @@ export function AppointmentDetailPage() {
       <PageHeader
         title="Appointment details"
         actions={
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/appointments')}>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate(orgPath('/appointments'))}>
             <FiArrowLeft className="h-4 w-4" />
             All appointments
           </Button>
@@ -106,9 +98,7 @@ export function AppointmentDetailPage() {
                     <p className="mt-1 text-sm text-muted-foreground">{selected.unified.appointmentCode}</p>
                   )}
                 </div>
-                <Badge variant={statusVariant[selected.status] ?? 'secondary'} className="capitalize">
-                  {selected.status.replace(/_/g, ' ')}
-                </Badge>
+                <StatusBadge status={selected.status} domain="appointment" />
               </div>
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -166,13 +156,13 @@ export function AppointmentDetailPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/appointments/${selected.id}/tracking`)}
+                      onClick={() => navigate(orgPath(`/appointments/${selected.id}/tracking`))}
                     >
                       Track technician
                     </Button>
                   )}
                   {showTeleJoin && (
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/appointments/${selected.id}/tele`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(orgPath(`/appointments/${selected.id}/tele`))}>
                       Join teleconsultation
                     </Button>
                   )}
@@ -227,7 +217,7 @@ export function AppointmentDetailPage() {
             open={cancelOpen}
             appointmentId={selected.id}
             onClose={() => setCancelOpen(false)}
-            onDone={() => navigate('/appointments')}
+            onDone={() => navigate(orgPath('/appointments'))}
           />
           <RescheduleAppointmentDialog
             open={rescheduleOpen}

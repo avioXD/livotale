@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { EnquiryOrderOutcomeDraft } from '@/store/enquiries';
 import type { Enquiry, EnquiryOrderOutcome } from '@/types/enquiry';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const OUTCOMES: { value: EnquiryOrderOutcome; label: string }[] = [
   { value: 'confirmed', label: 'Order confirmed / paid' },
@@ -38,7 +39,7 @@ export function EnquiryOrderOutcomePanel({
 
       {enquiry.orderId && (
         <Button size="sm" variant="outline" asChild>
-          <Link to={`/admin/orders/${enquiry.orderId}`}>Open order {enquiry.orderId}</Link>
+          <Link to={orgPath(`/admin/orders/${enquiry.orderId}`)}>Open order {enquiry.orderId}</Link>
         </Button>
       )}
 

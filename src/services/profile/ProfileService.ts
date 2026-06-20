@@ -1,4 +1,4 @@
-import { mockOrApi } from '@/services/mock';
+import { storageService } from '@/services/storage/StorageService';
 import { BaseApiService } from '@/services/base';
 import type {
   ConsentPurpose,
@@ -8,43 +8,28 @@ import type {
   UserConsent,
   UserProfile,
 } from '@/types';
-import {
-  mockAcceptConsent,
-  mockGetProfile,
-  mockListConsentPurposes,
-  mockListConsents,
-  mockUpdateBasic,
-  mockUpdateEmergencyContact,
-  mockUpsertInsurance,
-} from './profile.mock';
-
 class ProfileService extends BaseApiService {
   async getProfile(): Promise<UserProfile> {
-    return mockOrApi(
-      () => mockGetProfile(),
-      () => this.get('/profile'),
-    );
+    return this.get('/profile')
   }
 
   async updateBasic(payload: UpdateBasicPayload): Promise<UserProfile> {
-    return mockOrApi(
-      () => mockUpdateBasic(payload),
-      () =>
-        this.patch('/profile/basic', {
+    return this.patch('/profile/basic', {
           fullName: payload.fullName,
-          email: payload.email,
           mobile: payload.mobile,
           gender: payload.gender,
           dob: payload.dob,
-        }),
-    );
+          profilePhotoUrl: payload.profilePhotoUrl,
+        })
+  }
+
+  async uploadProfilePhoto(file: File, userId: string): Promise<UserProfile> {
+    const { storageUrl } = await storageService.uploadFile(file, 'profile', userId);
+        return this.patch('/profile/photo', { profilePhotoUrl: storageUrl });
   }
 
   async updateEmergencyContact(payload: UpdateEmergencyContactPayload): Promise<UserProfile> {
-    return mockOrApi(
-      () => mockUpdateEmergencyContact(payload),
-      () => this.patch('/profile/emergency-contact', payload),
-    );
+    return this.patch('/profile/emergency-contact', payload)
   }
 
   async upsertInsurance(payload: {
@@ -55,31 +40,19 @@ class ProfileService extends BaseApiService {
     validUntil?: string;
     isPrimary?: boolean;
   }): Promise<InsuranceDetails> {
-    return mockOrApi(
-      () => mockUpsertInsurance(payload),
-      () => this.patch('/profile/insurance', payload),
-    );
+    return this.patch('/profile/insurance', payload)
   }
 
   async listConsents(): Promise<UserConsent[]> {
-    return mockOrApi(
-      () => mockListConsents(),
-      () => this.get('/consent/mine'),
-    );
+    return this.get('/compliance/consent/mine')
   }
 
   async listConsentPurposes(): Promise<ConsentPurpose[]> {
-    return mockOrApi(
-      () => mockListConsentPurposes(),
-      () => this.get('/consent/purposes'),
-    );
+    return this.get('/compliance/consent/purposes')
   }
 
   async acceptConsent(purposeId: string): Promise<UserConsent[]> {
-    return mockOrApi(
-      () => mockAcceptConsent(purposeId),
-      () => this.post('/consent/accept', { purposeId }),
-    );
+    return this.post('/compliance/consent/accept', { purposeId })
   }
 }
 

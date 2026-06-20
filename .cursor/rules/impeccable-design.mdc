@@ -1,0 +1,52 @@
+---
+description: Livotale UI design standards (Impeccable-inspired). Typography, color, spacing, and component hierarchy for landing and admin surfaces.
+globs: src/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Livotale Design Standards
+
+## Brand colors (never hardcode alternatives)
+
+- Primary pink: `#D7316C` — use `text-livotale-pink`, `bg-livotale-pink`
+- Primary teal: `#1EABB3` — use `text-livotale-teal`, `bg-livotale-teal`
+- Gradients: `from-livotale-pink to-livotale-teal` for CTAs and hero accents
+
+## Typography
+
+- Font: Inter (loaded in index.html); fallback system-ui
+- Landing hero H1: `text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold`
+- Section H2: `text-3xl md:text-4xl lg:text-5xl font-bold`
+- Body: `text-base md:text-lg leading-relaxed`
+- Labels/badges: `text-xs sm:text-sm font-semibold uppercase tracking-widest`
+
+## Landing (dark theme)
+
+- Background: `bg-black` / `bg-neutral-950`
+- Text: `text-white` headings, `text-neutral-300/400` body
+- Cards: `border border-white/10 bg-white/[0.02]`
+- Full-bleed sections: use `left-1/2 -ml-[50vw] w-screen` pattern sparingly
+
+## Admin (light theme)
+
+- Background: `bg-background` / `bg-card`
+- Use shadcn/ui components; do not invent one-off button styles
+- Sidebar: collapsed 72px, expanded 256px — match AdminLayout
+
+## Spacing
+
+- Section padding: `py-16 md:py-24`
+- Container: `max-w-7xl mx-auto px-4 sm:px-6`
+- Card padding: `p-6 md:p-8`
+
+## Components
+
+- Primary CTA: gradient button or WhatsAppButton for booking
+- Secondary: outline with brand border (`border-livotale-teal/40`)
+- Icons: lucide-react in admin; consistent `h-5 w-5` or `h-6 w-6`
+
+## Accessibility
+
+- All images need meaningful `alt`
+- Interactive elements need `aria-label` when icon-only
+- Maintain 4.5:1 contrast on body text

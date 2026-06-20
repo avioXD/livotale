@@ -24,7 +24,8 @@
 
 ```
 src/store/
-  createListStore.ts      # Paginated list factory (patients, appointments)
+  createListStore.ts      # Server-paginated list factory (patients)
+  createClientListStore.ts # Client-paginated list factory (ops tables, directories)
   packages/
     packagesAdminStore.ts
     packageDetailStore.ts
@@ -130,6 +131,23 @@ Other modules (enquiries, orders, dashboard) still call `packageService` directl
 3. **Selectors**: `useStore((s) => s.field)` — avoid subscribing to entire store  
 4. **Navigation after save**: component calls `navigate()`; store returns saved entity  
 5. **Mock mode**: stores call services; services mutate `MOCK_PACKAGES` — store cache stays in sync via upsert/invalidate
+
+---
+
+## List store factories (I03)
+
+| Factory | Use when |
+|---------|----------|
+| `createListStore` | API returns `{ items, total, page, pageSize, totalPages }` (server pagination) |
+| `createClientListStore` | API returns full array; UI slices with `paginateList` |
+
+Both expose: `draftFilters` / `appliedFilters`, `searchInput` / `appliedSearch`, `page`, `pageSize`, `filtersExpanded`, `applyFilters`, `resetFilters`, `setFiltersExpanded`.
+
+**Pagination in components**: use `useStorePaged(store, selectSlice, selectSetPage)` from `@/hooks/useStorePaged` — do **not** call store `getPaged()` during render without subscribing to `page`/`items` (Zustand will not re-render on page change).
+
+Client store adds `getPaged()` for legacy use only; prefer `useStorePaged`.
+
+Ops hub tables: `useOpsOrdersStore`, `useOpsAppointmentsStore`. Directory tables: `useAuditLogStore`, `useBankDirectoryStore`, `usePartnerLabsListStore`, etc.
 
 ---
 

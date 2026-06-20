@@ -8,29 +8,11 @@ import {
   type DoctorConsultRow,
 } from '@/app/pages/doctor/dashboard/components/DoctorOnlineConsultPanel';
 import { Button } from '@/components/ui/button';
-import { adminAppointmentsService } from '@/services/appointments';
-import { doctorAppointmentsService } from '@/services';
+import { doctorConsultationService } from '@/services';
 import { dashboardService } from '@/services/patients';
 import type { DashboardOverview } from '@/types';
-
-const DEMO_TELE_CONSULTS: DoctorConsultRow[] = [
-  {
-    id: 'demo-tele-1',
-    appointmentCode: 'APT-TELE-1042',
-    patientName: 'Rohan Mehta',
-    scheduledStart: new Date(new Date().setHours(11, 0, 0, 0)).toISOString(),
-    status: 'assigned',
-    typeName: 'Teleconsultation',
-  },
-  {
-    id: 'demo-tele-2',
-    appointmentCode: 'APT-TELE-1048',
-    patientName: 'Priya Nair',
-    scheduledStart: new Date(new Date().setHours(15, 30, 0, 0)).toISOString(),
-    status: 'booked',
-    typeName: 'Follow-up teleconsult',
-  },
-];
+import type { LiverCareOrder } from '@/types/serviceOrder';
+import { orgPath } from '@/app/config/orgRoutes';
 
 interface DoctorDashboardPanelProps {
   /** When set, loads this doctor's queue via admin API (staff profile preview). */
@@ -39,21 +21,23 @@ interface DoctorDashboardPanelProps {
   readOnly?: boolean;
 }
 
-function toConsultRow(row: {
-  id: string;
-  appointmentCode: string;
-  patientName: string;
-  scheduledStart: string;
-  status: string;
-  typeName?: string;
-}): DoctorConsultRow {
+const CONSULTATION_ORDER_STATUSES = new Set([
+  'doctor_assigned',
+  'consultation_pending',
+  'prescription_pending',
+  'prescription_generated',
+]);
+
+function orderToConsultRow(order: LiverCareOrder): DoctorConsultRow | null {
+  if (!order.consultationScheduledAt) return null;
+  if (!CONSULTATION_ORDER_STATUSES.has(order.orderStatus)) return null;
   return {
-    id: row.id,
-    appointmentCode: row.appointmentCode,
-    patientName: row.patientName,
-    scheduledStart: row.scheduledStart,
-    status: row.status,
-    typeName: row.typeName,
+    id: order.id,
+    appointmentCode: order.orderNumber,
+    patientName: order.patientName,
+    scheduledStart: order.consultationScheduledAt,
+    status: order.orderStatus,
+    typeName: order.packageName,
   };
 }
 
@@ -64,7 +48,6 @@ export function DoctorDashboardPanel({
 }: DoctorDashboardPanelProps) {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [teleAppointments, setTeleAppointments] = useState<DoctorConsultRow[]>([]);
-  const [usingDemoTele, setUsingDemoTele] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,38 +67,17 @@ export function DoctorDashboardPanel({
       }
 
       try {
-        const today = new Date().toISOString().slice(0, 10);
-        let teleRows: DoctorConsultRow[] = [];
-
-        if (doctorId) {
-          const rows = await adminAppointmentsService.list({
-            doctorId,
-            dateFrom: `${today}T00:00:00.000Z`,
-            limit: '50',
-          });
-          teleRows = rows
-            .filter((r) => r.visitMode === 'tele')
-            .map(toConsultRow);
-        } else {
-          const calendar = await doctorAppointmentsService.getCalendar({ view: 'week', date: today });
-          teleRows = calendar.appointments
-            .filter((r) => r.visitMode === 'tele')
-            .map(toConsultRow);
-        }
+        const orders = await doctorConsultationService.listAssignedOrders(doctorId);
+        const teleRows = orders
+          .map(orderToConsultRow)
+          .filter((row): row is DoctorConsultRow => row !== null);
 
         if (!cancelled) {
-          if (teleRows.length > 0) {
-            setTeleAppointments(teleRows);
-            setUsingDemoTele(false);
-          } else {
-            setTeleAppointments(DEMO_TELE_CONSULTS);
-            setUsingDemoTele(true);
-          }
+          setTeleAppointments(teleRows);
         }
       } catch {
         if (!cancelled) {
-          setTeleAppointments(DEMO_TELE_CONSULTS);
-          setUsingDemoTele(true);
+          setTeleAppointments([]);
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -141,7 +103,7 @@ export function DoctorDashboardPanel({
         </div>
         {!readOnly && (
           <Button variant="outline" size="sm" asChild>
-            <Link to="/doctor/appointments">Open calendar</Link>
+            <Link to={orgPath('/doctor/consultations')}>Open consultations</Link>
           </Button>
         )}
       </div>
@@ -149,12 +111,6 @@ export function DoctorDashboardPanel({
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
-        </div>
-      )}
-
-      {usingDemoTele && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          Showing demo online consultations — assign tele appointments to this doctor for live data.
         </div>
       )}
 

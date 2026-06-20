@@ -1,7 +1,7 @@
 # Global Development Tasks — Livotale Liver Care Platform
 
-**Last updated**: 2026-06-09  
-**Specs**: [README](./README.md) · **Plan**: [PLAN.md](./PLAN.md)  
+**Last updated**: 2026-06-20  
+**Specs**: [README](./README.md) · **Plan**: [PLAN.md](./PLAN.md) · **Recovery**: [recovery/00-MASTER-PLAN.md](./recovery/00-MASTER-PLAN.md)  
 **Legend**: `[ ]` pending · `[~]` in progress · `[x]` done · `[—]` deferred (API / E2E / stakeholder)
 
 ---
@@ -27,14 +27,14 @@
 
 ### Seed data
 - [x] F301 Mock seed in `liverCare.mock.ts` (UI)
-- [—] F302 API seed script `seed-liver-care-platform.js`
+- [x] F302 API seed script `seed-liver-care-platform.py`
 
 ---
 
 ## Phase 2 — Packages & public website → [01](./features/01-packages-public-website.md)
 
 - [x] W101–W104 Public pages + admin package CRUD
-- [—] W105 API: `GET /public/packages`, `POST /public/enquiries`
+- [x] W105 API: `GET /public/packages`, `POST /public/enquiries`
 - [x] W106 `PackageService`, `EnquiryService`
 
 ---
@@ -185,6 +185,74 @@
 - [x] H206 Patient portal published report dashboard
 - [ ] H207 Admin order detail dashboard preview
 - [—] H208 Live AI liver-health API endpoint
+
+---
+
+## Phase H — Platform recovery (API/UI/DB stabilization)
+
+**Specs**: [recovery/](./recovery/) · **Gap list**: [01-GAP-INVENTORY.md](./recovery/01-GAP-INVENTORY.md)
+
+### H0 — Database baseline
+- [x] R001 Migration `038_inbox_notifications.sql` created
+- [x] R002 Document apply order 032–038 in `LOCAL_CREDENTIALS.md`
+- [x] R003 Update `database/README.md` for migrations 014–038
+- [x] R004 CI/pre-dev script: verify P0 columns exist (`scripts/verify_p0_migrations.py`)
+
+### H1 — P0 API hotfixes
+- [x] R101 Fix `GET /auth/sessions` ResponseValidationError ([F01](./recovery/features/F01-auth-profile-settings.md))
+- [x] R102 Fix `GET /admin/staff/lab-partners/roster` route ordering (422)
+- [x] R103 Add `GET /admin/audit` alias → `/audit/activity` ([F02](./recovery/features/F02-admin-dashboard-ops.md))
+- [x] R104 Verify dashboard/enquiries after migration 034 applied
+- [x] R105 Verify staff lists after migration 036 applied
+
+### H2 — Global error UX
+- [x] R201 Implement `mapApiErrorToToast` + interceptor ([03-ERROR-TOAST-SPEC.md](./recovery/03-ERROR-TOAST-SPEC.md))
+- [x] R202 Debounce toast on notification bell polling
+- [x] R203 Sanitize 500 messages (no raw SQL in UI)
+
+### H3 — Appointments decision
+- [x] R301 Stakeholder sign-off: **Option A — retire legacy appointment UI** ([F05](./recovery/features/F05-legacy-appointments.md))
+- [x] R302 Remove or redirect broken `/admin/appointments/*` UI calls
+- [—] R303 Port hybrid teleconsult paths only (deferred — Option A)
+
+### H4 — Contract & E2E tests
+- [x] R401 Add `tests/contract/test_recovery_p0.py`
+- [x] R402 PKG-1 integration test (enquiry → order convert)
+- [x] R403 Playwright super-admin shell smoke (`e2e/super-admin-smoke.spec.ts`)
+
+### H5 — Mock retirement
+- [x] R501 Wire admin notification log to API ([F02](./recovery/features/F02-admin-dashboard-ops.md))
+- [ ] R502 Replace dummy payment link side effects with real outbox
+- [x] R503 Remove misleading "dummy" labels on live portal pages
+
+---
+
+## Phase I — URL-routed tabs & log field UX
+
+**Specs**: [platform/I-MASTER-PLAN.md](./platform/I-MASTER-PLAN.md) · **Plan**: [plans/I01-implementation-plan.md](./plans/I01-implementation-plan.md)
+
+### I0 — Shared primitives
+- [x] I001 `useUrlTabState` hook + unit tests
+- [x] I002 `fieldLimits.ts` + `LogTextarea` component
+
+### I1 — P0 URL tabs
+- [x] I101 `AdminStaffMemberDetailPage` — tab clicks sync URL
+- [x] I102 `AdminPartnerLabDetailPage` — profile/legal/reports/billing tabs
+- [x] I103 Settings `MyProfilePanel` — `profileSection` query param
+
+### I2 — P1 URL tabs
+- [x] I201 `AdminStaffOnboardPage` — send-link / admin-complete
+- [x] I202 `PatientLoginPage` — `?mode=otp|password`
+- [x] I203 Refactor existing URL tab pages to shared hook
+
+### I3 — Log fields
+- [x] I301 P0 Input→LogTextarea (payment notes, rx clinical notes)
+- [ ] I302 P1 validation on enquiry/order/technician/doctor note fields
+- [x] I303 Read-only log display (`whitespace-pre-wrap`)
+
+### I4 — Tests & docs
+- [x] I401 E2E `url-tabs.spec.ts` deep-link scenarios
+- [x] I402 Update platform ui-page-patterns + cursor rule
 
 ---
 

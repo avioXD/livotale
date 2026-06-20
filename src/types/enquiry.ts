@@ -98,6 +98,7 @@ export interface UpdateEnquiryInput {
   gender?: string;
   city?: string;
   address?: string;
+  message?: string;
   preferredPackageId?: string | null;
   orderOutcome?: EnquiryOrderOutcome | null;
   orderOutcomeRemarks?: string | null;

@@ -3,7 +3,7 @@ import { Check, Sparkles } from 'lucide-react';
 import { WHATSAPP_MESSAGES } from '@/app/config/whatsappMessages';
 import { PackageTestPanel } from '@/components/packages/PackageTestPanel';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
-import { bulletsFromSections } from '@/services/liverCare/package.utils';
+import { publicBulletsForPackage } from '@/services/liverCare/package.utils';
 import type { LiverCarePackage } from '@/types/package';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,7 @@ interface PublicPackageCardProps {
 
 export function PublicPackageCard({ pkg, featured = false }: PublicPackageCardProps) {
   const isFeatured = featured || pkg.recommendedTag;
-  const bullets = pkg.includes.bullets.length
-    ? pkg.includes.bullets
-    : bulletsFromSections(pkg.checklistSections);
+  const bullets = publicBulletsForPackage(pkg);
 
   return (
     <article
@@ -108,6 +106,12 @@ export function PublicPackageCard({ pkg, featured = false }: PublicPackageCardPr
         </ul>
 
         <div className="mt-6 flex flex-col gap-2">
+          <Button
+            asChild
+            className="w-full bg-livotale-teal text-white shadow-md hover:bg-livotale-teal/90"
+          >
+            <Link to={`/enquire?package=${pkg.code}`}>Enquire now</Link>
+          </Button>
           <WhatsAppButton
             className="w-full shadow-md"
             label="Book on WhatsApp"

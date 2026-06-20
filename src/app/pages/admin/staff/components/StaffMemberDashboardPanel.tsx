@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
 import { DoctorDashboardPanel } from '@/app/pages/doctor/dashboard/DoctorDashboardPanel';
-import { KpiCard, kpiAccentAt } from '@/components/common';
+import { AnalyticsPeriodToolbar, KpiCard, kpiAccentAt } from '@/components/common';
 import { DashboardCharts } from '@/app/pages/dashboard/components/DashboardCharts';
 import { DashboardStats } from '@/app/pages/dashboard/components/DashboardStats';
 import { EcosystemOverview } from '@/app/pages/dashboard/components/EcosystemOverview';
 import { SampleAnalyticsPanel } from '@/app/pages/sample-collection/components/SampleAnalyticsPanel';
-import { getDemoStaffDashboard } from '@/data/staffHubDemoData';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboardService } from '@/services/patients';
 import { opsAnalyticsService, type AnalyticsPeriod } from '@/services/opsAnalytics';
+import { staffDirectoryService } from '@/services/staff/StaffDirectoryService';
 import type { DashboardOverview } from '@/types';
 import type { SampleCollectionAnalytics } from '@/types/sampleCollection';
 import type { StaffMemberRow, StaffRoleKey } from '@/types/staffHub';
-
-const PERIODS: AnalyticsPeriod[] = ['daily', 'monthly', 'yearly'];
 
 interface StaffMemberDashboardPanelProps {
   roleKey: StaffRoleKey;
@@ -42,7 +39,7 @@ function roleDashboardDescription(roleKey: StaffRoleKey, memberName: string): st
     case 'lab_partner':
       return `${memberName} sees collected samples and published reports — daily, monthly, or yearly.`;
     case 'operations':
-      return `${memberName} sees network-wide samples and reports across all teams.`;
+      return `${memberName} sees network-wide samples and reports across assigned city and pincodes.`;
     case 'technician':
     case 'doctor':
       return `${memberName} sees clinic KPIs, online consultations, trends, and the care ecosystem overview.`;
@@ -51,16 +48,28 @@ function roleDashboardDescription(roleKey: StaffRoleKey, memberName: string): st
   }
 }
 
+const SAMPLE_ANALYTICS_ROLES = new Set<StaffRoleKey>([
+  'technician',
+  'doctor',
+  'lab_partner',
+  'operations',
+  'super_admin',
+]);
+
 export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMemberDashboardPanelProps) {
   const [period, setPeriod] = useState<AnalyticsPeriod>('monthly');
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [sampleAnalytics, setSampleAnalytics] = useState<SampleCollectionAnalytics | null>(null);
+  const [staffDashboard, setStaffDashboard] = useState<Awaited<ReturnType<typeof staffDirectoryService.getDashboard>>>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const usesSampleAnalytics = roleKey === 'lab_partner' || roleKey === 'operations';
+  const usesSampleAnalytics = SAMPLE_ANALYTICS_ROLES.has(roleKey);
   const isDoctor = roleKey === 'doctor';
-  const demoDashboard = getDemoStaffDashboard(roleKey);
+
+  useEffect(() => {
+    void staffDirectoryService.getDashboard(roleKey).then(setStaffDashboard);
+  }, [roleKey]);
 
   useEffect(() => {
     if (usesSampleAnalytics || isDoctor) return;
@@ -87,7 +96,7 @@ export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMe
   }, [usesSampleAnalytics, isDoctor]);
 
   useEffect(() => {
-    if (!usesSampleAnalytics) return;
+    if (!usesSampleAnalytics || isDoctor) return;
 
     let cancelled = false;
     void (async () => {
@@ -111,7 +120,7 @@ export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMe
     return () => {
       cancelled = true;
     };
-  }, [usesSampleAnalytics, roleKey, period]);
+  }, [usesSampleAnalytics, isDoctor, roleKey, period]);
 
   return (
     <div className="space-y-4">
@@ -120,27 +129,11 @@ export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMe
         <span className="font-medium">Dashboard</span> home screen after sign-in.
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold tracking-tight">{roleDashboardTitle(roleKey)}</h3>
-          <p className="text-sm text-muted-foreground">
-            {roleDashboardDescription(roleKey, member.fullName)}
-          </p>
-        </div>
-        {usesSampleAnalytics && (
-          <div className="flex flex-wrap gap-2">
-            {PERIODS.map((p) => (
-              <Button
-                key={p}
-                size="sm"
-                variant={period === p ? 'default' : 'outline'}
-                onClick={() => setPeriod(p)}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </Button>
-            ))}
-          </div>
-        )}
+      <div>
+        <h3 className="text-lg font-semibold tracking-tight">{roleDashboardTitle(roleKey)}</h3>
+        <p className="text-sm text-muted-foreground">
+          {roleDashboardDescription(roleKey, member.fullName)}
+        </p>
       </div>
 
       {error && (
@@ -156,29 +149,32 @@ export function StaffMemberDashboardPanel({ roleKey, member, doctorId }: StaffMe
           readOnly
         />
       ) : usesSampleAnalytics ? (
-        isLoading && !sampleAnalytics ? (
-          <p className="text-sm text-muted-foreground">Loading analytics…</p>
-        ) : sampleAnalytics ? (
-          <SampleAnalyticsPanel
-            analytics={sampleAnalytics}
-            title={
-              roleKey === 'lab_partner'
-                ? 'Your lab — samples & reports'
-                : 'All teams — samples & reports'
-            }
-          />
-        ) : null
-      ) : isLoading && !overview && !demoDashboard ? (
+        <>
+          <AnalyticsPeriodToolbar period={period} onPeriodChange={setPeriod} />
+          {isLoading && !sampleAnalytics ? (
+            <p className="text-sm text-muted-foreground">Loading analytics…</p>
+          ) : sampleAnalytics ? (
+            <SampleAnalyticsPanel
+              analytics={sampleAnalytics}
+              title={
+                roleKey === 'lab_partner'
+                  ? `${member.fullName} — lab samples & reports (${period})`
+                  : `${member.fullName} — analytics (${period})`
+              }
+            />
+          ) : null}
+        </>
+      ) : isLoading && !overview && !staffDashboard ? (
         <p className="text-sm text-muted-foreground">Loading dashboard data…</p>
       ) : (
         <>
-          {demoDashboard && !overview && (
+          {staffDashboard && !overview && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{demoDashboard.headline}</CardTitle>
+                <CardTitle className="text-base">{staffDashboard.headline}</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {demoDashboard.kpis.map((kpi, i) => (
+                {staffDashboard.kpis.map((kpi, i) => (
                   <KpiCard
                     key={kpi.label}
                     label={kpi.label}

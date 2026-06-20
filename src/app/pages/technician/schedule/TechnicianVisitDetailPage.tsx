@@ -1,40 +1,27 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { technicianAppointmentsService } from '@/services';
-import { TechnicianSampleCollectionPanel } from '@/app/pages/technician/schedule/components/TechnicianSampleCollectionPanel';
-import type { SampleCollection } from '@/types/sampleCollection';
-
-type VisitDetailTab = 'clinical' | 'samples';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function TechnicianVisitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab') as VisitDetailTab | null;
-  const activeTab: VisitDetailTab = tabParam === 'samples' ? 'samples' : 'clinical';
-
-  const setActiveTab = (tab: VisitDetailTab) => {
-    setSearchParams(tab === 'clinical' ? {} : { tab });
-  };
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
   const [vitals, setVitals] = useState({ weightKg: '', heightCm: '', bpSystolic: '', bpDiastolic: '', waistCm: '' });
   const [fibro, setFibro] = useState({ liverStiffnessKpa: '', capDbm: '', fibrosisStage: 'F2', steatosisGrade: 'S2' });
-  const [sampleCode, setSampleCode] = useState('');
   const [issueNote, setIssueNote] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const visit = detail?.visit as Record<string, unknown> | undefined;
-  const sampleCollection = detail?.sampleCollection as SampleCollection | null | undefined;
   const checklist = (visit?.checklist as Array<{ code: string; title: string; status: string }>) ?? [];
 
   const addressParts = [
@@ -113,12 +100,12 @@ export function TechnicianVisitDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={String(detail?.patientName ?? 'Sample collection')}
+        title={String(detail?.patientName ?? 'Field visit')}
         description={String(detail?.appointmentCode ?? '')}
         actions={
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/technician/schedule')}>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate(orgPath('/technician/schedule'))}>
             <FiArrowLeft className="h-4 w-4" />
-            Sample collection
+            Back to schedule
           </Button>
         }
       />
@@ -136,12 +123,13 @@ export function TechnicianVisitDetailPage() {
           <div className="flex flex-wrap gap-2">
             <Badge className="capitalize">{String(detail.status).replace(/_/g, ' ')}</Badge>
             <Badge variant="outline">{String(detail.typeName)}</Badge>
-            {sampleCollection && (
-              <Badge variant="secondary" className="font-mono capitalize">
-                {sampleCollection.sampleCode} · {sampleCollection.status.replace(/_/g, ' ')}
-              </Badge>
-            )}
           </div>
+
+          <Card className="border-muted">
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              Blood tests are scheduled separately at our lab partner — not collected during this field visit.
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader><CardTitle className="text-base">Patient details</CardTitle></CardHeader>
@@ -150,9 +138,7 @@ export function TechnicianVisitDetailPage() {
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Patient</p>
                 <p className="text-sm font-medium">{String(detail.patientName ?? '—')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {[detail.patientCode, detail.patientMobile ?? sampleCollection?.patientMobile]
-                    .filter(Boolean)
-                    .join(' · ') || '—'}
+                  {[detail.patientCode, detail.patientMobile].filter(Boolean).join(' · ') || '—'}
                 </p>
               </div>
               <div>
@@ -176,24 +162,10 @@ export function TechnicianVisitDetailPage() {
                   <p className="text-sm text-muted-foreground">{String(detail.chiefComplaint)}</p>
                 </div>
               ) : null}
-              {sampleCollection?.collectionRemarks && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Collection notes</p>
-                  <p className="text-sm text-muted-foreground">{sampleCollection.collectionRemarks}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as VisitDetailTab)} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="clinical">Clinical</TabsTrigger>
-              <TabsTrigger value="samples">
-                Sample collection{sampleCollection ? ` · ${sampleCollection.sampleCode}` : ''}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="clinical" className="mt-4 space-y-4">
+          <div className="space-y-4">
               <Card>
                 <CardHeader><CardTitle className="text-base">Visit status</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
@@ -274,27 +246,6 @@ export function TechnicianVisitDetailPage() {
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="text-base">Blood sample</CardTitle></CardHeader>
-                <CardContent className="flex gap-2">
-                  <Input placeholder="Sample barcode" value={sampleCode} onChange={(e) => setSampleCode(e.target.value)} />
-                  <Button
-                    disabled={isSaving || !sampleCode}
-                    onClick={() =>
-                      void runAction(() =>
-                        technicianAppointmentsService.collectSample(id, {
-                          sampleCode,
-                          sampleType: 'blood',
-                          tubesCount: 3,
-                        }),
-                      )
-                    }
-                  >
-                    Record sample
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
                 <CardHeader><CardTitle className="text-base">Report issue / escalation</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <Textarea
@@ -333,19 +284,7 @@ export function TechnicianVisitDetailPage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="samples" className="mt-4 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                LGSC sample workflow — photos, collection status, and lab handover.
-              </p>
-              <TechnicianSampleCollectionPanel
-                appointmentId={id}
-                initialSample={sampleCollection ?? null}
-                onUpdated={() => void load()}
-              />
-            </TabsContent>
-          </Tabs>
+          </div>
         </>
       ) : null}
     </div>

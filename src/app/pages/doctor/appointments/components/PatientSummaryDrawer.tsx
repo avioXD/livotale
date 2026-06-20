@@ -3,6 +3,7 @@ import { FiExternalLink } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DoctorAppointmentDetail } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
 interface PatientSummaryDrawerProps {
   appointment: DoctorAppointmentDetail;
@@ -12,16 +13,16 @@ export function PatientSummaryDrawer({ appointment }: PatientSummaryDrawerProps)
   const summary = appointment.patientSummary;
   const pid = appointment.patientId;
   const links = [
-    { label: 'Profile', path: `/patients/${pid}?tab=profile` },
-    { label: 'Orders', path: `/patients/${pid}?tab=orders` },
-    { label: 'Payments', path: `/patients/${pid}?tab=payments` },
+    { label: 'Profile', path: orgPath(`/patients/${pid}?tab=profile`) },
+    { label: 'Orders', path: orgPath(`/patients/${pid}?tab=orders`) },
+    { label: 'Payments', path: orgPath(`/patients/${pid}?tab=payments`) },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="gap-2" asChild>
-          <Link to={`/patients/${pid}?tab=profile`}>
+          <Link to={orgPath(`/patients/${pid}?tab=profile`)}>
             <FiExternalLink className="h-4 w-4" />
             Open patient
           </Link>

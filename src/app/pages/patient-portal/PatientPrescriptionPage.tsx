@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { PatientPortalBreadcrumbs } from '@/app/layouts/patient-portal/PatientPortalBreadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { patientPortalService, prescriptionOrderService } from '@/services/liverCare';
@@ -44,7 +45,10 @@ export function PatientPrescriptionPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="lg:hidden">
+        <PatientPortalBreadcrumbs />
+      </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Prescription</h1>
           <p className="text-sm text-muted-foreground">

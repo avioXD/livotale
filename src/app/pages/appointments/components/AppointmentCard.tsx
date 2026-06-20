@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FiCalendar, FiMapPin, FiUser } from 'react-icons/fi';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppointmentStatusStepper } from '@/app/pages/appointments/components/AppointmentStatusStepper';
@@ -13,16 +13,6 @@ interface AppointmentCardProps {
   onReschedule?: (id: string) => void;
   onCancel?: (id: string) => void;
 }
-
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  booked: 'secondary',
-  assigned: 'default',
-  in_progress: 'default',
-  completed: 'outline',
-  cancelled: 'destructive',
-  rescheduled: 'secondary',
-  no_show: 'destructive',
-};
 
 function formatVisitType(type: string) {
   return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -84,9 +74,7 @@ export function AppointmentCard({
               </span>
             </CardDescription>
           </div>
-          <Badge variant={statusVariant[appointment.status] ?? 'secondary'} className="capitalize">
-            {appointment.status.replace(/_/g, ' ')}
-          </Badge>
+          <StatusBadge status={appointment.status} domain="appointment" />
         </div>
 
         {showPatient && appointment.patientName && (

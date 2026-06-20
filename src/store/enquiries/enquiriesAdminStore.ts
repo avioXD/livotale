@@ -3,6 +3,7 @@ import { enquiryService } from '@/services/liverCare';
 import type { Enquiry, EnquiryStatus } from '@/types/enquiry';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
 import { paginateList } from '@/utils/pagination';
+import { sortByLatestFirst } from '@/utils/sortByLatestFirst';
 
 interface EnquiriesAdminStore {
   items: Enquiry[];
@@ -14,6 +15,7 @@ interface EnquiriesAdminStore {
   appliedSource: string;
   page: number;
   pageSize: number;
+  filtersExpanded: boolean;
   isLoading: boolean;
   error: string | null;
   fetchEnquiries: () => Promise<void>;
@@ -24,7 +26,9 @@ interface EnquiriesAdminStore {
   resetFilters: () => void;
   setPage: (page: number) => void;
   setPageSize: (size: number) => void;
+  setFiltersExpanded: (v: boolean) => void;
   upsertEnquiry: (enquiry: Enquiry) => void;
+  removeEnquiry: (id: string) => void;
   getPaged: () => ReturnType<typeof paginateList<Enquiry>>;
 }
 
@@ -38,6 +42,7 @@ export const useEnquiriesAdminStore = create<EnquiriesAdminStore>((set, get) => 
   appliedSource: '',
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
+  filtersExpanded: false,
   isLoading: false,
   error: null,
 
@@ -45,11 +50,13 @@ export const useEnquiriesAdminStore = create<EnquiriesAdminStore>((set, get) => 
     const { appliedSearch, appliedStatus, appliedSource } = get();
     set({ isLoading: true, error: null });
     try {
-      const items = await enquiryService.list({
-        search: appliedSearch || undefined,
-        status: (appliedStatus as EnquiryStatus) || undefined,
-        source: appliedSource || undefined,
-      });
+      const items = sortByLatestFirst(
+        await enquiryService.list({
+          search: appliedSearch || undefined,
+          status: (appliedStatus as EnquiryStatus) || undefined,
+          source: appliedSource || undefined,
+        }),
+      );
       set({ items, isLoading: false });
     } catch (err) {
       set({
@@ -88,6 +95,7 @@ export const useEnquiriesAdminStore = create<EnquiriesAdminStore>((set, get) => 
 
   setPage: (page) => set({ page }),
   setPageSize: (pageSize) => set({ pageSize, page: 1 }),
+  setFiltersExpanded: (filtersExpanded) => set({ filtersExpanded }),
 
   upsertEnquiry: (enquiry) => {
     const items = get().items;
@@ -101,8 +109,14 @@ export const useEnquiriesAdminStore = create<EnquiriesAdminStore>((set, get) => 
     set({ items: next });
   },
 
+  removeEnquiry: (id) => {
+    set({ items: get().items.filter((e) => e.id !== id) });
+  },
+
   getPaged: () => {
     const { items, page, pageSize } = get();
-    return paginateList(items, page, pageSize);
+    const paged = paginateList(items, page, pageSize);
+    if (paged.page !== page) set({ page: paged.page });
+    return paged;
   },
 }));

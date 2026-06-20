@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { liverCareOrderService } from '@/services/liverCare';
+import { toastSuccess, toastError } from '@/store/toast/toastStore';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import type { OfflinePaymentRecord } from '@/types/payment';
 import type { OrderInvoice } from '@/types/patientPortal';
 import { LiverCareOfflinePaymentModal } from './LiverCareOfflinePaymentModal';
+
+type PaymentChannel = 'whatsapp' | 'sms' | 'email';
 
 interface OrderPaymentSectionProps {
   order: LiverCareOrder;
@@ -14,12 +18,19 @@ interface OrderPaymentSectionProps {
   readOnly?: boolean;
 }
 
+const CHANNEL_LABELS: Record<PaymentChannel, string> = {
+  whatsapp: 'WhatsApp',
+  sms: 'SMS',
+  email: 'Email',
+};
+
 export function OrderPaymentSection({ order, onUpdated, readOnly = false }: OrderPaymentSectionProps) {
   const [showOffline, setShowOffline] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
   const [offlineRecords, setOfflineRecords] = useState<OfflinePaymentRecord[]>([]);
   const [invoice, setInvoice] = useState<OrderInvoice | null>(null);
+  const [channels, setChannels] = useState<PaymentChannel[]>(['whatsapp', 'sms', 'email']);
 
   useEffect(() => {
     void liverCareOrderService.listOfflinePayments(order.id).then(setOfflineRecords);
@@ -29,6 +40,12 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
       setInvoice(null);
     }
   }, [order.id, order.paymentStatus]);
+
+  const toggleChannel = (channel: PaymentChannel) => {
+    setChannels((prev) =>
+      prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel],
+    );
+  };
 
   const handleOffline = async (body: Parameters<typeof liverCareOrderService.markOfflinePayment>[1]) => {
     setSaving(true);
@@ -42,9 +59,22 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
   };
 
   const handleSendLink = async () => {
+    if (channels.length === 0) {
+      toastError('Select at least one notification channel.');
+      return;
+    }
+    if (channels.includes('email') && !order.patientEmail?.trim()) {
+      toastError('No patient email on file — uncheck Email or add email to patient profile.');
+      return;
+    }
+
     setSendingLink(true);
     try {
-      await liverCareOrderService.sendPaymentLink(order.id, ['whatsapp', 'sms', 'email']);
+      await liverCareOrderService.sendPaymentLink(order.id, channels);
+      const sent = channels
+        .filter((ch) => ch !== 'email' || order.patientEmail?.trim())
+        .map((ch) => CHANNEL_LABELS[ch]);
+      toastSuccess(`Payment link sent via ${sent.join(', ')}.`);
       onUpdated();
     } finally {
       setSendingLink(false);
@@ -60,7 +90,7 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="text-muted-foreground">Status:</span>
-            <Badge className="capitalize">{order.paymentStatus}</Badge>
+            <StatusBadge status={order.paymentStatus} domain="payment" />
             {order.paymentMode && (
               <>
                 <span className="text-muted-foreground">Mode:</span>
@@ -72,11 +102,37 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
           </div>
 
           {!readOnly && order.paymentStatus !== 'success' && (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setShowOffline(true)}>Mark offline payment</Button>
-              <Button size="sm" variant="secondary" onClick={handleSendLink} disabled={sendingLink}>
-                {sendingLink ? 'Sending…' : 'Send online payment link'}
-              </Button>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Send link via</Label>
+                <div className="flex flex-wrap gap-3">
+                  {(['whatsapp', 'sms', 'email'] as PaymentChannel[]).map((channel) => (
+                    <label key={channel} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={channels.includes(channel)}
+                        onChange={() => toggleChannel(channel)}
+                      />
+                      {CHANNEL_LABELS[channel]}
+                    </label>
+                  ))}
+                </div>
+                {channels.includes('email') && !order.patientEmail?.trim() && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    No patient email on file — email channel will be skipped unless you add one to the patient profile.
+                  </p>
+                )}
+                {order.patientEmail?.trim() && (
+                  <p className="text-xs text-muted-foreground">Patient email: {order.patientEmail}</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setShowOffline(true)}>Mark offline payment</Button>
+                <Button size="sm" variant="secondary" onClick={handleSendLink} disabled={sendingLink}>
+                  {sendingLink ? 'Sending…' : 'Send online payment link'}
+                </Button>
+              </div>
             </div>
           )}
 

@@ -1,22 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LiverHealthReportPanel } from '@/components/liver-health-report/LiverHealthReportPanel';
-import {
-  aiExtractionOrderService,
-  finalReportService,
-  pathologyService,
-  technicianOrderService,
-} from '@/services/liverCare';
-import type { FibrosisScanRecord } from '@/types/fibrosisScan';
+import { LiverHealthReportDashboard } from '@/components/liver-health-report/LiverHealthReportDashboard';
 import type { AIExtractionJob } from '@/types/aiExtraction';
-import type { LabReportUpload } from '@/types/labReport';
+import type { FibrosisScanRecord } from '@/types/fibrosisScan';
 import type { FinalReport } from '@/types/finalReport';
+import type { LabReportUpload } from '@/types/labReport';
+import type { LiverHealthReport } from '@/types/liverHealthReport';
 
 interface DoctorMedicalSummaryPanelProps {
-  orderId: string;
+  scan: FibrosisScanRecord | null;
+  labReport: LabReportUpload | null;
+  aiJob: AIExtractionJob | null;
+  finalReport: FinalReport | null;
+  liverHealthReport: LiverHealthReport | null;
 }
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -28,26 +27,14 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanelProps) {
-  const [scan, setScan] = useState<FibrosisScanRecord | null>(null);
-  const [labReport, setLabReport] = useState<LabReportUpload | null>(null);
-  const [aiJob, setAiJob] = useState<AIExtractionJob | null>(null);
-  const [report, setReport] = useState<FinalReport | null>(null);
+export function DoctorMedicalSummaryPanel({
+  scan,
+  labReport,
+  aiJob,
+  finalReport,
+  liverHealthReport,
+}: DoctorMedicalSummaryPanelProps) {
   const [showRaw, setShowRaw] = useState(false);
-
-  useEffect(() => {
-    void Promise.all([
-      technicianOrderService.getScan(orderId),
-      pathologyService.getReport(orderId),
-      aiExtractionOrderService.getJobForOrder(orderId),
-      finalReportService.getForOrder(orderId),
-    ]).then(([s, lr, ai, fr]) => {
-      setScan(s);
-      setLabReport(lr);
-      setAiJob(ai);
-      setReport(fr);
-    });
-  }, [orderId]);
 
   return (
     <div className="space-y-6">
@@ -60,7 +47,15 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
             </Badge>
           )}
         </div>
-        <LiverHealthReportPanel orderId={orderId} showReferences />
+        {liverHealthReport ? (
+          <LiverHealthReportDashboard report={liverHealthReport} showReferences />
+        ) : (
+          <p className="py-6 text-sm text-muted-foreground">
+            {scan
+              ? 'Scan or pathology data not ready for AI report generation.'
+              : 'No scan data yet.'}
+          </p>
+        )}
       </div>
 
       <div>
@@ -198,19 +193,19 @@ export function DoctorMedicalSummaryPanel({ orderId }: DoctorMedicalSummaryPanel
                 <CardTitle className="text-base">Final report</CardTitle>
               </CardHeader>
               <CardContent className="text-sm">
-                {!report ? (
+                {!finalReport ? (
                   <p className="text-muted-foreground">Report not generated yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    <DetailRow label="Report #" value={report.reportNumber} />
+                    <DetailRow label="Report #" value={finalReport.reportNumber} />
                     <DetailRow label="Status" value={
-                      <Badge className="capitalize">{report.status}</Badge>
+                      <Badge className="capitalize">{finalReport.status}</Badge>
                     } />
-                    {report.publishedAt && (
-                      <DetailRow label="Published" value={new Date(report.publishedAt).toLocaleString()} />
+                    {finalReport.publishedAt && (
+                      <DetailRow label="Published" value={new Date(finalReport.publishedAt).toLocaleString()} />
                     )}
-                    {report.pdfUrl && (
-                      <a href={report.pdfUrl} target="_blank" rel="noreferrer" className="block text-primary underline">
+                    {finalReport.pdfUrl && (
+                      <a href={finalReport.pdfUrl} target="_blank" rel="noreferrer" className="block text-primary underline">
                         Download report PDF
                       </a>
                     )}

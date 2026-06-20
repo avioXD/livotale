@@ -1,5 +1,5 @@
 import type { FinalReportPreviewData } from '@/types/finalReport';
-import { DEFAULT_LETTERHEAD } from '@/services/liverCare/finalReports.mock';
+import { DEFAULT_LETTERHEAD } from '@/constants/letterhead';
 
 interface FinalReportPreviewProps {
   data: FinalReportPreviewData;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DataTable,
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import type { DoctorAppointmentSummary } from '@/types';
 import type { TableColumn } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
+import { countActiveFilters } from '@/utils/listFilters';
+import { orgPath } from '@/app/config/orgRoutes';
 import { paginateList } from '@/utils/pagination';
 
 interface DoctorAppointmentsListPanelProps {
@@ -35,6 +37,7 @@ export function DoctorAppointmentsListPanel({
   const [appliedStatus, setAppliedStatus] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const statusOptions = useMemo(
     () => [...new Set(appointments.map((a) => a.status))].sort(),
@@ -61,6 +64,11 @@ export function DoctorAppointmentsListPanel({
   }, [appointments, appliedSearch, appliedStatus]);
 
   const paged = paginateList(filtered, page, pageSize);
+  const activeFilterCount = countActiveFilters({ status: appliedStatus }, { status: '' }, appliedSearch);
+
+  useEffect(() => {
+    if (paged.page !== page) setPage(paged.page);
+  }, [paged.page, page]);
 
   const columns: TableColumn<DoctorAppointmentSummary>[] = useMemo(
     () => [
@@ -70,7 +78,7 @@ export function DoctorAppointmentsListPanel({
         header: 'Patient',
         render: (r) => (
           <Link
-            to={`/patients/${r.patientId}?tab=profile`}
+            to={orgPath(`/patients/${r.patientId}?tab=profile`)}
             className="text-livotale-pink hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
@@ -152,6 +160,9 @@ export function DoctorAppointmentsListPanel({
           setAppliedStatus('');
           setPage(1);
         }}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
       >
         <FilterField label="Status" htmlFor="doc-appt-status">
           <select

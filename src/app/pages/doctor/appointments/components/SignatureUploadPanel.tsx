@@ -46,7 +46,7 @@ export function SignatureUploadPanel({ isSaving, onSave }: SignatureUploadPanelP
             <Label htmlFor="signature-url">Signature file URL</Label>
             <Input
               id="signature-url"
-              placeholder="https://storage.example.com/signatures/doctor.png"
+              placeholder="https://storage.example.com/signatures/org/doctor.png"
               value={storageUrl}
               onChange={(e) => setStorageUrl(e.target.value)}
               required

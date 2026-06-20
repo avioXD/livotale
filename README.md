@@ -14,7 +14,7 @@ Built with React 19, Vite, TypeScript, Tailwind CSS, Zustand, and shadcn/Radix U
 ```bash
 pnpm install
 cp .env.example .env
-# Set VITE_MOCK_MODE=true for offline UI
+# Point VITE_API_BASE_URL at the running FastAPI server
 pnpm dev
 ```
 
@@ -24,8 +24,8 @@ App runs at **http://localhost:5173**.
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_MOCK_MODE` | `true` = in-memory mocks, no API required |
-| `VITE_API_BASE_URL` | REST API base URL (ignored in mock mode) |
+| `VITE_API_BASE_URL` | REST API base URL (default `http://localhost:4000/api/v1`) |
+| `VITE_EXTERNAL_SERVICES_MODE` | `dummy` or `live` for client-side integration stubs |
 
 ## Scripts
 

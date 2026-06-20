@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import { ORG_LOGIN_PATH } from '@/app/config/orgRoutes';
 import { Button } from '@/components/ui/button';
 
 export function EnquireThanksPage() {
@@ -17,7 +18,7 @@ export function EnquireThanksPage() {
           <Link to="/packages">View packages</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link to="/login">Staff login</Link>
+          <Link to={ORG_LOGIN_PATH}>Staff login</Link>
         </Button>
       </div>
     </div>

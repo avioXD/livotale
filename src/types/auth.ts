@@ -21,8 +21,10 @@ export interface User {
   fullName: string;
   roles: AppRole[];
   permissions?: string[];
-  /** Primary role used for route guards */
+  /** Active role chosen at login (or auto-selected when only one role). */
   role: AppRole;
+  /** Raw API role code for the active role — used when refreshing tokens. */
+  activeRoleCode?: ApiRoleCode;
 }
 
 export interface AuthTokens {
@@ -34,12 +36,15 @@ export interface AuthResponse {
   user: User;
   tokens: AuthTokens;
   sessionId?: string;
+  requiresRoleSelection?: boolean;
+  activeRole?: ApiRoleCode;
 }
 
 export interface LoginPayload {
   /** Username, email, or mobile */
   identifier: string;
   password: string;
+  activeRole?: ApiRoleCode;
 }
 
 export interface OtpRequestPayload {
@@ -57,6 +62,8 @@ export interface RegisterPayload {
   fullName: string;
   email?: string;
   mobile?: string;
+  /** API role code to assign (defaults to patient). */
+  role?: ApiRoleCode;
 }
 
 export interface ResetPasswordPayload {
@@ -88,6 +95,8 @@ export interface ApiLoginResponse {
   expiresIn: string;
   sessionId?: string;
   permissions?: string[];
+  activeRole?: ApiRoleCode;
+  requiresRoleSelection?: boolean;
   user: {
     id: string;
     username: string;
@@ -101,7 +110,8 @@ export interface ApiLoginResponse {
 export interface ApiMeResponse {
   id: string;
   username: string;
-  full_name: string;
+  full_name?: string;
+  fullName?: string;
   email: string | null;
   mobile: string | null;
   gender?: string | null;
@@ -110,6 +120,8 @@ export interface ApiMeResponse {
   last_login_at?: string | null;
   roles: ApiRoleCode[];
   permissions?: string[];
+  activeRole?: ApiRoleCode;
+  requiresRoleSelection?: boolean;
 }
 
 export interface ApiRegisterResponse {
@@ -126,6 +138,17 @@ export interface ApiRegisterResponse {
   };
 }
 
+export interface ApiSessionInfo {
+  id: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  deviceLabel: string | null;
+  isTrusted: boolean;
+  status?: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface UserSession {
   id: string;
   ip_address: string | null;
@@ -136,6 +159,21 @@ export interface UserSession {
   expires_at: string;
 }
 
+export interface ApiLoginLogEntry {
+  id: string;
+  userId?: string | null;
+  identifierUsed?: string | null;
+  loginMethod: string;
+  success: boolean;
+  failureReason: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  sessionId?: string | null;
+  createdAt: string;
+  username?: string | null;
+  fullName?: string | null;
+}
+
 export interface LoginLogEntry {
   id: string;
   login_method: string;
@@ -144,4 +182,7 @@ export interface LoginLogEntry {
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;
+  identifier_used?: string | null;
+  username?: string | null;
+  full_name?: string | null;
 }

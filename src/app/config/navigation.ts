@@ -5,6 +5,7 @@ import {
   FiClipboard,
   FiCreditCard,
   FiHome,
+  FiMapPin,
   FiSettings,
   FiShield,
   FiTruck,
@@ -13,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import { MdOutlineHealthAndSafety, MdOutlineScience } from 'react-icons/md';
 import { ADMIN_ROLES, OPS_ROLES } from '@/app/config/productRoles';
+import { orgPath, ORG_LOGIN_PATH, ORG_REGISTER_PATH, ORG_RESET_PASSWORD_PATH } from '@/app/config/orgRoutes';
 import { AppRole, type NavGroup, type NavGroupId, type NavItem } from '@/types';
 
 const STAFF_ROLES = [
@@ -68,7 +70,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'my-appointments',
     label: 'My Appointments',
-    path: '/appointments',
+    path: orgPath('/appointments'),
     icon: FiCalendar,
     roles: [AppRole.PATIENT],
     group: 'overview',
@@ -76,7 +78,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'patient-treatment-plans',
     label: 'Treatment Plans',
-    path: '/treatment-plans',
+    path: orgPath('/treatment-plans'),
     icon: MdOutlineHealthAndSafety,
     roles: [AppRole.PATIENT],
     group: 'patient-care',
@@ -84,7 +86,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'patient-prescriptions',
     label: 'Prescriptions',
-    path: '/prescriptions',
+    path: orgPath('/prescriptions'),
     icon: FiClipboard,
     roles: [AppRole.PATIENT],
     group: 'patient-care',
@@ -92,7 +94,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'patient-coaching',
     label: 'Health Coaching',
-    path: '/coaching',
+    path: orgPath('/coaching'),
     icon: FiHeart,
     roles: [AppRole.PATIENT],
     group: 'patient-care',
@@ -100,7 +102,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'patient-delivery',
     label: 'Home Delivery',
-    path: '/delivery',
+    path: orgPath('/delivery'),
     icon: FiTruck,
     roles: [AppRole.PATIENT],
     group: 'patient-care',
@@ -110,7 +112,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    path: '/dashboard',
+    path: orgPath('/dashboard'),
     icon: FiHome,
     roles: [...STAFF_ROLES],
     group: 'overview',
@@ -118,7 +120,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'staff-notifications',
     label: 'Notifications',
-    path: '/notifications',
+    path: orgPath('/notifications'),
     icon: FiBell,
     roles: [...STAFF_ROLES],
     group: 'overview',
@@ -128,7 +130,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-packages',
     label: 'Packages',
-    path: '/admin/packages',
+    path: orgPath('/admin/packages'),
     icon: FiCreditCard,
     roles: [...ADMIN_ROLES],
     group: 'overview',
@@ -136,35 +138,51 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-audit',
     label: 'Audit log',
-    path: '/admin/audit',
+    path: orgPath('/admin/audit'),
     icon: FiShield,
+    roles: [...ADMIN_ROLES],
+    group: 'overview',
+  },
+  {
+    id: 'admin-login-logs',
+    label: 'Login activity',
+    path: orgPath('/admin/login-logs'),
+    icon: FiActivity,
     roles: [...ADMIN_ROLES],
     group: 'overview',
   },
   {
     id: 'patients-registry',
     label: 'Patients',
-    path: '/patients',
+    path: orgPath('/patients'),
     icon: FiUsers,
-    roles: [...OPS_ROLES],
+    roles: [...OPS_ROLES, AppRole.DOCTOR],
     group: 'overview',
   },
 
   // ── Doctor ──
   {
+    id: 'doc-my-patients',
+    label: 'My patients',
+    path: orgPath('/doctor/patients'),
+    icon: FiUsers,
+    roles: [AppRole.DOCTOR],
+    group: 'clinical',
+  },
+  {
     id: 'doc-consultations',
     label: 'Consultations',
-    path: '/doctor/consultations',
+    path: orgPath('/doctor/consultations'),
     icon: FiActivity,
     roles: [AppRole.DOCTOR],
     group: 'clinical',
   },
 
-  // ── Technician — field visits & sample collection on order detail ──
+  // ── Technician — FibroScan field visits only ──
   {
     id: 'technician-orders',
     label: 'Field orders',
-    path: '/technician/orders',
+    path: orgPath('/technician/orders'),
     icon: FiActivity,
     roles: [AppRole.TECHNICIAN],
     group: 'technician-ops',
@@ -174,24 +192,24 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-operations',
     label: 'Day-to-day ops',
-    path: '/admin/operations',
+    path: orgPath('/admin/operations'),
     icon: FiShield,
     roles: [...OPS_ROLES],
     group: 'admin-ops',
     childrenOnly: true,
     children: [
-      { id: 'ops-overview', label: 'Overview', path: '/admin/operations', icon: FiHome },
-      { id: 'ops-enquiries', label: 'Enquiries', path: '/admin/operations?tab=enquiries', icon: FiClipboard },
-      { id: 'ops-orders', label: 'Orders', path: '/admin/operations?tab=orders', icon: FiCreditCard },
-      { id: 'ops-partner-lab', label: 'Lab reports', path: '/admin/operations?tab=partner-lab', icon: MdOutlineScience },
-      { id: 'ops-appointments', label: 'Appointments', path: '/admin/operations?tab=appointments', icon: FiCalendar },
-      { id: 'ops-ai-review', label: 'AI review', path: '/admin/operations?tab=ai-review', icon: FiActivity },
+      { id: 'ops-overview', label: 'Overview', path: orgPath('/admin/operations'), icon: FiHome },
+      { id: 'ops-enquiries', label: 'Enquiries', path: orgPath('/admin/operations?tab=enquiries'), icon: FiClipboard },
+      { id: 'ops-orders', label: 'Orders', path: orgPath('/admin/operations?tab=orders'), icon: FiCreditCard },
+      { id: 'ops-partner-lab', label: 'Lab reports', path: orgPath('/admin/operations?tab=partner-lab'), icon: MdOutlineScience },
+      { id: 'ops-appointments', label: 'Appointments', path: orgPath('/admin/operations?tab=appointments'), icon: FiCalendar },
+      { id: 'ops-ai-review', label: 'AI review', path: orgPath('/admin/operations?tab=ai-review'), icon: FiActivity },
     ],
   },
   {
     id: 'admin-notifications',
     label: 'Channel notification log',
-    path: '/admin/notifications',
+    path: orgPath('/admin/notifications'),
     icon: FiClipboard,
     roles: [...OPS_ROLES],
     group: 'admin-ops',
@@ -199,9 +217,17 @@ export const navigationItems: NavItem[] = [
 
   // ── People & partners ──
   {
+    id: 'admin-bank-details',
+    label: 'Bank details',
+    path: orgPath('/admin/bank-details'),
+    icon: FiCreditCard,
+    roles: [AppRole.SUPER_ADMIN],
+    group: 'staff-management',
+  },
+  {
     id: 'admin-staff-technicians',
     label: 'Technicians',
-    path: '/admin/staff/technicians',
+    path: orgPath('/admin/staff/technicians'),
     icon: FiUsers,
     roles: [...OPS_ROLES],
     group: 'staff-management',
@@ -209,7 +235,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-staff-doctors',
     label: 'Doctors',
-    path: '/admin/staff/doctors',
+    path: orgPath('/admin/staff/doctors'),
     icon: FiActivity,
     roles: [...OPS_ROLES],
     group: 'staff-management',
@@ -217,7 +243,7 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-staff-lab-partners',
     label: 'Lab partners',
-    path: '/admin/staff/lab-partners',
+    path: orgPath('/admin/staff/lab-partners'),
     icon: MdOutlineScience,
     roles: [...OPS_ROLES],
     group: 'staff-management',
@@ -225,7 +251,15 @@ export const navigationItems: NavItem[] = [
   {
     id: 'admin-staff-operations',
     label: 'Operations team',
-    path: '/admin/staff/operations',
+    path: orgPath('/admin/staff/operations'),
+    icon: FiShield,
+    roles: [...ADMIN_ROLES],
+    group: 'staff-management',
+  },
+  {
+    id: 'admin-staff-super-admins',
+    label: 'Super admins',
+    path: orgPath('/admin/staff/super-admins'),
     icon: FiShield,
     roles: [...ADMIN_ROLES],
     group: 'staff-management',
@@ -233,9 +267,17 @@ export const navigationItems: NavItem[] = [
 
   // ── Settings ──
   {
+    id: 'admin-service-zones',
+    label: 'Service zones',
+    path: orgPath('/admin/service-zones'),
+    icon: FiMapPin,
+    roles: [...ADMIN_ROLES],
+    group: 'account',
+  },
+  {
     id: 'admin-integrations',
     label: 'Integrations',
-    path: '/admin/integrations',
+    path: orgPath('/admin/integrations'),
     icon: FiSettings,
     roles: [...ADMIN_ROLES],
     group: 'account',
@@ -243,24 +285,24 @@ export const navigationItems: NavItem[] = [
   {
     id: 'settings',
     label: 'Settings',
-    path: '/settings',
+    path: orgPath('/settings'),
     icon: FiSettings,
     roles: [...ALL_PRODUCT_ROLES, AppRole.DIETICIAN, AppRole.HEALTH_COACH, AppRole.PHARMACY, AppRole.LAB_PARTNER],
     group: 'account',
     childrenOnly: true,
     children: [
-      { id: 'settings-profile', label: 'Account', path: '/settings', icon: FiSettings },
+      { id: 'settings-profile', label: 'Account', path: orgPath('/settings'), icon: FiSettings },
       {
         id: 'doc-availability',
         label: 'Availability',
-        path: '/settings?tab=availability',
+        path: orgPath('/settings?tab=availability'),
         icon: FiCalendar,
         roles: [AppRole.DOCTOR],
       },
       {
         id: 'doc-leave',
         label: 'Leave',
-        path: '/settings?tab=leave',
+        path: orgPath('/settings?tab=leave'),
         icon: FiCalendar,
         roles: [AppRole.DOCTOR],
       },
@@ -298,7 +340,7 @@ export function getNavGroupsForRole(role: AppRole | null): NavGroup[] {
   }));
 }
 
-export const OPEN_ROUTES = ['/login', '/register', '/reset-password'] as const;
+export const OPEN_ROUTES = [ORG_LOGIN_PATH, ORG_REGISTER_PATH, ORG_RESET_PASSWORD_PATH] as const;
 
 export function isOpenRoute(pathname: string): boolean {
   return OPEN_ROUTES.some((route) => pathname.startsWith(route));
@@ -311,16 +353,16 @@ export function getDefaultHomePath(role: AppRole | null): string {
     case AppRole.OPERATIONS:
     case AppRole.CITY_MANAGER:
     case AppRole.SUPER_ADMIN:
-      return '/dashboard';
+      return orgPath('/dashboard');
     case AppRole.PATIENT:
       return '/patient-journey';
     case AppRole.DIETICIAN:
     case AppRole.HEALTH_COACH:
     case AppRole.PHARMACY:
     case AppRole.LAB_PARTNER:
-      return '/settings';
+      return orgPath('/settings');
     default:
-      return '/settings';
+      return orgPath('/settings');
   }
 }
 

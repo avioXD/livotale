@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAdminAppointmentsStore } from '@/store';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function AdminAppointmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,7 +62,7 @@ export function AdminAppointmentDetailPage() {
   const handleCancel = async () => {
     if (!id || !cancelReason.trim()) return;
     await cancelAppointment(id, cancelReason.trim());
-    navigate('/admin/operations?tab=appointments');
+    navigate(orgPath('/admin/operations?tab=appointments'));
   };
 
   if (isLoading && !selected) {
@@ -73,7 +74,7 @@ export function AdminAppointmentDetailPage() {
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Appointment not found.</p>
         <Button variant="outline" asChild>
-          <Link to="/admin/operations?tab=appointments">Back to operations</Link>
+          <Link to={orgPath('/admin/operations?tab=appointments')}>Back to operations</Link>
         </Button>
       </div>
     );
@@ -83,7 +84,7 @@ export function AdminAppointmentDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link to="/admin/operations?tab=appointments" aria-label="Back">
+          <Link to={orgPath('/admin/operations?tab=appointments')} aria-label="Back">
             <FiArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -111,7 +112,7 @@ export function AdminAppointmentDetailPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="text-muted-foreground">Patient</p>
-                <Link to={`/patients/${selected.patientId}`} className="font-medium text-livotale-pink hover:underline">
+                <Link to={orgPath(`/patients/${selected.patientId}`)} className="font-medium text-livotale-pink hover:underline">
                   {selected.patientName}
                 </Link>
               </div>

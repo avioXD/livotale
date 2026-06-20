@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Enquiry, EnquiryFollowUpLog, EnquiryOrderOutcome } from '@/types/enquiry';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const OUTCOME_LABELS: Record<EnquiryOrderOutcome, string> = {
   confirmed: 'Order confirmed / paid',
@@ -24,8 +25,18 @@ function FollowUpLogRow({ log }: { log: EnquiryFollowUpLog }) {
         {formatLogTime(log.createdAt)}
         {log.createdByName ? ` · ${log.createdByName}` : ''}
       </p>
-      {log.callRemarks && <p className="mt-1"><span className="text-muted-foreground">Call: </span>{log.callRemarks}</p>}
-      {log.internalNotes && <p className="mt-0.5"><span className="text-muted-foreground">Notes: </span>{log.internalNotes}</p>}
+      {log.callRemarks && (
+        <p className="mt-1 whitespace-pre-wrap">
+          <span className="text-muted-foreground">Call: </span>
+          {log.callRemarks}
+        </p>
+      )}
+      {log.internalNotes && (
+        <p className="mt-0.5 whitespace-pre-wrap">
+          <span className="text-muted-foreground">Notes: </span>
+          {log.internalNotes}
+        </p>
+      )}
     </div>
   );
 }
@@ -89,7 +100,7 @@ export function EnquiryViewPanel({ enquiry, archived = false }: EnquiryViewPanel
           </div>
           <div className="sm:col-span-2">
             <span className="text-muted-foreground">Message</span>
-            <p className="font-medium">{enquiry.message ?? '—'}</p>
+            <p className="font-medium whitespace-pre-wrap">{enquiry.message ?? '—'}</p>
           </div>
           <div className="sm:col-span-2">
             <span className="text-muted-foreground">Received</span>
@@ -101,7 +112,7 @@ export function EnquiryViewPanel({ enquiry, archived = false }: EnquiryViewPanel
       {enquiry.orderOutcomeRemarks && (
         <Card>
           <CardHeader><CardTitle className="text-base">Order outcome remarks</CardTitle></CardHeader>
-          <CardContent className="text-sm">{enquiry.orderOutcomeRemarks}</CardContent>
+          <CardContent className="whitespace-pre-wrap text-sm">{enquiry.orderOutcomeRemarks}</CardContent>
         </Card>
       )}
 
@@ -125,7 +136,7 @@ export function EnquiryViewPanel({ enquiry, archived = false }: EnquiryViewPanel
 
       {enquiry.orderId && (
         <Button asChild>
-          <Link to={`/admin/orders/${enquiry.orderId}`}>View order</Link>
+          <Link to={orgPath(`/admin/orders/${enquiry.orderId}`)}>View order</Link>
         </Button>
       )}
     </div>

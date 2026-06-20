@@ -1,18 +1,25 @@
 import { Link } from 'react-router-dom';
+import { StatusBadge } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import type { Patient, TableColumn } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export const patientColumns: TableColumn<Patient>[] = [
   {
     key: 'name',
     header: 'Patient',
     render: (p) => (
-      <Link to={`/patients/${p.id}`} className="font-medium text-primary hover:underline">
+      <Link to={orgPath(`/patients/${p.id}`)} className="font-medium text-primary hover:underline">
         {p.fullName}
       </Link>
     ),
   },
   { key: 'code', header: 'MR No.', render: (p) => p.patientCode ?? '—' },
+  {
+    key: 'doctor',
+    header: 'Assigned Doctor',
+    render: (p) => p.assignedDoctor ?? '—',
+  },
   {
     key: 'bmi',
     header: 'BMI',
@@ -36,8 +43,6 @@ export const patientColumns: TableColumn<Patient>[] = [
   {
     key: 'status',
     header: 'Status',
-    render: (p) => (
-      <span className="capitalize rounded-full bg-muted px-2 py-0.5 text-xs">{p.status}</span>
-    ),
+    render: (p) => <StatusBadge status={p.status} />,
   },
 ];

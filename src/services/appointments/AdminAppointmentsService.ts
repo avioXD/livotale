@@ -1,4 +1,3 @@
-import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type {
   AdminAppointmentDetail,
@@ -12,144 +11,81 @@ import type {
   AppointmentAnalytics,
   AppointmentVisitMode,
   DoctorAvailabilityCalendar,
+  DoctorAvailabilityException,
+  DoctorAvailabilityPayload,
+  DoctorAvailabilityRule,
+  DoctorHoliday,
   DoctorOption,
   TimeSlotOption,
 } from '@/types';
-import {
-  mockAssignAdminAppointment,
-  mockCancelAdminAppointment,
-  mockGetAdminAnalytics,
-  mockGetAdminAppointment,
-  mockGetAdminDashboard,
-  mockGetAdminDoctorAvailability,
-  mockGetAdminRouteLive,
-  mockHandleMissedAdminAppointment,
-  mockListAdminAppointmentTypes,
-  mockListAdminAppointments,
-  mockListAdminDoctorSlots,
-  mockListAdminDoctors,
-  mockListAdminReminderLogs,
-  mockListMissedAdminAppointments,
-  mockOverrideAdminStatus,
-  mockSendAdminReminder,
-  mockUpdateAdminAppointment,
-  mockWalkInBook,
-} from './adminAppointments.mock';
-
 export class AdminAppointmentsService extends BaseApiService {
   async getDashboard(): Promise<AdminAppointmentsDashboard> {
-    return mockOrApi(
-      () => mockGetAdminDashboard(),
-      () => this.get<AdminAppointmentsDashboard>('/admin/appointments/dashboard'),
-    );
+    return this.get<AdminAppointmentsDashboard>('/admin/appointments/dashboard')
   }
 
   async list(params: Record<string, string | undefined> = {}): Promise<AdminAppointmentSummary[]> {
-    return mockOrApi(
-      () => mockListAdminAppointments(params),
-      () => this.get<AdminAppointmentSummary[]>('/admin/appointments', { params }),
-    );
+    return this.get<AdminAppointmentSummary[]>('/admin/appointments', { params })
   }
 
   async getById(id: string): Promise<AdminAppointmentDetail> {
-    return mockOrApi(
-      () => mockGetAdminAppointment(id),
-      () => this.get<AdminAppointmentDetail>(`/admin/appointments/${id}`),
-    );
+    return this.get<AdminAppointmentDetail>(`/admin/appointments/${id}`)
   }
 
   async update(id: string, payload: Record<string, unknown>): Promise<AdminAppointmentDetail> {
-    return mockOrApi(
-      () => mockUpdateAdminAppointment(id, payload),
-      () => this.patch<AdminAppointmentDetail>(`/admin/appointments/${id}`, payload),
-    );
+    return this.patch<AdminAppointmentDetail>(`/admin/appointments/${id}`, payload)
   }
 
   async cancelAppointment(id: string, payload: { reason?: string; notes?: string } = {}): Promise<{ deleted: boolean; id: string }> {
-    return mockOrApi(
-      () => mockCancelAdminAppointment(id, payload),
-      () => this.delete<{ deleted: boolean; id: string }>(`/admin/appointments/${id}`, { data: payload }),
-    );
+    return this.delete<{ deleted: boolean; id: string }>(`/admin/appointments/${id}`, { data: payload })
   }
 
   async assign(id: string, payload: { doctorId?: string; technicianId?: string; notify?: boolean }) {
-    return mockOrApi(
-      () => mockAssignAdminAppointment(id, payload),
-      () => this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/assign`, payload),
-    );
+    return this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/assign`, payload)
   }
 
   async overrideStatus(id: string, payload: { status: string; reason: string; notes?: string }) {
-    return mockOrApi(
-      () => mockOverrideAdminStatus(id, payload),
-      () => this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/status`, payload),
-    );
+    return this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/status`, payload)
   }
 
   async sendReminder(id: string, payload: { reminderType?: string } = {}) {
-    return mockOrApi(
-      () => mockSendAdminReminder(id, payload),
-      () => this.post<AppointmentReminderLog>(`/admin/appointments/${id}/remind`, payload),
-    );
+    return this.post<AppointmentReminderLog>(`/admin/appointments/${id}/remind`, payload)
   }
 
   async listMissed(): Promise<AdminAppointmentSummary[]> {
-    return mockOrApi(
-      () => mockListMissedAdminAppointments(),
-      () => this.get<AdminAppointmentSummary[]>('/admin/appointments/missed'),
-    );
+    return this.get<AdminAppointmentSummary[]>('/admin/appointments/missed')
   }
 
   async handleMissed(id: string, payload: { action: 'follow_up' | 'closed'; reason?: string }) {
-    return mockOrApi(
-      () => mockHandleMissedAdminAppointment(id, payload),
-      () => this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/missed`, payload),
-    );
+    return this.patch<AdminAppointmentSummary>(`/admin/appointments/${id}/missed`, payload)
   }
 
   async getRouteLive(date?: string): Promise<AdminRouteLiveItem[]> {
-    return mockOrApi(
-      () => mockGetAdminRouteLive(date),
-      () => this.get<AdminRouteLiveItem[]>('/admin/appointments/route-live', { params: { date } }),
-    );
+    return this.get<AdminRouteLiveItem[]>('/admin/appointments/route-live', { params: { date } })
   }
 
   async listReminderLogs(limit = 100): Promise<AppointmentReminderLog[]> {
-    return mockOrApi(
-      () => mockListAdminReminderLogs(limit),
-      () => this.get<AppointmentReminderLog[]>('/admin/appointment-reminder-logs', { params: { limit } }),
-    );
+    return this.get<AppointmentReminderLog[]>('/admin/appointment-reminder-logs', { params: { limit } })
   }
 
   async listAppointmentTypes(): Promise<AppointmentTypeOption[]> {
-    return mockOrApi(
-      () => mockListAdminAppointmentTypes(),
-      () => this.get<AppointmentTypeOption[]>('/admin/appointment-types'),
-    );
+    return this.get<AppointmentTypeOption[]>('/admin/appointment-types')
   }
 
   async getAnalytics(): Promise<AppointmentAnalytics> {
-    return mockOrApi(
-      () => mockGetAdminAnalytics(),
-      () => this.get<AppointmentAnalytics>('/admin/analytics/appointments'),
-    );
+    return this.get<AppointmentAnalytics>('/admin/analytics/org/appointments')
   }
 
-  async listDoctors(): Promise<DoctorOption[]> {
-    return mockOrApi(
-      () => mockListAdminDoctors(),
-      () => this.get<DoctorOption[]>('/admin/doctors'),
-    );
+  async listDoctors(language?: string): Promise<DoctorOption[]> {
+    return this.get<DoctorOption[]>('/admin/doctors', {
+      params: language ? { language } : undefined,
+    });
   }
 
   async getDoctorAvailability(
     doctorId: string,
     params?: { fromDate?: string; toDate?: string },
   ): Promise<DoctorAvailabilityCalendar> {
-    return mockOrApi(
-      () => mockGetAdminDoctorAvailability(doctorId, params),
-      () => this.get<DoctorAvailabilityCalendar>(`/admin/doctors/${doctorId}/availability`, { params }),
-    );
+    return this.get<DoctorAvailabilityCalendar>(`/admin/doctors/${doctorId}/availability`, { params })
   }
 
   async listDoctorSlots(
@@ -157,20 +93,34 @@ export class AdminAppointmentsService extends BaseApiService {
     date: string,
     visitMode: AppointmentVisitMode = 'clinic',
   ): Promise<TimeSlotOption[]> {
-    return mockOrApi(
-      () => mockListAdminDoctorSlots(doctorId, date, visitMode),
-      () =>
-        this.get<TimeSlotOption[]>(`/admin/doctors/${doctorId}/slots`, {
+    return this.get<TimeSlotOption[]>(`/admin/doctors/${doctorId}/slots`, {
           params: { date, visitMode },
-        }),
-    );
+        })
+  }
+
+  async getDoctorSchedule(
+    doctorId: string,
+  ): Promise<{ rules: DoctorAvailabilityRule[]; exceptions: DoctorAvailabilityException[] }> {
+    return this.get(`/admin/doctors/${doctorId}/schedule`)
+  }
+
+  async saveDoctorSchedule(doctorId: string, payload: DoctorAvailabilityPayload) {
+    return this.put(`/admin/doctors/${doctorId}/schedule`, payload)
+  }
+
+  async listDoctorHolidays(doctorId: string): Promise<DoctorHoliday[]> {
+    return this.get<DoctorHoliday[]>(`/admin/doctors/${doctorId}/holidays`)
+  }
+
+  async createDoctorHoliday(
+    doctorId: string,
+    payload: { title: string; startDate: string; endDate: string; reason?: string },
+  ): Promise<DoctorHoliday> {
+    return this.post<DoctorHoliday>(`/admin/doctors/${doctorId}/holidays`, payload)
   }
 
   async walkInBook(payload: AdminWalkInBookPayload): Promise<AdminWalkInBookResult> {
-    return mockOrApi(
-      () => mockWalkInBook(payload),
-      () => this.post<AdminWalkInBookResult>('/admin/appointments/walk-in', payload),
-    );
+    return this.post<AdminWalkInBookResult>('/admin/appointments/walk-in', payload)
   }
 }
 

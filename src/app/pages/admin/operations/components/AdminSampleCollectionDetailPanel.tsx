@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { AdminSampleCollectionUpdate, SampleCollection, StaffLabPartnerProfile, StaffTechnicianProfile } from '@/types/sampleCollection';
+import { orgPath } from '@/app/config/orgRoutes';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   if (value == null || value === '' || value === '—') return null;
@@ -236,7 +237,7 @@ export function AdminSampleCollectionDetailPanel({
             label="Appointment"
             value={
               sample.appointmentCode ? (
-                <Link to={`/admin/appointments/${sample.appointmentId}`} className="text-livotale-pink hover:underline">
+                <Link to={orgPath(`/admin/appointments/${sample.appointmentId}`)} className="text-livotale-pink hover:underline">
                   {sample.appointmentCode}
                 </Link>
               ) : (
@@ -247,7 +248,7 @@ export function AdminSampleCollectionDetailPanel({
           <DetailRow
             label="Patient"
             value={
-              <Link to={`/patients/${sample.patientId}`} className="text-livotale-pink hover:underline">
+              <Link to={orgPath(`/patients/${sample.patientId}`)} className="text-livotale-pink hover:underline">
                 {sample.patientName}
                 {sample.patientCode ? ` · ${sample.patientCode}` : ''}
               </Link>

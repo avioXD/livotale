@@ -8,11 +8,11 @@ import {
   isStaffProfileComplete,
   isStaffVerificationComplete,
 } from '@/app/pages/staff/onboarding/staffOnboardingUtils';
-import { buildDemoStaffProfile } from '@/data/staffProfileDemoData';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { TechnicianProfileView } from '@/app/pages/technician/profile/components/TechnicianProfileView';
+import { orgPath } from '@/app/config/orgRoutes';
 import { staffOnboardingService } from '@/services/staff/StaffOnboardingService';
 import { staffProfileService } from '@/services/staff/StaffProfileService';
 import { technicianProfileService } from '@/services/technician/TechnicianProfileService';
@@ -20,7 +20,6 @@ import { useAuthStore, useStaffOnboardingStore } from '@/store';
 import type { StaffRoleKey } from '@/types/staffHub';
 import type { StaffFullProfile } from '@/types/staffProfile';
 import type { TechnicianFullProfile } from '@/types/technicianProfile';
-import { TECHNICIAN_PROFILE_DEMO } from '@/data/technicianProfileDemoData';
 
 export function StaffOnboardingPage() {
   const [searchParams] = useSearchParams();
@@ -60,16 +59,6 @@ export function StaffOnboardingPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load onboarding');
-      setTechProfile({ ...TECHNICIAN_PROFILE_DEMO });
-      setStaffProfile(
-        buildDemoStaffProfile('technician', {
-          id: 'onboard-demo',
-          fullName: user?.fullName ?? 'Staff',
-          subtitle: '',
-          status: 'inactive',
-          metrics: [],
-        }),
-      );
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +110,7 @@ export function StaffOnboardingPage() {
       await loadOnboardingStatus(user?.id);
       setSubmitted(true);
       if (verificationComplete) {
-        navigate('/dashboard', { replace: true });
+        navigate(orgPath('/dashboard'), { replace: true });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Submit failed');
@@ -167,7 +156,7 @@ export function StaffOnboardingPage() {
           profile={techProfile}
           mode="technician"
           isSaving={isSaving}
-          usingDemo={techProfile.id.startsWith('demo-')}
+          usingDemo={false}
           onSaveEmployee={async (payload) => {
             setIsSaving(true);
             try {

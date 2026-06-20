@@ -1,14 +1,17 @@
 export interface PatientListItem {
-  patient_id: string;
-  patient_code: string;
-  full_name: string;
-  primary_doctor_id?: string | null;
-  liver_score?: number | null;
-  risk_score?: number | null;
-  latest_fibroscan_kpa?: number | null;
+  patientId: string;
+  patientCode: string;
+  fullName: string;
+  mobile?: string | null;
+  journeyStatus?: string | null;
+  primaryDoctorName?: string | null;
+  primaryDoctorId?: string | null;
+  liverScore?: number | null;
+  riskScore?: number | null;
+  latestFibroscanKpa?: number | null;
   sgpt?: number | null;
-  active_package_name?: string | null;
-  score_calculated_at?: string | null;
+  activePackageName?: string | null;
+  scoreCalculatedAt?: string | null;
   bmi?: number | null;
 }
 
@@ -162,15 +165,23 @@ export const DEFAULT_PATIENT_FILTERS: PatientFilters = {
   assignedDoctor: '',
 };
 
+export function mapJourneyToListStatus(journey?: string | null): Patient['status'] {
+  if (!journey) return 'pending';
+  if (journey === 'inactive' || journey === 'archived') return 'inactive';
+  if (journey === 'registered' || journey.includes('pending')) return 'pending';
+  return 'active';
+}
+
 export function mapListItemToPatient(row: PatientListItem): Patient {
   return {
-    id: row.patient_id,
-    patientCode: row.patient_code,
-    fullName: row.full_name,
-    status: 'active',
+    id: row.patientId,
+    patientCode: row.patientCode,
+    fullName: row.fullName,
+    status: mapJourneyToListStatus(row.journeyStatus),
+    assignedDoctor: row.primaryDoctorName ?? undefined,
     bmi: row.bmi,
-    riskScore: row.risk_score,
-    liverScore: row.liver_score,
-    lastVisit: row.score_calculated_at ?? undefined,
+    riskScore: row.riskScore,
+    liverScore: row.liverScore,
+    lastVisit: row.scoreCalculatedAt ?? undefined,
   };
 }

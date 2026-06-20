@@ -26,11 +26,18 @@ Standard layout for admin list and detail screens. Enforced via shared shells an
 |---------|----------|-------|
 | Title | Top left | `PageHeader` |
 | Primary action | Top right | Add lead, Add package, Book appointment |
-| Search + filters | `ListToolbar` | Apply copies draft → applied; resets page to 1 |
+| Search + filters | `ListToolbar` | Apply copies draft → applied; resets page to 1; filters **collapsed by default** (Show/Hide toggle) |
 | Table | Center | `onRowClick` navigates to detail |
 | Pagination | Bottom | `PaginationControls` |
 
 **Reference pages**: `AdminEnquiriesPage`, `AdminPackagesPage`, `PatientsPage`
+
+### Collapsible filters (I03)
+
+- Filter fields render only when `filtersExpanded` is true (default: **false**)
+- `ListToolbar` shows **Show filters** / **Hide filters** when filter children are provided
+- Badge shows `activeFilterCount` when collapsed and filters are applied
+- Filter + pagination state lives in Zustand list stores (session persistence)
 
 ---
 
@@ -59,6 +66,8 @@ Standard layout for admin list and detail screens. Enforced via shared shells an
 | Tabs | Below header row; sync `?tab=` in URL |
 
 **Reference pages**: `EnquiryDetailPage`, `AdminPackageDetailPage`, `PatientDetailPage`
+
+**Phase I**: all tabs must use URL sync via `useUrlTabState` — see [I01-url-routed-tabs.md](./I01-url-routed-tabs.md). Nested profile sub-tabs use `?profileSection=basic|employment|…`. Log-style fields use `LogTextarea` — see [I02-log-textarea-validation.md](./I02-log-textarea-validation.md).
 
 ---
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAdminAppointmentsStore } from '@/store';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const POLL_MS = 30_000;
 
@@ -65,7 +66,7 @@ export function RouteMonitoringPanel() {
                     <p className="mt-1 text-xs text-muted-foreground">No GPS ping yet</p>
                   )}
                   <Button size="sm" variant="link" className="mt-2 h-auto p-0" asChild>
-                    <Link to={`/admin/appointments/${row.appointmentId}`}>Open appointment</Link>
+                    <Link to={orgPath(`/admin/appointments/${row.appointmentId}`)}>Open appointment</Link>
                   </Button>
                 </div>
               ))}

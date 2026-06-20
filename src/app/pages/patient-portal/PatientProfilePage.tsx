@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { BankDetailsPanel } from '@/app/pages/bank/components/BankDetailsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,12 +20,17 @@ export function PatientProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void patientPortalService.getProfile(session.phone).then((p) => {
-      setProfile(p);
-      setEmail(p.email ?? '');
-      setCity(p.city ?? '');
-      setDateOfBirth(p.dateOfBirth ?? '');
-    });
+    void patientPortalService
+      .getProfile(session.phone)
+      .then((p) => {
+        setProfile(p);
+        setEmail(p.email ?? '');
+        setCity(p.city ?? '');
+        setDateOfBirth(p.dateOfBirth ?? '');
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
+      });
   }, [session.phone]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -48,7 +54,11 @@ export function PatientProfilePage() {
   };
 
   if (!profile) {
-    return <p className="text-muted-foreground">Loading profile…</p>;
+    return (
+      <p className="text-muted-foreground">
+        {error ?? 'Loading profile…'}
+      </p>
+    );
   }
 
   return (
@@ -56,7 +66,7 @@ export function PatientProfilePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">My profile</h1>
-          <p className="text-muted-foreground">Update contact details. Name and phone are managed by operations.</p>
+          <p className="text-muted-foreground">Update contact details and refund bank information.</p>
         </div>
         <Button variant="outline" asChild>
           <Link to="/patient">Back</Link>
@@ -99,6 +109,8 @@ export function PatientProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      <BankDetailsPanel mode="patient" patientPhone={session.phone} />
     </div>
   );
 }

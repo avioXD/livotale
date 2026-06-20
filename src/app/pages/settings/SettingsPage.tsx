@@ -1,57 +1,56 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/common';
-import { StaffSelfProfileContent } from '@/app/pages/staff/profile/components/StaffSelfProfileContent';
 import { AvailabilityEditor } from '@/app/pages/doctor/appointments/components/AvailabilityEditor';
 import { HolidayForm } from '@/app/pages/doctor/appointments/components/HolidayForm';
+import { ChangePasswordSection } from '@/app/pages/settings/components/ChangePasswordSection';
+import { MyProfilePanel } from '@/app/pages/settings/components/MyProfilePanel';
+import { ProfileConsentSection } from '@/app/pages/settings/components/ProfileConsentSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore, useDoctorAppointmentsStore, useProfileStore, useUserRole } from '@/store';
+import { toastError, toastSuccess } from '@/store/toast/toastStore';
 import { authService } from '@/services';
 import { ROLE_LABELS } from '@/rbac';
-import { AppRole, type LoginLogEntry, type UserSession } from '@/types';
+import { AppRole, type LoginLogEntry, type UserConsent, type UserSession } from '@/types';
+import { formatLoginFailureReason, formatLoginMethod } from '@/utils/authMappers';
 
-const STAFF_ROLES = new Set<AppRole>([
-  AppRole.TECHNICIAN,
-  AppRole.DOCTOR,
-  AppRole.LAB_PARTNER,
-  AppRole.DIETICIAN,
-  AppRole.HEALTH_COACH,
-  AppRole.PHARMACY,
-  AppRole.OPERATIONS,
-  AppRole.CITY_MANAGER,
-  AppRole.SUPER_ADMIN,
-]);
+const SETTINGS_TABS = [
+  'my-profile',
+  'availability',
+  'leave',
+  'emergency',
+  'consent',
+  'security',
+] as const;
 
 export function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const userRole = useUserRole();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') ?? 'profile';
+  const [activeTab, setActiveTab] = useUrlTabState({
+    defaultValue: 'my-profile',
+    validValues: SETTINGS_TABS,
+    omitDefault: true,
+  });
 
   const profile = useProfileStore((state) => state.profile);
   const consents = useProfileStore((state) => state.consents);
   const isLoading = useProfileStore((state) => state.isLoading);
-  const error = useProfileStore((state) => state.error);
   const loadProfile = useProfileStore((state) => state.loadProfile);
-  const saveBasic = useProfileStore((state) => state.saveBasic);
   const saveEmergencyContact = useProfileStore((state) => state.saveEmergencyContact);
   const loadConsents = useProfileStore((state) => state.loadConsents);
   const acceptConsent = useProfileStore((state) => state.acceptConsent);
 
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
   const [emergencyName, setEmergencyName] = useState('');
   const [emergencyMobile, setEmergencyMobile] = useState('');
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loginLogs, setLoginLogs] = useState<LoginLogEntry[]>([]);
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [acceptingPurposeId, setAcceptingPurposeId] = useState<string | null>(null);
 
   const isPatient = userRole === AppRole.PATIENT;
-  const isStaff = userRole != null && STAFF_ROLES.has(userRole);
   const isDoctor = userRole === AppRole.DOCTOR;
 
   const availabilityRules = useDoctorAppointmentsStore((s) => s.availabilityRules);
@@ -69,9 +68,6 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (!profile) return;
-    setFullName(profile.basic.full_name ?? '');
-    setEmail(profile.basic.email ?? '');
-    setMobile(profile.basic.mobile ?? '');
     setEmergencyName(profile.emergencyContact?.name ?? '');
     setEmergencyMobile(profile.emergencyContact?.mobile ?? '');
   }, [profile]);
@@ -89,37 +85,47 @@ export function SettingsPage() {
   }, [activeTab, isDoctor, loadAvailability, loadHolidays]);
 
   const loadSecurity = async () => {
-    const [sessionList, logs] = await Promise.all([
-      authService.listSessions(),
-      authService.getLoginLogs(20),
-    ]);
-    setSessions(sessionList);
-    setLoginLogs(logs);
-  };
-
-  const handleTabChange = (tab: string) => {
-    if (tab === 'profile') {
-      setSearchParams({}, { replace: true });
-    } else {
-      setSearchParams({ tab }, { replace: true });
+    setSecurityError(null);
+    try {
+      const [sessionList, logs] = await Promise.all([
+        authService.listSessions(),
+        authService.getLoginLogs(20),
+      ]);
+      setSessions(sessionList);
+      setLoginLogs(logs);
+    } catch (err) {
+      setSecurityError(err instanceof Error ? err.message : 'Failed to load security data');
     }
   };
 
-  const handleBasicSave = async (e: FormEvent) => {
-    e.preventDefault();
-    await saveBasic({ fullName, email, mobile });
+  const handleTabChange = (tab: string) => {
+    if ((SETTINGS_TABS as readonly string[]).includes(tab)) {
+      setActiveTab(tab as (typeof SETTINGS_TABS)[number]);
+    }
   };
 
-  const handleEmergencySave = async (e: FormEvent) => {
+  const handleEmergencySave = async (e: React.FormEvent) => {
     e.preventDefault();
     await saveEmergencyContact({ name: emergencyName, mobile: emergencyMobile });
+  };
+
+  const handleAcceptConsent = async (consent: UserConsent) => {
+    setAcceptingPurposeId(consent.purposeId);
+    try {
+      await acceptConsent(consent.purposeId);
+      toastSuccess(`Consent saved for ${consent.purposeName}`);
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Failed to save consent');
+    } finally {
+      setAcceptingPurposeId(null);
+    }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Account profile, security, consent, and session management."
+        description="Manage your profile, security, and account preferences."
       />
 
       {user && (
@@ -133,14 +139,9 @@ export function SettingsPage() {
         </div>
       )}
 
-      {error && (
-        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
-      )}
-
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="flex h-auto flex-wrap gap-1">
-          <TabsTrigger value="profile">Basic info</TabsTrigger>
-          {isStaff && <TabsTrigger value="my-profile">My profile</TabsTrigger>}
+          <TabsTrigger value="my-profile">My profile</TabsTrigger>
           {isDoctor && <TabsTrigger value="availability">Availability</TabsTrigger>}
           {isDoctor && <TabsTrigger value="leave">Leave</TabsTrigger>}
           {isPatient && <TabsTrigger value="emergency">Emergency</TabsTrigger>}
@@ -148,31 +149,9 @@ export function SettingsPage() {
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="mt-4 max-w-lg space-y-4">
-          <form onSubmit={(e) => void handleBasicSave(e)} className="space-y-4 rounded-lg border p-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full name</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile</Label>
-              <Input id="mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} />
-            </div>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save profile'}
-            </Button>
-          </form>
+        <TabsContent value="my-profile" className="mt-4">
+          <MyProfilePanel />
         </TabsContent>
-
-        {isStaff && (
-          <TabsContent value="my-profile" className="mt-4">
-            <StaffSelfProfileContent />
-          </TabsContent>
-        )}
 
         {isDoctor && (
           <TabsContent value="availability" className="mt-4">
@@ -220,29 +199,24 @@ export function SettingsPage() {
           </TabsContent>
         )}
 
-        <TabsContent value="consent" className="mt-4 space-y-3">
-          {consents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No consent records yet.</p>
-          ) : (
-            consents.map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="font-medium">{c.purpose_name}</p>
-                  <p className="text-xs text-muted-foreground">{c.purpose_code}</p>
-                </div>
-                {c.accepted ? (
-                  <Badge>Accepted</Badge>
-                ) : (
-                  <Button size="sm" onClick={() => void acceptConsent(c.purpose_id)}>
-                    Accept
-                  </Button>
-                )}
-              </div>
-            ))
-          )}
+        <TabsContent value="consent" className="mt-4">
+          <ProfileConsentSection
+            consents={consents}
+            isLoading={isLoading}
+            acceptingPurposeId={acceptingPurposeId}
+            onAccept={handleAcceptConsent}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="mt-4 space-y-6">
+          <ChangePasswordSection />
+
+          {securityError && (
+            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {securityError}
+            </div>
+          )}
+
           <section className="space-y-2">
             <h3 className="font-medium">Active sessions</h3>
             {sessions.length === 0 ? (
@@ -263,12 +237,12 @@ export function SettingsPage() {
           <section className="space-y-2">
             <h3 className="font-medium">Recent login activity</h3>
             {loginLogs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No login logs loaded.</p>
+              <p className="text-sm text-muted-foreground">No login logs available.</p>
             ) : (
               loginLogs.map((log) => (
                 <div key={log.id} className="rounded-lg border p-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span>{log.login_method}</span>
+                    <span>{formatLoginMethod(log.login_method)}</span>
                     <Badge variant={log.success ? 'default' : 'destructive'}>
                       {log.success ? 'Success' : 'Failed'}
                     </Badge>
@@ -276,6 +250,11 @@ export function SettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     {new Date(log.created_at).toLocaleString()} · {log.ip_address ?? 'Unknown IP'}
                   </p>
+                  {!log.success && log.failure_reason && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {formatLoginFailureReason(log.failure_reason)}
+                    </p>
+                  )}
                 </div>
               ))
             )}

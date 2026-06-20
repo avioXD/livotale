@@ -5,15 +5,19 @@ import {
   FilterField,
   ListToolbar,
   PaginationControls,
+  StatusBadge,
+  ActiveFilterBanner,
 } from '@/components/common';
 import {
-  LAB_AI_STATUS_PRESETS,
   LAB_DISPATCH_STATUS_PRESETS,
+  LAB_AI_STATUS_PRESETS,
 } from '@/app/pages/admin/operations/adminOperationsConfig';
-import { Badge } from '@/components/ui/badge';
 import { useLabReportsStore } from '@/store';
 import type { AIExtractionStatus } from '@/types/aiExtraction';
 import type { LabReportQueueRow } from '@/types/labReport';
+import { orgPath } from '@/app/config/orgRoutes';
+import { countActiveFilters } from '@/utils/listFilters';
+import { useStorePaged } from '@/hooks/useStorePaged';
 import { SAMPLE_DISPATCH_LABELS } from '@/types/sampleDispatch';
 import type { TableColumn } from '@/types';
 
@@ -38,19 +42,6 @@ function readFilterParam(params: URLSearchParams, key: string): string {
   return params.get(key) ?? '';
 }
 
-function dispatchBadgeVariant(status: LabReportQueueRow['dispatchStatus']) {
-  if (status === 'awaiting_report') return 'default' as const;
-  if (status === 'report_uploaded') return 'secondary' as const;
-  return 'outline' as const;
-}
-
-function aiBadgeVariant(status: AIExtractionStatus | null) {
-  if (status === 'review_pending') return 'default' as const;
-  if (status === 'verified') return 'secondary' as const;
-  if (status === 'failed' || status === 'reupload_required') return 'destructive' as const;
-  return 'outline' as const;
-}
-
 interface AdminOperationsPartnerLabTabProps {
   defaultExtractionStatus?: string;
   focusAiReview?: boolean;
@@ -68,8 +59,12 @@ export function AdminOperationsPartnerLabTab({
   const draftDispatch = useLabReportsStore((s) => s.draftDispatch);
   const draftLab = useLabReportsStore((s) => s.draftLab);
   const draftAi = useLabReportsStore((s) => s.draftAi);
-  const page = useLabReportsStore((s) => s.page);
+  const appliedDispatch = useLabReportsStore((s) => s.appliedDispatch);
+  const appliedLab = useLabReportsStore((s) => s.appliedLab);
+  const appliedAi = useLabReportsStore((s) => s.appliedAi);
+  const appliedSearch = useLabReportsStore((s) => s.appliedSearch);
   const pageSize = useLabReportsStore((s) => s.pageSize);
+  const filtersExpanded = useLabReportsStore((s) => s.filtersExpanded);
   const isLoading = useLabReportsStore((s) => s.isLoading);
   const error = useLabReportsStore((s) => s.error);
   const partnerLabs = useLabReportsStore((s) => s.partnerLabs);
@@ -82,7 +77,7 @@ export function AdminOperationsPartnerLabTab({
   const resetFilters = useLabReportsStore((s) => s.resetFilters);
   const setPage = useLabReportsStore((s) => s.setPage);
   const setPageSize = useLabReportsStore((s) => s.setPageSize);
-  const getPagedQueue = useLabReportsStore((s) => s.getPagedQueue);
+  const setFiltersExpanded = useLabReportsStore((s) => s.setFiltersExpanded);
   const fetchQueue = useLabReportsStore((s) => s.fetchQueue);
 
   useEffect(() => {
@@ -97,14 +92,28 @@ export function AdminOperationsPartnerLabTab({
       appliedLab: lab,
       draftAi: ai,
       appliedAi: ai,
+      page: 1,
     });
     void fetchQueue();
   }, [searchParams, defaultExtractionStatus, fetchQueue]);
 
-  const paged = getPagedQueue();
+  const paged = useStorePaged(
+    useLabReportsStore,
+    (s) => ({ items: s.queue, page: s.page, pageSize: s.pageSize }),
+    (s) => s.setPage,
+  );
+  const defaultLabFilters = useMemo(
+    () => ({ dispatch: '', lab: '', ai: defaultExtractionStatus }),
+    [defaultExtractionStatus],
+  );
+  const activeFilterCount = countActiveFilters(
+    { dispatch: appliedDispatch, lab: appliedLab, ai: appliedAi },
+    defaultLabFilters,
+    appliedSearch,
+  );
 
   const openOrderLabStep = useCallback(
-    (orderId: string) => navigate(`/admin/orders/${orderId}?step=lab`),
+    (orderId: string) => navigate(orgPath(`/admin/orders/${orderId}?step=lab`)),
     [navigate],
   );
 
@@ -117,6 +126,20 @@ export function AdminOperationsPartnerLabTab({
       .map((id) => ({ id, name: nameById.get(id) ?? queue.find((r) => r.partnerLabId === id)?.partnerLabName ?? id }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [queue, partnerLabs]);
+
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    const dispatch = LAB_DISPATCH_STATUS_PRESETS.find((p) => p.value === appliedDispatch);
+    if (dispatch?.value) labels.push(`Stage: ${dispatch.label}`);
+    if (appliedLab) {
+      const labName = labOptions.find((l) => l.id === appliedLab)?.name ?? appliedLab;
+      labels.push(`Lab: ${labName}`);
+    }
+    const ai = LAB_AI_STATUS_PRESETS.find((p) => p.value === appliedAi);
+    if (ai?.value) labels.push(`AI: ${ai.label}`);
+    if (appliedSearch) labels.push(`Search: "${appliedSearch}"`);
+    return labels;
+  }, [appliedDispatch, appliedLab, appliedAi, appliedSearch, labOptions]);
 
   const columns: TableColumn<LabReportQueueRow>[] = useMemo(
     () => [
@@ -141,17 +164,44 @@ export function AdminOperationsPartnerLabTab({
         render: (r) => r.partnerLabName ?? <span className="text-muted-foreground">Not assigned</span>,
       },
       {
+        key: 'externalId',
+        header: 'Lab portal ID',
+        render: (r) =>
+          r.pathologyExternalAppointmentId ? (
+            <span className="font-mono text-xs">{r.pathologyExternalAppointmentId}</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: 'visit',
+        header: 'Visit',
+        render: (r) => {
+          if (r.pathologyVisitOutcome === 'visited') {
+            return <StatusBadge status="verified" domain="aiExtraction" label="Visited" />;
+          }
+          if (r.pathologyVisitOutcome === 'no_show') {
+            return <StatusBadge status="reupload_required" domain="aiExtraction" label="No-show" />;
+          }
+          return <span className="text-xs text-muted-foreground">Pending</span>;
+        },
+      },
+      {
         key: 'status',
         header: focusAiReview ? 'AI status' : 'Stage',
         render: (r) =>
           focusAiReview && r.extractionStatus ? (
-            <Badge variant={aiBadgeVariant(r.extractionStatus)}>
-              {AI_STATUS_LABELS[r.extractionStatus]}
-            </Badge>
+            <StatusBadge
+              status={r.extractionStatus}
+              domain="aiExtraction"
+              label={AI_STATUS_LABELS[r.extractionStatus]}
+            />
           ) : (
-            <Badge variant={dispatchBadgeVariant(r.dispatchStatus)}>
-              {DISPATCH_STAGE_LABELS[r.dispatchStatus]}
-            </Badge>
+            <StatusBadge
+              status={r.dispatchStatus}
+              domain="sampleDispatch"
+              label={DISPATCH_STAGE_LABELS[r.dispatchStatus]}
+            />
           ),
       },
     ],
@@ -199,12 +249,18 @@ export function AdminOperationsPartnerLabTab({
         </div>
       )}
 
+      <ActiveFilterBanner labels={activeFilterLabels} onClear={handleResetFilters} />
+
       <ListToolbar
         searchValue={searchInput}
         onSearchChange={setSearchInput}
         searchPlaceholder="Search order #, patient, or lab…"
         onApplyFilters={handleApplyFilters}
         onResetFilters={handleResetFilters}
+        isLoading={isLoading}
+        filtersExpanded={filtersExpanded}
+        onFiltersExpandedChange={setFiltersExpanded}
+        activeFilterCount={activeFilterCount}
       >
         <FilterField label="Sample / PDF stage" htmlFor="ops-lab-dispatch">
           <select
@@ -267,6 +323,7 @@ export function AdminOperationsPartnerLabTab({
         totalPages={paged.totalPages}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
+        isLoading={isLoading}
       />
     </div>
   );

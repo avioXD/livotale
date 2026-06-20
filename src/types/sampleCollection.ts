@@ -165,6 +165,7 @@ export interface SampleCollectionAnalytics {
 export interface StaffTechnicianProfile {
   id: string;
   userId: string;
+  badgeId?: string | null;
   fullName: string;
   email: string | null;
   mobile: string | null;

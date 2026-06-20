@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { PatientPortalBreadcrumbs } from '@/app/layouts/patient-portal/PatientPortalBreadcrumbs';
 import { Button } from '@/components/ui/button';
 import { LiverHealthReportPanel } from '@/components/liver-health-report/LiverHealthReportPanel';
 import { finalReportService, patientPortalService } from '@/services/liverCare';
@@ -43,7 +44,10 @@ export function PatientReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="lg:hidden">
+        <PatientPortalBreadcrumbs />
+      </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Your Liver Health Report</h1>
           <p className="text-sm text-muted-foreground">

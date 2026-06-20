@@ -17,9 +17,10 @@ import {
   isArchivedConvertedThread,
   isConvertedLatestThread,
 } from '@/utils/enquiryThread';
+import { orgPath } from '@/app/config/orgRoutes';
 
-const LIST_PATH = '/admin/operations?tab=enquiries';
-const DETAIL_PATH = '/admin/enquiries';
+const LIST_PATH = orgPath('/admin/operations?tab=enquiries');
+const DETAIL_PATH = orgPath('/admin/enquiries');
 
 export type EnquiryDetailTab =
   | 'view'
@@ -53,6 +54,7 @@ export function EnquiryDetailPage() {
   const threadEnquiries = useEnquiryDetailStore((s) => s.threadEnquiries);
   const packages = useEnquiryDetailStore((s) => s.packages);
   const followUp = useEnquiryDetailStore((s) => s.followUp);
+  const orderIntake = useEnquiryDetailStore((s) => s.orderIntake);
   const details = useEnquiryDetailStore((s) => s.details);
   const orderOutcome = useEnquiryDetailStore((s) => s.orderOutcome);
   const isLoading = useEnquiryDetailStore((s) => s.isLoading);
@@ -62,6 +64,7 @@ export function EnquiryDetailPage() {
   const loadById = useEnquiryDetailStore((s) => s.loadById);
   const initCreate = useEnquiryDetailStore((s) => s.initCreate);
   const patchFollowUp = useEnquiryDetailStore((s) => s.patchFollowUp);
+  const patchOrderIntake = useEnquiryDetailStore((s) => s.patchOrderIntake);
   const patchDetails = useEnquiryDetailStore((s) => s.patchDetails);
   const patchOrderOutcome = useEnquiryDetailStore((s) => s.patchOrderOutcome);
   const createLead = useEnquiryDetailStore((s) => s.createLead);
@@ -69,6 +72,7 @@ export function EnquiryDetailPage() {
   const saveDetails = useEnquiryDetailStore((s) => s.saveDetails);
   const saveOrderOutcome = useEnquiryDetailStore((s) => s.saveOrderOutcome);
   const convertToOrder = useEnquiryDetailStore((s) => s.convertToOrder);
+  const archiveLead = useEnquiryDetailStore((s) => s.archiveLead);
   const createNewThread = useEnquiryDetailStore((s) => s.createNewThread);
   const isStartingThread = useEnquiryDetailStore((s) => s.isStartingThread);
   const clear = useEnquiryDetailStore((s) => s.clear);
@@ -155,7 +159,7 @@ export function EnquiryDetailPage() {
     if (!id || isCreate) return;
     try {
       const orderId = await convertToOrder(id);
-      navigate(`/admin/orders/${orderId}`);
+      navigate(orgPath(`/admin/orders/${orderId}`));
     } catch {
       // error in store
     }
@@ -166,6 +170,17 @@ export function EnquiryDetailPage() {
     try {
       const created = await createNewThread(id);
       navigate(`${DETAIL_PATH}/${created.id}?tab=view`, { replace: true });
+    } catch {
+      // error in store
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!id || isCreate) return;
+    if (!globalThis.confirm('Archive this lead? It will be removed from the active enquiries list.')) return;
+    try {
+      await archiveLead(id);
+      navigate(LIST_PATH);
     } catch {
       // error in store
     }
@@ -295,7 +310,9 @@ export function EnquiryDetailPage() {
                         enquiry={enquiry}
                         packages={packages}
                         followUp={followUp}
+                        orderIntake={orderIntake}
                         onChange={patchFollowUp}
+                        onIntakeChange={patchOrderIntake}
                         onConvert={() => void handleConvert()}
                         converting={isConverting}
                       />
@@ -315,6 +332,17 @@ export function EnquiryDetailPage() {
                         onSave={() => void handleSaveDetails()}
                         saving={isSaving}
                       />
+                      {enquiry.status !== 'converted' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="text-destructive"
+                          disabled={isSaving}
+                          onClick={() => void handleArchive()}
+                        >
+                          Archive lead
+                        </Button>
+                      )}
                     </div>
                   </TabsContent>
                 </>

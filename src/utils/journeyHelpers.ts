@@ -1,4 +1,5 @@
 import type { JourneyState, JourneyStatus } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const ONBOARDING_COMPLETE_STATUSES: JourneyStatus[] = [
   'visit_booked',
@@ -18,5 +19,5 @@ export function isPatientOnboardingComplete(journey: JourneyState | null): boole
 }
 
 export function resolvePatientHomePath(onboardingComplete: boolean): string {
-  return onboardingComplete ? '/dashboard' : '/patient-journey';
+  return onboardingComplete ? orgPath('/dashboard') : '/patient-journey';
 }

@@ -6,17 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { patientPortalService } from '@/services/liverCare';
+import { patientPortalService, slotService } from '@/services/liverCare';
 import {
   buildScanScheduledAt,
   defaultEditableScanDate,
+  FIBROSCAN_VISIT_LABEL,
+  FIBROSCAN_VISIT_MODE,
   formatScanVisitSummary,
   getScanTimeSlots,
   isPaymentReadyForScan,
   normalizeSlotCode,
-  SCAN_VISIT_MODE_LABELS,
 } from '@/services/liverCare/scanSchedule';
-import type { LiverCareOrder, ScanVisitMode } from '@/types/serviceOrder';
+import { formatTimeSlotDisplay } from '@/services/liverCare/appointmentSlots';
+import type { LiverCareOrder } from '@/types/serviceOrder';
 
 interface PatientScanScheduleSectionProps {
   order: LiverCareOrder;
@@ -25,13 +27,14 @@ interface PatientScanScheduleSectionProps {
 }
 
 export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientScanScheduleSectionProps) {
-  const [visitMode, setVisitMode] = useState<ScanVisitMode>(order.scanVisitMode ?? 'home');
   const [scheduleDate, setScheduleDate] = useState(defaultEditableScanDate(order));
   const [slotCode, setSlotCode] = useState(normalizeSlotCode(order.scanTimeSlot));
-  const [slotLabel, setSlotLabel] = useState(order.scanTimeSlot ?? '');
+  const [slotLabel, setSlotLabel] = useState(formatTimeSlotDisplay(order.scanTimeSlot));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [apiSlots, setApiSlots] = useState<TimeSlotOption[]>([]);
 
   const paymentReady = isPaymentReadyForScan(order);
   const canSubmit =
@@ -39,17 +42,38 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
     !order.scanScheduledAt &&
     !['scan_in_progress', 'scan_completed', 'completed', 'cancelled'].includes(order.orderStatus);
 
-  const slots = useMemo(
-    () => (canSubmit ? getScanTimeSlots(scheduleDate, visitMode) : []),
-    [canSubmit, scheduleDate, visitMode],
+  const fallbackSlots = useMemo(
+    () => (canSubmit ? getScanTimeSlots(scheduleDate) : []),
+    [canSubmit, scheduleDate],
   );
 
+  const slots = apiSlots.length > 0 ? apiSlots : fallbackSlots;
+
   useEffect(() => {
-    setVisitMode(order.scanVisitMode ?? 'home');
+    if (!canSubmit || !scheduleDate) {
+      setApiSlots([]);
+      return;
+    }
+    void slotService
+      .listPublicScanSlots(scheduleDate)
+      .then((rows) =>
+        setApiSlots(
+          rows.map((s) => ({
+            code: s.code,
+            label: s.label,
+            available: s.available,
+            scheduledAt: s.scheduledAt,
+          })),
+        ),
+      )
+      .catch(() => setApiSlots([]));
+  }, [canSubmit, scheduleDate]);
+
+  useEffect(() => {
     setScheduleDate(defaultEditableScanDate(order));
     setSlotCode(normalizeSlotCode(order.scanTimeSlot));
-    setSlotLabel(order.scanTimeSlot ?? '');
-  }, [order.id, order.scanPatientPreferredAt, order.scanVisitMode, order.scanTimeSlot, order.scanScheduledAt]);
+    setSlotLabel(formatTimeSlotDisplay(order.scanTimeSlot));
+  }, [order.id, order.scanPatientPreferredAt, order.scanTimeSlot, order.scanScheduledAt]);
 
   const handleSubmit = async () => {
     if (!slotCode) {
@@ -63,11 +87,13 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
       const preferredAt = buildScanScheduledAt(scheduleDate, slotCode);
       const updated = await patientPortalService.requestScanDate(phone, order.id, {
         preferredAt,
-        visitMode,
+        visitMode: FIBROSCAN_VISIT_MODE,
         timeSlot: slotLabel || slotCode,
       });
       onUpdated(updated);
-      setSuccess('Preferred scan date submitted. Operations will assign a technician and confirm your appointment.');
+      setSuccess(
+        'Preferred home visit time submitted. Operations will assign a technician and confirm your appointment.',
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save preferred date');
     } finally {
@@ -78,12 +104,12 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
   if (order.orderStatus === 'cancelled') return null;
 
   return (
-    <Card>
+    <Card id="patient-scan-schedule">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Schedule your fibrosis scan</CardTitle>
+        <CardTitle className="text-base">Schedule your home FibroScan visit</CardTitle>
         <CardDescription>
-          Choose a clinic or home visit and pick your preferred date. A technician will be assigned by our operations
-          team after you submit.
+          FibroScan is home-visit only — pick your preferred date and time online after payment. A technician
+          will visit your registered address; our operations team assigns the field technician after you submit.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -92,7 +118,7 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
 
         {order.scanScheduledAt ? (
           <div className="rounded-md border border-green-200 bg-green-50/60 px-3 py-2 text-sm text-green-900">
-            <p className="font-medium">Your scan is confirmed</p>
+            <p className="font-medium">Your home visit is confirmed</p>
             <p className="mt-1">{formatScanVisitSummary(order)}</p>
             {order.technicianName && (
               <p className="mt-1 text-xs">Technician: {order.technicianName}</p>
@@ -108,44 +134,19 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
 
         {!paymentReady && (
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            Complete payment first to select your scan date.
+            Complete payment first to book your home visit online.
           </p>
         )}
 
         {canSubmit && (
           <>
-            <div className="space-y-2">
-              <Label>Visit type</Label>
-              <div className="flex flex-wrap gap-2">
-                {(['home', 'clinic'] as ScanVisitMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setVisitMode(mode)}
-                    className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                      visitMode === mode
-                        ? 'border-livotale-pink bg-livotale-pink/10 text-livotale-pink'
-                        : 'hover:bg-muted/50'
-                    }`}
-                  >
-                    {SCAN_VISIT_MODE_LABELS[mode]}
-                  </button>
-                ))}
-              </div>
-              {visitMode === 'home' && (
-                <p className="text-xs text-muted-foreground">
-                  Home visit at your registered address. Fasting 3 hours before scan is recommended.
-                </p>
-              )}
-              {visitMode === 'clinic' && (
-                <p className="text-xs text-muted-foreground">
-                  Visit one of our partner clinics. Clinic location will be confirmed by operations.
-                </p>
-              )}
-            </div>
+            <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{FIBROSCAN_VISIT_LABEL}</span> at your registered
+              address. Fasting 3 hours before the scan is recommended. Clinic walk-in is not available.
+            </p>
 
             <div className="space-y-1">
-              <Label htmlFor="patient-scan-date">Preferred scan date</Label>
+              <Label htmlFor="patient-scan-date">Preferred home visit date</Label>
               <Input
                 id="patient-scan-date"
                 type="date"
@@ -160,7 +161,7 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
             </div>
 
             <div className="space-y-2">
-              <Label>Preferred time slot</Label>
+              <Label>Preferred time slot (45 min)</Label>
               <TimeSlotGrid
                 slots={slots}
                 selectedCode={slotCode}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthLayout } from '@/app/pages/auth/components/AuthLayout';
+import { ORG_LOGIN_PATH } from '@/app/config/orgRoutes';
 import { useAuthStore } from '@/store';
 
 export function ResetPasswordPage() {
@@ -34,7 +35,7 @@ export function ResetPasswordPage() {
             If an account exists for <strong>{email}</strong>, you will receive a password reset
             link shortly.
           </p>
-          <Link to="/login" className="text-sm text-primary hover:underline">
+          <Link to={ORG_LOGIN_PATH} className="text-sm text-primary hover:underline">
             Back to sign in
           </Link>
         </div>
@@ -63,7 +64,7 @@ export function ResetPasswordPage() {
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to={ORG_LOGIN_PATH} className="text-primary hover:underline">
               Back to sign in
             </Link>
           </p>

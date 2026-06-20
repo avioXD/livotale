@@ -1,7 +1,5 @@
 import type { AuditLogEntry } from '@/types/adminDashboard';
 import type { OrderTimelineCategory, OrderTimelineEvent } from '@/types/serviceOrder';
-import { MOCK_ORDER_TIMELINES } from './liverCare.mock';
-
 export interface AppendTimelineOptions {
   label?: string;
   detail?: string;
@@ -21,19 +19,34 @@ const EVENT_CATALOG: Record<string, { label: string; category: OrderTimelineCate
   assign_technician: { label: 'Technician assigned', category: 'scan' },
   technician_reassigned: { label: 'Technician reassigned', category: 'scan' },
   scan_date_requested: { label: 'Patient selected scan date', category: 'scan' },
+  consultation_date_requested: { label: 'Patient selected consult slot', category: 'consultation' },
+  consultation_schedule_confirmed: { label: 'Consultation confirmed', category: 'consultation' },
   schedule_scan: { label: 'Scan scheduled', category: 'scan' },
   start_scan: { label: 'Scan started', category: 'scan' },
   visit_started: { label: 'Technician visit started', category: 'scan' },
   reached_location: { label: 'Technician reached patient location', category: 'scan' },
+  visit_completion_otp_sent: { label: 'Completion OTP sent to patient', category: 'scan' },
+  visit_completion_otp_verified: { label: 'Visit completion confirmed by patient OTP', category: 'scan' },
+  scan_report_proof_uploaded: { label: 'FibroScan report proof uploaded', category: 'scan' },
   scan_data_fetched: { label: 'Scan data fetched from device', category: 'scan' },
   scan_saved: { label: 'Scan measurements saved', category: 'scan' },
   scan_reviewed: { label: 'Scan reviewed by operations', category: 'scan' },
   complete_scan: { label: 'Scan marked complete', category: 'scan' },
   scan_completed: { label: 'Fibrosis scan completed', category: 'scan' },
   scan_failed: { label: 'Scan could not be completed', category: 'scan' },
+  patient_intake_entered: { label: 'Patient intake entered by operations', category: 'scan' },
+  patient_intake_verified: { label: 'Patient intake submitted by technician', category: 'scan' },
+  patient_intake_approved: { label: 'Patient intake validated by operations', category: 'scan' },
+  patient_intake_rejected: { label: 'Patient intake rejected by operations', category: 'scan' },
+  fibroscan_intake_submitted: { label: 'FibroScan intake submitted by technician', category: 'scan' },
+  fibroscan_intake_approved: { label: 'FibroScan intake validated by operations', category: 'scan' },
+  fibroscan_intake_rejected: { label: 'FibroScan intake rejected by operations', category: 'scan' },
   assign_lab: { label: 'Lab partner assigned', category: 'pathology' },
   lab_assigned: { label: 'Lab partner assigned', category: 'pathology' },
-  sample_collected: { label: 'Blood sample collected', category: 'pathology' },
+  lab_order_created: { label: 'Lab partner order created', category: 'pathology' },
+  pathology_date_requested: { label: 'Patient selected pathology visit', category: 'pathology' },
+  pathology_scheduled: { label: 'Pathology visit scheduled', category: 'pathology' },
+  sample_collected: { label: 'Blood sample collected by lab partner', category: 'pathology' },
   sample_dispatched: { label: 'Blood sample submitted to lab', category: 'pathology' },
   sample_received_at_lab: { label: 'Sample received at lab', category: 'pathology' },
   awaiting_lab_report: { label: 'Awaiting lab report PDF', category: 'pathology' },
@@ -114,11 +127,11 @@ export function appendOrderTimeline(
     category: options.category ?? catalog?.category ?? 'system',
     metadata: options.metadata,
   };
-  const events = MOCK_ORDER_TIMELINES[orderId] ?? [];
-  events.push(event);
-  MOCK_ORDER_TIMELINES[orderId] = events;
+  // Timeline persistence is handled by the API.
   return event;
 }
+
+import { formatTimeSlotDisplay } from './appointmentSlots';
 
 export function formatTransitionDetail(event: string, meta?: Record<string, string>): string | undefined {
   if (event === 'assign_technician' && meta?.technicianName) {
@@ -131,8 +144,7 @@ export function formatTransitionDetail(event: string, meta?: Record<string, stri
     return `Video consult · ${new Date(meta.scheduledAt).toLocaleString()}`;
   }
   if (event === 'schedule_scan' && meta?.scheduledAt) {
-    const mode = meta.visitMode === 'home' ? 'Home visit' : meta.visitMode === 'clinic' ? 'Clinic visit' : 'Scan';
-    return `${mode}${meta.timeSlot ? ` · ${meta.timeSlot}` : ''} · ${new Date(meta.scheduledAt).toLocaleString()}`;
+    return `Home visit${meta.timeSlot ? ` · ${formatTimeSlotDisplay(meta.timeSlot)}` : ''} · ${new Date(meta.scheduledAt).toLocaleString()}`;
   }
   if (event === 'assign_lab' && meta?.partnerLabName) {
     return `Lab: ${meta.partnerLabName}`;

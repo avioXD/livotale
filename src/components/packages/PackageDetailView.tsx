@@ -4,7 +4,7 @@ import { WHATSAPP_MESSAGES } from '@/app/config/whatsappMessages';
 import { PackageTestPanel } from '@/components/packages/PackageTestPanel';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import type { LiverCarePackage } from '@/types/package';
-import { ALWAYS_INCLUDED_DELIVERY_ITEMS, bulletsFromSections } from '@/services/liverCare/package.utils';
+import { ALWAYS_INCLUDED_DELIVERY_ITEMS, bulletsFromSections, publicBulletsForPackage, publicPackageCopy } from '@/services/liverCare/package.utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +33,11 @@ interface PackageDetailViewProps {
 
 export function PackageDetailView({ pkg, showEnquire = true, readOnly = false, compact = false }: PackageDetailViewProps) {
   const price = formatPrice(pkg);
-  const bullets = pkg.includes.bullets.length ? pkg.includes.bullets : bulletsFromSections(pkg.checklistSections);
+  const bullets = readOnly
+    ? publicBulletsForPackage(pkg)
+    : pkg.includes.bullets.length
+      ? pkg.includes.bullets
+      : bulletsFromSections(pkg.checklistSections);
 
   return (
     <div className={compact ? 'space-y-4' : 'space-y-8'}>
@@ -109,7 +113,9 @@ export function PackageDetailView({ pkg, showEnquire = true, readOnly = false, c
                       )}
                     </span>
                     <div>
-                      <p className={item.included ? '' : 'text-muted-foreground line-through'}>{item.label}</p>
+                      <p className={item.included ? '' : 'text-muted-foreground line-through'}>
+                        {readOnly ? publicPackageCopy(item.label) : item.label}
+                      </p>
                       {item.detail && <p className="text-xs text-muted-foreground">{item.detail}</p>}
                     </div>
                   </div>

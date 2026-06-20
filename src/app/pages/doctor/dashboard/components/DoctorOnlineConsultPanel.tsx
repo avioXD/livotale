@@ -3,6 +3,7 @@ import { FiVideo } from 'react-icons/fi';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export interface DoctorConsultRow {
   id: string;
@@ -36,11 +37,15 @@ const ACTIVE_STATUSES = new Set([
   'in_progress',
   'consultation_started',
   'waiting_for_doctor',
+  'doctor_assigned',
+  'consultation_pending',
+  'prescription_pending',
+  'prescription_generated',
 ]);
 
 export function DoctorOnlineConsultPanel({
   appointments,
-  joinPathPrefix = '/doctor/appointments',
+  joinPathPrefix = orgPath('/doctor/consultations'),
   readOnly = false,
 }: DoctorOnlineConsultPanelProps) {
   const upcoming = appointments.filter((a) => ACTIVE_STATUSES.has(a.status));
@@ -90,7 +95,7 @@ export function DoctorOnlineConsultPanel({
                 </Badge>
                 {!readOnly && (
                   <Button size="sm" variant="default" className="gap-1" asChild>
-                    <Link to={`${joinPathPrefix}/${appt.id}/tele`}>
+                    <Link to={`${joinPathPrefix}/${appt.id}`}>
                       <FiVideo className="h-3.5 w-3.5" />
                       Join
                     </Link>

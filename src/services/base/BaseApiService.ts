@@ -4,10 +4,17 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { isMockMode } from '@/services/mock';
 import { getStoredToken, clearStoredTokens } from '@/rbac';
+import { ORG_LOGIN_PATH } from '@/app/config/orgRoutes';
+import { mapApiErrorToToast, shouldToastApiError } from '@/services/base/apiError';
+import { toastError } from '@/store/toast/toastStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4001/api/v1';
+const PATIENT_PORTAL_PREFIX = '/patient';
+
+function isPatientPortalRoute(): boolean {
+  return window.location.pathname.startsWith(PATIENT_PORTAL_PREFIX);
+}
 
 export interface ApiEnvelope<T> {
   data: T;
@@ -29,9 +36,11 @@ export const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = getStoredToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!isPatientPortalRoute()) {
+      const token = getStoredToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -41,15 +50,18 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !isMockMode()) {
+    if (error.response?.status === 401 && !isPatientPortalRoute()) {
       clearStoredTokens();
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.pathname !== ORG_LOGIN_PATH) {
+        window.location.href = ORG_LOGIN_PATH;
       }
     }
 
     const body = error.response?.data as ApiErrorBody | undefined;
     const message = body?.message ?? body?.error ?? error.message ?? 'Request failed';
+    if (shouldToastApiError(error, error.config?.url)) {
+      toastError(mapApiErrorToToast(error));
+    }
     return Promise.reject(new Error(message));
   },
 );

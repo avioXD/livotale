@@ -67,7 +67,7 @@ Reusable UX for admin entities that have many records and a rich single-record v
 | `editContent` | Form panel with save/cancel |
 | `actions` | Header buttons (delete, external preview, …) |
 
-Tab changes update URL: `setSearchParams({ tab })` with `replace: true`.
+Tab changes update URL: `setSearchParams({ tab })` with `replace: true`. Prefer `useUrlTabState` (Phase I).
 
 ---
 

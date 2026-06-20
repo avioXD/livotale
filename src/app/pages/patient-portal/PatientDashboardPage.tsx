@@ -1,43 +1,64 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiBell, FiDownload, FiFileText, FiUser } from 'react-icons/fi';
-import { KpiActionCard, KpiGrid } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { DashboardErrorState } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PatientDashboardPanel } from '@/app/pages/patients/components/PatientDashboardPanel';
+import { PatientOrderCard } from '@/app/pages/patient-portal/components/PatientOrderCard';
 import { patientPortalService } from '@/services/liverCare';
+import { getMostUrgentPatientAction } from '@/services/liverCare/patientOrderProgress';
 import { usePatientPortalStore } from '@/store';
-import { formatScanVisitSummary } from '@/services/liverCare/scanSchedule';
 import type { LiverCareOrder } from '@/types/serviceOrder';
-import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { PatientDownloadItem, PatientNotification } from '@/types/patientPortal';
+import type { PatientDashboardData } from '@/types/patients';
 
 export function PatientDashboardPage() {
   const session = usePatientPortalStore((s) => s.session)!;
   const [orders, setOrders] = useState<LiverCareOrder[]>([]);
   const [notifications, setNotifications] = useState<PatientNotification[]>([]);
   const [downloads, setDownloads] = useState<PatientDownloadItem[]>([]);
+  const [healthDashboard, setHealthDashboard] = useState<PatientDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     void Promise.all([
       patientPortalService.listMyOrders(session.phone),
       patientPortalService.listNotifications(session.phone),
       patientPortalService.listDownloads(session.phone),
-    ]).then(([orderRows, notifRows, dlRows]) => {
-      setOrders(orderRows);
-      setNotifications(notifRows);
-      setDownloads(dlRows);
-      setLoading(false);
-    });
+      patientPortalService.getDashboardAnalytics(session.phone).catch(() => null),
+    ])
+      .then(([orderRows, notifRows, dlRows, analytics]) => {
+        setOrders(orderRows);
+        setNotifications(notifRows);
+        setDownloads(dlRows);
+        setHealthDashboard(analytics);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Failed to load your dashboard');
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    load();
   }, [session.phone]);
 
   const unread = notifications.filter((n) => !n.read).length;
   const reports = downloads.filter((d) => d.type === 'report');
   const prescriptions = downloads.filter((d) => d.type === 'prescription');
+  const nextAction = getMostUrgentPatientAction(orders);
+  const recentOrders = orders.slice(0, 2);
 
   if (loading) {
     return <p className="text-muted-foreground">Loading your orders…</p>;
+  }
+
+  if (error) {
+    return <DashboardErrorState message={error} onRetry={load} title="Could not load your dashboard" />;
   }
 
   return (
@@ -47,38 +68,40 @@ export function PatientDashboardPage() {
         <p className="text-muted-foreground">Track orders, payments, reports, and prescriptions.</p>
       </div>
 
-      <KpiGrid>
-        <KpiActionCard
-          label="Profile"
-          actionLabel="Edit details"
-          href="/patient/profile"
-          icon={FiUser}
-          accent="pink"
-        />
-        <KpiActionCard
-          label="Notifications"
-          actionLabel="View inbox"
-          href="/patient/notifications"
-          icon={FiBell}
-          accent="teal"
-          badge={unread > 0 ? unread : undefined}
-        />
-        <KpiActionCard
-          label="Downloads"
-          actionLabel="Download center"
-          href="/patient/downloads"
-          icon={FiDownload}
-          accent="indigo"
-          badge={downloads.length}
-        />
-        <KpiActionCard
-          label="Support"
-          actionLabel="care@livotale.test"
-          href="mailto:care@livotale.test"
-          icon={FiFileText}
-          accent="amber"
-        />
-      </KpiGrid>
+      {nextAction.type !== 'none' ? (
+        <Card className="border-livotale-pink/30 bg-gradient-to-br from-livotale-pink/5 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Next step</CardTitle>
+            <p className="text-sm text-muted-foreground">{nextAction.order.orderNumber} · {nextAction.order.packageName}</p>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to={nextAction.href}>{nextAction.label}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : orders.length > 0 ? (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="py-4 text-sm text-green-900">
+            You&apos;re all caught up. We&apos;ll notify you when there&apos;s something new.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {unread > 0 && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <p className="text-sm">
+              You have <span className="font-semibold">{unread}</span> unread notification{unread === 1 ? '' : 's'}.
+            </p>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/patient/notifications">View inbox</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {healthDashboard && <PatientDashboardPanel dashboard={healthDashboard} />}
 
       {(reports.length > 0 || prescriptions.length > 0) && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -88,9 +111,9 @@ export function PatientDashboardPage() {
                 <CardTitle className="text-base text-green-900">Published reports</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {reports.map((r) => (
+                {reports.slice(0, 3).map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
-                    <span>{r.label}</span>
+                    <span className="truncate">{r.label}</span>
                     <Button size="sm" asChild>
                       <Link to={`/patient/orders/${r.orderId}/report`}>View</Link>
                     </Button>
@@ -105,9 +128,9 @@ export function PatientDashboardPage() {
                 <CardTitle className="text-base text-green-900">Published prescriptions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {prescriptions.map((r) => (
+                {prescriptions.slice(0, 3).map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
-                    <span>{r.label}</span>
+                    <span className="truncate">{r.label}</span>
                     <Button size="sm" asChild>
                       <Link to={`/patient/orders/${r.orderId}/prescription`}>View</Link>
                     </Button>
@@ -119,52 +142,29 @@ export function PatientDashboardPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">My orders</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {orders.length === 0 && <p className="text-sm text-muted-foreground">No orders yet.</p>}
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"
-            >
-              <div>
-                <p className="font-medium">{order.orderNumber}</p>
-                <p className="text-sm text-muted-foreground">{order.packageName}</p>
-                <p className="text-sm">₹{order.finalAmount.toLocaleString('en-IN')}</p>
-                {order.consultationScheduledAt && (
-                  <p className="text-xs text-muted-foreground">
-                    Consultation: {new Date(order.consultationScheduledAt).toLocaleString()}
-                  </p>
-                )}
-                {(order.scanScheduledAt || order.scanPatientPreferredAt) && (
-                  <p className="text-xs text-muted-foreground">
-                    Scan: {formatScanVisitSummary(order)}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={order.paymentStatus === 'success' ? 'default' : 'outline'} className="capitalize">
-                  {order.paymentStatus}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {ORDER_STATUS_LABELS[order.orderStatus]}
-                </span>
-                {order.paymentStatus !== 'success' && (
-                  <Button size="sm" asChild>
-                    <Link to={`/patient/orders/${order.id}/pay`}>Pay now</Link>
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" asChild>
-                  <Link to={`/patient/orders/${order.id}`}>Details</Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Recent orders</h2>
+          {orders.length > 2 && (
+            <Button variant="link" className="h-auto p-0" asChild>
+              <Link to="/patient/orders">View all ({orders.length})</Link>
+            </Button>
+          )}
+        </div>
+
+        {recentOrders.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No orders yet.{' '}
+              <Link to="/packages" className="text-livotale-pink hover:underline">
+                View packages
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          recentOrders.map((order) => <PatientOrderCard key={order.id} order={order} />)
+        )}
+      </div>
     </div>
   );
 }

@@ -1,9 +1,6 @@
-import { mockOrApi } from '@/services/mock';
 import { BaseApiService } from '@/services/base';
 import type { InboxNotification, InboxNotificationCategory } from '@/types/inboxNotification';
 import { AppRole } from '@/types/auth';
-import { MOCK_INBOX } from './inboxNotification.mock';
-
 export interface PushNotificationInput {
   title: string;
   body: string;
@@ -15,29 +12,12 @@ export interface PushNotificationInput {
 }
 
 class InboxNotificationService extends BaseApiService {
-  private inbox = [...MOCK_INBOX];
-
   async listForRole(role: AppRole | null): Promise<InboxNotification[]> {
-    return mockOrApi(
-      () => {
-        if (!role) return [];
-        return this.inbox
-          .filter((n) => n.targetRoles.includes(role))
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      },
-      () => this.get<InboxNotification[]>('/notifications/inbox', { params: { role } }),
-    );
+    return this.get<InboxNotification[]>('/notifications/inbox', { params: { role } })
   }
 
   async listForPatientPhone(phone: string): Promise<InboxNotification[]> {
-    const normalized = phone.replace(/\D/g, '').slice(-10);
-    return mockOrApi(
-      () =>
-        this.inbox
-          .filter((n) => n.targetPhone && n.targetPhone.replace(/\D/g, '').slice(-10) === normalized)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-      () => this.get<InboxNotification[]>('/notifications/inbox/patient', { params: { phone } }),
-    );
+    return this.get<InboxNotification[]>('/notifications/inbox/patient', { params: { phone } });
   }
 
   async unreadCount(role: AppRole | null): Promise<number> {
@@ -51,49 +31,16 @@ class InboxNotificationService extends BaseApiService {
   }
 
   async markRead(id: string): Promise<void> {
-    return mockOrApi(
-      () => {
-        const row = this.inbox.find((n) => n.id === id);
-        if (row) row.read = true;
-      },
-      () => this.patch(`/notifications/inbox/${id}/read`),
-    );
+    return this.patch(`/notifications/inbox/${id}/read`)
   }
 
   async markAllRead(role: AppRole | null): Promise<void> {
-    return mockOrApi(
-      () => {
-        if (!role) return;
-        for (const n of this.inbox) {
-          if (n.targetRoles.includes(role)) n.read = true;
-        }
-      },
-      () => this.patch('/notifications/inbox/read-all', { role }),
-    );
+    return this.patch('/notifications/inbox/read-all', { role })
   }
 
   /** Push in-app notification — call from domain services on workflow events */
   async push(input: PushNotificationInput): Promise<InboxNotification> {
-    return mockOrApi(
-      () => {
-        const row: InboxNotification = {
-          id: `inb-${Date.now()}`,
-          title: input.title,
-          body: input.body,
-          category: input.category,
-          channel: 'push',
-          targetRoles: input.targetRoles,
-          orderId: input.orderId ?? null,
-          targetPhone: input.targetPhone ?? null,
-          triggerAction: input.triggerAction,
-          read: false,
-          createdAt: new Date().toISOString(),
-        };
-        this.inbox.unshift(row);
-        return row;
-      },
-      () => this.post<InboxNotification>('/notifications/inbox', input),
-    );
+    return this.post<InboxNotification>('/notifications/inbox', input)
   }
 }
 

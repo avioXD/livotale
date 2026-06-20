@@ -1,9 +1,11 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiLogOut, FiMenu } from 'react-icons/fi';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { getNavGroupsForRole } from '@/app/config/navigation';
+import { getDefaultHomePath, getNavGroupsForRole } from '@/app/config/navigation';
+import { orgPath } from '@/app/config/orgRoutes';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useAuthStore, useUserRole } from '@/store';
 import { cn, getInitialsFromFullName } from '@/utils';
@@ -23,28 +25,28 @@ function isNavPathActive(pathname: string, search: string, path: string): boolea
     return pathname === basePath;
   }
 
-  if (basePath === '/admin/operations') {
-    return pathname === '/admin/operations' && !search.includes('tab=');
+  if (basePath === orgPath('/admin/operations')) {
+    return pathname === orgPath('/admin/operations') && !search.includes('tab=');
   }
 
-  if (basePath === '/doctor/appointments') {
-    return pathname === '/doctor/appointments' && !search.includes('section=');
+  if (basePath === orgPath('/doctor/appointments')) {
+    return pathname === orgPath('/doctor/appointments') && !search.includes('section=');
   }
 
-  if (basePath === '/settings') {
+  if (basePath === orgPath('/settings')) {
     const tab = new URLSearchParams(search).get('tab');
     if (query) {
       const expectedTab = new URLSearchParams(query).get('tab');
-      return pathname === '/settings' && tab === expectedTab;
+      return pathname === orgPath('/settings') && tab === expectedTab;
     }
-    return pathname === '/settings' && (!tab || tab === 'profile');
+    return pathname === orgPath('/settings') && (!tab || tab === 'profile');
   }
 
-  if (basePath.startsWith('/admin/staff/')) {
+  if (basePath.startsWith(orgPath('/admin/staff/'))) {
     return pathname === basePath || pathname.startsWith(`${basePath}/`);
   }
 
-  return pathname === basePath || (pathname.startsWith(`${basePath}/`) && basePath !== '/admin/operations');
+  return pathname === basePath || (pathname.startsWith(`${basePath}/`) && basePath !== orgPath('/admin/operations'));
 }
 
 function isNavItemActive(pathname: string, search: string, item: NavItem): boolean {
@@ -59,41 +61,42 @@ function isNavItemActive(pathname: string, search: string, item: NavItem): boole
 function isChildActive(pathname: string, search: string, child: NavChildItem): boolean {
   if (isNavPathActive(pathname, search, child.path)) return true;
   if (child.id === 'ops-appointments') {
-    return pathname.startsWith('/admin/appointments/');
+    return pathname.startsWith(orgPath('/admin/appointments/'));
   }
-  if (child.id === 'ops-samples' && pathname === '/admin/sample-collections') {
+  if (child.id === 'ops-samples' && pathname === orgPath('/admin/sample-collections')) {
     return true;
   }
   if (child.id === 'care-appointments') {
-    return pathname === '/appointments' || (pathname.startsWith('/appointments/') && !pathname.includes('/book'));
+    return pathname === orgPath('/appointments') || (pathname.startsWith(orgPath('/appointments/')) && !pathname.includes('/book'));
   }
   if (child.id === 'care-patients') {
-    return pathname === '/patients' || pathname.startsWith('/patients/');
+    return pathname === orgPath('/patients') || pathname.startsWith(`${orgPath('/patients')}/`);
   }
   if (child.id === 'ops-enquiries') {
     return (
-      (pathname === '/admin/operations' && search.includes('tab=enquiries')) ||
-      pathname === '/admin/enquiries' ||
-      pathname.startsWith('/admin/enquiries/')
+      (pathname === orgPath('/admin/operations') && search.includes('tab=enquiries')) ||
+      pathname === orgPath('/admin/enquiries') ||
+      pathname.startsWith(`${orgPath('/admin/enquiries')}/`)
     );
   }
   if (child.id === 'doc-availability') {
-    return pathname === '/settings' && search.includes('tab=availability');
+    return pathname === orgPath('/settings') && search.includes('tab=availability');
   }
   if (child.id === 'doc-leave') {
-    return pathname === '/settings' && search.includes('tab=leave');
+    return pathname === orgPath('/settings') && search.includes('tab=leave');
   }
   if (child.id === 'settings-profile') {
-    return pathname === '/settings' && !search.includes('tab=');
+    return pathname === orgPath('/settings') && !search.includes('tab=');
   }
   if (child.id === 'tech-orders') {
-    return pathname === '/technician/orders' || pathname.startsWith('/technician/orders/');
+    return pathname === orgPath('/technician/orders') || pathname.startsWith(`${orgPath('/technician/orders')}/`);
   }
   return false;
 }
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const userRole = useUserRole();
   const user = useAuthStore((state) => state.user);
   const collapsed = useAuthStore((state) => state.sidebarCollapsed);
@@ -101,6 +104,7 @@ export function Sidebar() {
   const logout = useAuthStore((state) => state.logout);
 
   const navGroups = getNavGroupsForRole(userRole);
+  const logoHomePath = userRole ? getDefaultHomePath(userRole) : '/';
 
   const renderChildLink = (child: NavChildItem) => {
     const ChildIcon = child.icon;
@@ -229,19 +233,13 @@ export function Sidebar() {
           collapsed ? 'w-[72px]' : 'w-64',
         )}
       >
-        <div className="flex h-16 items-center gap-3 border-b px-4">
+        <Link to={logoHomePath} aria-label="Go to Livotale home" className="flex h-16 items-center border-b px-4 transition hover:bg-accent/50">
           <img
             src="/assets/livotale-logo.png"
             alt={`${APP_NAME} logo`}
-            className="h-9 w-9 shrink-0 object-contain"
+            className="h-9 w-auto shrink-0 object-contain"
           />
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-livotale-pink">{APP_NAME}</p>
-              <p className="truncate text-xs text-muted-foreground">Liver Care Admin</p>
-            </div>
-          )}
-        </div>
+        </Link>
 
         <nav className="flex-1 space-y-4 overflow-y-auto p-3">
           {navGroups.map((group) => (
@@ -294,7 +292,9 @@ export function Sidebar() {
             <Button
               variant="ghost"
               size={collapsed ? 'icon' : 'default'}
-              onClick={() => void logout()}
+              onClick={() => {
+                void logout().then(() => navigate('/', { replace: true }));
+              }}
               aria-label="Logout"
             >
               <FiLogOut />
@@ -310,6 +310,8 @@ export function Sidebar() {
 export function TopBar() {
   const toggleSidebar = useAuthStore((state) => state.toggleSidebar);
   const user = useAuthStore((state) => state.user);
+  const userRole = useUserRole();
+  const logoHomePath = userRole ? getDefaultHomePath(userRole) : '/';
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 lg:px-6">
@@ -325,19 +327,25 @@ export function TopBar() {
         </Button>
         <NotificationBell />
         <div>
-          <h1 className="text-lg font-semibold">
-            Welcome back{user ? `, ${user.fullName.split(' ')[0]}` : ''}
-          </h1>
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            Liver care ecosystem — Liver Fibrosis Scan, AI plans & home delivery
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg font-semibold">
+              Welcome back{user ? `, ${user.fullName.split(' ')[0]}` : ''}
+            </h1>
+            {userRole && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                {ROLE_LABELS[userRole]}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
-      <img
-        src="/assets/livotale-logo.png"
-        alt="Livotale"
-        className="h-8 w-8 object-contain lg:hidden"
-      />
+      <Link to={logoHomePath} aria-label="Go to Livotale home" className="lg:hidden">
+        <img
+          src="/assets/livotale-logo.png"
+          alt="Livotale"
+          className="h-8 w-auto object-contain"
+        />
+      </Link>
     </header>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { orgPath } from '@/app/config/orgRoutes';
 import { useAuthStore, useStaffOnboardingStore, useUserRole } from '@/store';
 import { AppRole } from '@/types';
 
@@ -9,7 +10,11 @@ const STAFF_ONBOARDING_ROLES: AppRole[] = [
   AppRole.OPERATIONS,
 ];
 
-const ALLOWED_WHEN_GATED = ['/staff/onboarding', '/staff/profile', '/settings'];
+const ALLOWED_WHEN_GATED = [
+  orgPath('/staff/onboarding'),
+  orgPath('/staff/profile'),
+  orgPath('/settings'),
+];
 
 export function StaffOnboardingRoute() {
   const userRole = useUserRole();
@@ -43,11 +48,11 @@ export function StaffOnboardingRoute() {
   const onAllowedPath = ALLOWED_WHEN_GATED.some((p) => location.pathname.startsWith(p));
 
   if (gated && !onAllowedPath) {
-    return <Navigate to="/staff/onboarding" replace />;
+    return <Navigate to={orgPath('/staff/onboarding')} replace />;
   }
 
-  if (!gated && location.pathname === '/staff/onboarding') {
-    return <Navigate to="/dashboard" replace />;
+  if (!gated && location.pathname === orgPath('/staff/onboarding')) {
+    return <Navigate to={orgPath('/dashboard')} replace />;
   }
 
   return <Outlet />;

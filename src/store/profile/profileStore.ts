@@ -8,10 +8,17 @@ interface ProfileStoreState {
   isLoading: boolean;
   error: string | null;
   loadProfile: () => Promise<void>;
-  saveBasic: (payload: { fullName?: string; email?: string; mobile?: string }) => Promise<void>;
+  saveBasic: (payload: {
+    fullName?: string;
+    mobile?: string;
+    gender?: string;
+    dob?: string;
+    profilePhotoUrl?: string;
+  }) => Promise<void>;
+  uploadPhoto: (file: File, userId: string) => Promise<void>;
   saveEmergencyContact: (payload: { name: string; mobile: string }) => Promise<void>;
   loadConsents: () => Promise<void>;
-  acceptConsent: (purposeId: string) => Promise<void>;
+  acceptConsent: (purposeId: string) => Promise<UserConsent[]>;
   clearError: () => void;
 }
 
@@ -48,6 +55,20 @@ export const useProfileStore = create<ProfileStoreState>((set) => ({
     }
   },
 
+  uploadPhoto: async (file, userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const profile = await profileService.uploadProfilePhoto(file, userId);
+      set({ profile, isLoading: false });
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : 'Failed to upload photo',
+      });
+      throw err;
+    }
+  },
+
   saveEmergencyContact: async (payload) => {
     set({ isLoading: true, error: null });
     try {
@@ -72,8 +93,18 @@ export const useProfileStore = create<ProfileStoreState>((set) => ({
   },
 
   acceptConsent: async (purposeId) => {
-    const consents = await profileService.acceptConsent(purposeId);
-    set({ consents });
+    set({ isLoading: true, error: null });
+    try {
+      const consents = await profileService.acceptConsent(purposeId);
+      set({ consents, isLoading: false });
+      return consents;
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : 'Failed to accept consent',
+      });
+      throw err;
+    }
   },
 
   clearError: () => set({ error: null }),

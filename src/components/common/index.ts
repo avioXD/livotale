@@ -16,3 +16,9 @@ export {
   type KpiCardProps,
 } from './KpiCard';
 export { PaginationControls } from './PaginationControls';
+export { StatusBadge } from './StatusBadge';
+export { AnalyticsPeriodToolbar } from './AnalyticsPeriodToolbar';
+export { RouteFallback } from './RouteFallback';
+export { ConfirmModal } from './ConfirmModal';
+export { DashboardErrorState } from './DashboardErrorState';
+export { ActiveFilterBanner } from './ActiveFilterBanner';

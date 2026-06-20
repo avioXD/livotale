@@ -1,9 +1,9 @@
-import { mockOrApi } from '@/services/mock';
-import { authMock } from '@/services/auth/auth.mock';
 import { BaseApiService } from '@/services/base';
 import type {
+  ApiLoginLogEntry,
   ApiLoginResponse,
   ApiMeResponse,
+  ApiSessionInfo,
   AuthResponse,
   ChangePasswordPayload,
   LoginLogEntry,
@@ -15,75 +15,77 @@ import type {
   User,
   UserSession,
 } from '@/types';
-import { toAuthResponse, toUserFromMe } from '@/utils/authMappers';
-import { setMockSessionUser } from '@/services/mock/mockSession';
-import { setStoredTokens } from '@/rbac';
+import { toAuthResponse, toLoginLogEntry, toUserFromMe, toUserSession } from '@/utils/authMappers';
+import { setStoredTokens, getStoredRefreshToken } from '@/rbac';
 
 class AuthService extends BaseApiService {
   async login(payload: LoginPayload): Promise<AuthResponse> {
-    return mockOrApi(
-      () => authMock.login(payload),
-      async () => {
-        const api = await this.post<ApiLoginResponse>('/auth/login', {
-          identifier: payload.identifier.trim(),
-          password: payload.password,
-        });
-        const auth = toAuthResponse(api);
-        const profile = await this.getProfileWithToken(
-          auth.tokens.accessToken,
-          auth.tokens.refreshToken,
-        );
-        return { ...auth, user: profile };
-      },
-    );
+    const api = await this.post<ApiLoginResponse>('/auth/login', {
+      identifier: payload.identifier.trim(),
+      password: payload.password.trim(),
+      ...(payload.activeRole ? { activeRole: payload.activeRole } : {}),
+    });
+    const auth = toAuthResponse(api);
+    setStoredTokens(auth.tokens.accessToken, auth.tokens.refreshToken);
+    return auth;
   }
 
   async requestOtp(payload: OtpRequestPayload): Promise<{ expiresInSeconds: number; devOtp?: string }> {
-    return mockOrApi(
-      () => authMock.requestOtp(),
-      () => this.post('/auth/otp/request', payload),
-    );
+    return this.post('/auth/otp/request', payload);
   }
 
   async verifyOtp(payload: OtpVerifyPayload): Promise<AuthResponse> {
-    return mockOrApi(
-      () => authMock.verifyOtp(payload),
-      async () => {
-        const api = await this.post<ApiLoginResponse>('/auth/otp/verify', payload);
-        const auth = toAuthResponse(api);
-        const profile = await this.getProfileWithToken(
-          auth.tokens.accessToken,
-          auth.tokens.refreshToken,
-        );
-        return { ...auth, user: profile };
-      },
+    const api = await this.post<ApiLoginResponse>('/auth/otp/verify', payload);
+    const auth = toAuthResponse(api);
+    const profile = await this.getProfileWithToken(
+      auth.tokens.accessToken,
+      auth.tokens.refreshToken,
     );
+    return { ...auth, user: profile };
   }
 
-  async refresh(refreshToken: string): Promise<AuthResponse['tokens']> {
-    return mockOrApi(
-      () => authMock.refresh(refreshToken),
-      () => this.post('/auth/refresh', { refreshToken }),
-    );
+  async selectRole(activeRole: ApiLoginResponse['user']['roles'][number]): Promise<AuthResponse> {
+    const api = await this.post<{
+      accessToken: string;
+      activeRole: ApiLoginResponse['user']['roles'][number];
+      permissions?: string[];
+      user: ApiLoginResponse['user'];
+    }>('/auth/select-role', { activeRole });
+    setStoredTokens(api.accessToken, getStoredRefreshToken() ?? undefined);
+    const auth = toAuthResponse({
+      accessToken: api.accessToken,
+      tokenType: 'Bearer',
+      expiresIn: '8h',
+      permissions: api.permissions,
+      activeRole: api.activeRole,
+      requiresRoleSelection: false,
+      user: api.user,
+    });
+    return auth;
+  }
+
+  async refresh(
+    refreshToken: string,
+    activeRole?: ApiLoginResponse['user']['roles'][number],
+  ): Promise<AuthResponse['tokens'] & { activeRole?: ApiLoginResponse['user']['roles'][number]; requiresRoleSelection?: boolean }> {
+    return this.post('/auth/refresh', {
+      refreshToken,
+      ...(activeRole ? { activeRole } : {}),
+    });
   }
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
-    return mockOrApi(
-      () => authMock.register(payload),
-      async () => {
-        await this.post('/patient/register', {
-          username: payload.username.trim().toLowerCase(),
-          password: payload.password,
-          fullName: payload.fullName,
-          email: payload.email ?? null,
-          mobile: payload.mobile ?? null,
-        });
-        return this.login({
-          identifier: payload.username,
-          password: payload.password,
-        });
-      },
-    );
+    const api = await this.post<ApiLoginResponse>('/patient/register', {
+      username: payload.username.trim().toLowerCase(),
+      password: payload.password,
+      fullName: payload.fullName,
+      email: payload.email ?? null,
+      mobile: payload.mobile ?? null,
+      ...(payload.role ? { role: payload.role } : {}),
+    });
+    const auth = toAuthResponse(api);
+    setStoredTokens(auth.tokens.accessToken, auth.tokens.refreshToken);
+    return auth;
   }
 
   async resetPassword(_payload: ResetPasswordPayload): Promise<{ message: string }> {
@@ -91,29 +93,15 @@ class AuthService extends BaseApiService {
   }
 
   async changePassword(payload: ChangePasswordPayload): Promise<{ updated: boolean }> {
-    return mockOrApi(
-      () => authMock.changePassword(),
-      () => this.post('/auth/password/change', payload),
-    );
+    return this.post('/auth/password/change', payload);
   }
 
   async getProfile(): Promise<User> {
-    return mockOrApi(
-      () => authMock.getProfile(),
-      async () => {
-        const api = await this.get<ApiMeResponse>('/auth/me');
-        const user = toUserFromMe(api);
-        setMockSessionUser(user);
-        return user;
-      },
-    );
+    const api = await this.get<ApiMeResponse>('/auth/me');
+    return toUserFromMe(api);
   }
 
   async logout(refreshToken?: string): Promise<void> {
-    if (import.meta.env.VITE_MOCK_MODE === 'true') {
-      authMock.logout();
-      return;
-    }
     try {
       await this.post('/auth/logout', { refreshToken });
     } catch {
@@ -122,24 +110,22 @@ class AuthService extends BaseApiService {
   }
 
   async listSessions(): Promise<UserSession[]> {
-    return mockOrApi(
-      () => authMock.listSessions(),
-      () => this.get('/auth/sessions'),
-    );
+    const rows = await this.get<ApiSessionInfo[]>('/auth/sessions');
+    return rows.map(toUserSession);
   }
 
   async revokeSession(sessionId: string): Promise<{ revoked: boolean }> {
-    return mockOrApi(
-      () => authMock.revokeSession(),
-      () => this.delete(`/auth/sessions/${sessionId}`),
-    );
+    return this.delete(`/auth/sessions/${sessionId}`);
   }
 
   async getLoginLogs(limit = 20): Promise<LoginLogEntry[]> {
-    return mockOrApi(
-      () => authMock.getLoginLogs(),
-      () => this.get(`/audit/login-logs?limit=${limit}`),
-    );
+    const rows = await this.get<ApiLoginLogEntry[]>(`/audit/login-logs?limit=${limit}`);
+    return rows.map(toLoginLogEntry);
+  }
+
+  async getAllLoginLogs(limit = 50): Promise<LoginLogEntry[]> {
+    const rows = await this.get<ApiLoginLogEntry[]>(`/audit/login-logs?all=true&limit=${limit}`);
+    return rows.map(toLoginLogEntry);
   }
 
   private async getProfileWithToken(token: string, refreshToken?: string): Promise<User> {

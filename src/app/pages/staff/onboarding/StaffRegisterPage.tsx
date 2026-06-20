@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ORG_LOGIN_PATH, orgPath } from '@/app/config/orgRoutes';
 import { AuthLayout } from '@/app/pages/auth/components/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { staffOnboardingService } from '@/services/staff/StaffOnboardingService';
 import { useAuthStore } from '@/store';
+import { mapStaffRoleKeyToApiRole } from '@/app/pages/staff/onboarding/staffOnboardingUtils';
 import type { StaffOnboardingInvite } from '@/types/staffOnboarding';
 
 export function StaffRegisterPage() {
@@ -44,16 +46,24 @@ export function StaffRegisterPage() {
         fullName: form.fullName,
         email: form.email || undefined,
         mobile: form.mobile || undefined,
+        role: invite ? mapStaffRoleKeyToApiRole(invite.roleKey) : undefined,
       });
-      if (inviteToken) {
-        const userId = useAuthStore.getState().user?.id;
-        await staffOnboardingService.attachUser(inviteToken, userId);
-        navigate(`/staff/onboarding?invite=${inviteToken}`, { replace: true });
-      } else {
-        navigate('/staff/onboarding', { replace: true });
+      if (useAuthStore.getState().requiresRoleSelection) {
+        return;
       }
+      await finishStaffOnboarding();
     } catch {
       // store handles error
+    }
+  };
+
+  const finishStaffOnboarding = async () => {
+    if (inviteToken) {
+      const userId = useAuthStore.getState().user?.id;
+      await staffOnboardingService.attachUser(inviteToken, userId);
+      navigate(orgPath(`/staff/onboarding?invite=${inviteToken}`), { replace: true });
+    } else {
+      navigate(orgPath('/staff/onboarding'), { replace: true });
     }
   };
 
@@ -61,7 +71,7 @@ export function StaffRegisterPage() {
     return (
       <AuthLayout title="Staff registration" subtitle="Use the onboarding link shared by your administrator.">
         <p className="text-sm text-muted-foreground">
-          <Link to="/login" className="text-primary hover:underline">Sign in</Link> if you already have an account.
+          <Link to={ORG_LOGIN_PATH} className="text-primary hover:underline">Sign in</Link> if you already have an account.
         </p>
       </AuthLayout>
     );
@@ -71,6 +81,7 @@ export function StaffRegisterPage() {
     <AuthLayout
       title="Create staff account"
       subtitle={invite ? `Register as ${invite.roleKey.replace(/_/g, ' ')} — then complete your profile.` : 'Loading…'}
+      onRoleSelected={() => void finishStaffOnboarding()}
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}
@@ -97,6 +108,15 @@ export function StaffRegisterPage() {
         <Button type="submit" className="w-full" disabled={isLoading}>
           Register &amp; continue onboarding
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Already have an account?{' '}
+          <Link
+            to={`${ORG_LOGIN_PATH}?next=${encodeURIComponent(`${orgPath('/staff/register')}?invite=${inviteToken}`)}`}
+            className="text-primary hover:underline"
+          >
+            Sign in to add this role
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   );

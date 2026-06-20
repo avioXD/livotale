@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import { orgPath } from '@/app/config/orgRoutes';
 import {
   Bar,
   BarChart,
@@ -49,7 +50,7 @@ export function AdminAnalyticsPage() {
         description="30-day volume, completion rate, and breakdown by type."
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/appointments">
+            <Link to={orgPath('/admin/appointments')}>
               <FiArrowLeft className="h-4 w-4" />
               Ops dashboard
             </Link>

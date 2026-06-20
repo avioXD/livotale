@@ -9,6 +9,7 @@ import type {
   DoctorHoliday,
   AppointmentPrescriptionBundle,
   PrescriptionPdfInfo,
+  DoctorAvailabilityRule,
 } from '@/types';
 
 interface DoctorAppointmentsStore {
@@ -17,7 +18,7 @@ interface DoctorAppointmentsStore {
   selected: DoctorAppointmentDetail | null;
   prescriptionBundle: AppointmentPrescriptionBundle | null;
   prescriptionPdf: PrescriptionPdfInfo | null;
-  availabilityRules: Array<Record<string, unknown>>;
+  availabilityRules: DoctorAvailabilityRule[];
   holidays: DoctorHoliday[];
   isLoading: boolean;
   isSaving: boolean;

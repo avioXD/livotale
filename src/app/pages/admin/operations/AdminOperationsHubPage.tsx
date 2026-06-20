@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { OPERATIONS_TABS } from '@/app/pages/admin/operations/adminOperationsConfig';
 import { AdminOperationsOverviewTab } from '@/app/pages/admin/operations/components/AdminOperationsOverviewTab';
 import { AdminOperationsAppointmentsTab } from '@/app/pages/admin/operations/components/AdminOperationsAppointmentsTab';
@@ -9,8 +10,7 @@ import { AdminOperationsOrdersTab } from '@/app/pages/admin/operations/component
 import { AdminOperationsEnquiriesTab } from '@/app/pages/admin/operations/components/AdminOperationsEnquiriesTab';
 import { AdminOperationsAIReviewTab } from '@/app/pages/admin/operations/components/AdminOperationsAIReviewTab';
 import { adminOperationsService } from '@/services/admin/AdminOperationsService';
-import { useAdminAppointmentsStore } from '@/store';
-import type { OperationsOverview, OperationsTab } from '@/types/adminOperations';
+import type { OperationsTab } from '@/types/adminOperations';
 
 function parseTab(value: string | null): OperationsTab {
   if (value === 'samples') return 'partner-lab';
@@ -29,32 +29,27 @@ function parseTab(value: string | null): OperationsTab {
 export function AdminOperationsHubPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = parseTab(searchParams.get('tab'));
-  const [overview, setOverview] = useState<OperationsOverview | null>(null);
-  const loadDashboard = useAdminAppointmentsStore((s) => s.loadDashboard);
+
+  const overviewQuery = useAsyncData(
+    () => adminOperationsService.getOverview(),
+    [],
+  );
 
   const setTab = useCallback(
     (next: OperationsTab, extra?: Record<string, string>) => {
-      const params = new URLSearchParams(searchParams);
-      if (next === 'overview') {
-        params.delete('tab');
-      } else {
+      const params = new URLSearchParams();
+      if (next !== 'overview') {
         params.set('tab', next);
       }
       if (extra) {
-        for (const [k, v] of Object.entries(extra)) {
-          if (v) params.set(k, v);
-          else params.delete(k);
+        for (const [key, value] of Object.entries(extra)) {
+          if (value) params.set(key, value);
         }
       }
       setSearchParams(params, { replace: true });
     },
-    [searchParams, setSearchParams],
+    [setSearchParams],
   );
-
-  useEffect(() => {
-    void loadDashboard();
-    void adminOperationsService.getOverview().then(setOverview);
-  }, [loadDashboard]);
 
   const tabMeta = OPERATIONS_TABS.find((t) => t.key === tab)!;
 
@@ -66,7 +61,13 @@ export function AdminOperationsHubPage() {
       />
 
       {tab === 'overview' && (
-        <AdminOperationsOverviewTab overview={overview} onNavigateTab={(t, q) => setTab(t as OperationsTab, q)} />
+        <AdminOperationsOverviewTab
+          overview={overviewQuery.data}
+          overviewLoading={overviewQuery.status === 'loading'}
+          overviewError={overviewQuery.status === 'error' ? overviewQuery.error : null}
+          onRetryOverview={overviewQuery.retry}
+          onNavigateTab={setTab}
+        />
       )}
       {tab === 'enquiries' && <AdminOperationsEnquiriesTab />}
       {tab === 'appointments' && <AdminOperationsAppointmentsTab />}

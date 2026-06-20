@@ -24,9 +24,16 @@ const DEFAULT_RULE: DoctorAvailabilityRule = {
 };
 
 interface AvailabilityEditorProps {
-  rules: Array<Record<string, unknown>>;
+  rules: DoctorAvailabilityRule[];
   isSaving: boolean;
   onSave: (rules: DoctorAvailabilityRule[]) => Promise<void>;
+}
+
+function normalizeRule(row: DoctorAvailabilityRule | Record<string, unknown>): DoctorAvailabilityRule {
+  if ('dayOfWeek' in row && typeof row.dayOfWeek === 'number') {
+    return row as DoctorAvailabilityRule;
+  }
+  return mapRule(row as Record<string, unknown>);
 }
 
 function mapRule(row: Record<string, unknown>): DoctorAvailabilityRule {
@@ -46,7 +53,7 @@ export function AvailabilityEditor({ rules, isSaving, onSave }: AvailabilityEdit
   const [draft, setDraft] = useState<DoctorAvailabilityRule[]>([DEFAULT_RULE]);
 
   useEffect(() => {
-    if (rules.length) setDraft(rules.map(mapRule));
+    if (rules.length) setDraft(rules.map(normalizeRule));
   }, [rules]);
 
   const updateRule = (index: number, patch: Partial<DoctorAvailabilityRule>) => {

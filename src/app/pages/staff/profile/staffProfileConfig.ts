@@ -28,6 +28,15 @@ const BASE_ADDRESS_FIELDS: StaffFieldPermission[] = [
   { key: 'emergencyContactRelation', label: 'Relation', selfEditable: true, adminEditable: true, section: 'address' },
 ];
 
+/** Identity fields edited on the Basic info tab, not under Employment for self-service. */
+export const BASIC_IDENTITY_FIELD_KEYS = new Set([
+  'fullName',
+  'email',
+  'mobile',
+  'gender',
+  'dob',
+]);
+
 const BASE_EMPLOYMENT_FIELDS: StaffFieldPermission[] = [
   { key: 'fullName', label: 'Full name', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'email', label: 'Email', selfEditable: false, adminEditable: true, section: 'employment' },
@@ -37,7 +46,6 @@ const BASE_EMPLOYMENT_FIELDS: StaffFieldPermission[] = [
   { key: 'joinedOn', label: 'Joined on', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'qualification', label: 'Qualification', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'certification', label: 'Certification', selfEditable: false, adminEditable: true, section: 'employment' },
-  { key: 'bankAccountLast4', label: 'Bank account (last 4)', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'additionalNotes', label: 'HR notes', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'verificationStatus', label: 'Verification status', selfEditable: false, adminEditable: true, section: 'employment' },
   { key: 'status', label: 'Employment status', selfEditable: false, adminEditable: true, section: 'employment' },
@@ -71,6 +79,7 @@ export const STAFF_ROLE_PROFILE_CONFIGS: Record<StaffRoleKey, StaffRoleProfileCo
       ...BASE_EMPLOYMENT_FIELDS,
       { key: 'registrationNumber', label: 'Medical registration', selfEditable: false, adminEditable: true, section: 'role' },
       { key: 'specialization', label: 'Specialization', selfEditable: false, adminEditable: true, section: 'role' },
+      { key: 'languagesKnown', label: 'Languages known', selfEditable: true, adminEditable: true, section: 'role' },
       { key: 'clinicOrOrgName', label: 'Clinic / hospital', selfEditable: true, adminEditable: true, section: 'role' },
       ...BASE_ADDRESS_FIELDS,
     ],
@@ -129,6 +138,56 @@ export const STAFF_ROLE_PROFILE_CONFIGS: Record<StaffRoleKey, StaffRoleProfileCo
     optionalDocuments: ['degree_certificate', 'police_verification', 'other'],
     fields: [
       ...BASE_EMPLOYMENT_FIELDS,
+      {
+        key: 'assignedServiceZoneIds',
+        label: 'Service zones',
+        selfEditable: false,
+        adminEditable: true,
+        section: 'role',
+      },
+      {
+        key: 'assignedPincodes',
+        label: 'Assigned pincodes',
+        selfEditable: false,
+        adminEditable: true,
+        section: 'role',
+      },
+      {
+        key: 'cityManagerServiceZoneIds',
+        label: 'City manager promotion',
+        selfEditable: false,
+        adminEditable: true,
+        section: 'role',
+      },
+      ...BASE_ADDRESS_FIELDS,
+    ],
+  },
+  super_admin: {
+    role: 'super_admin',
+    label: 'Super Admin',
+    requiredDocuments: ['aadhaar', 'pan', 'employment_contract', 'nda'],
+    optionalDocuments: ['degree_certificate', 'police_verification', 'other'],
+    fields: [
+      ...BASE_EMPLOYMENT_FIELDS,
+      { key: 'clinicOrOrgName', label: 'Department / scope', selfEditable: false, adminEditable: true, section: 'role' },
+      ...BASE_ADDRESS_FIELDS,
+    ],
+  },
+  city_manager: {
+    role: 'city_manager',
+    label: 'City Manager',
+    requiredDocuments: ['aadhaar', 'pan', 'employment_contract', 'nda'],
+    optionalDocuments: ['degree_certificate', 'police_verification', 'other'],
+    fields: [
+      ...BASE_EMPLOYMENT_FIELDS,
+      { key: 'assignedCity', label: 'Assigned city', selfEditable: false, adminEditable: true, section: 'role' },
+      {
+        key: 'assignedPincodes',
+        label: 'Assigned pincodes (comma-separated)',
+        selfEditable: false,
+        adminEditable: true,
+        section: 'role',
+      },
       ...BASE_ADDRESS_FIELDS,
     ],
   },

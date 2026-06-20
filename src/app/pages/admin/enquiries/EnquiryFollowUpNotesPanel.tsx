@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { isLogFieldValid, LogTextarea } from '@/components/forms/LogTextarea';
 import type { EnquiryFollowUpDraft } from '@/store/enquiries';
 import type { Enquiry, EnquiryFollowUpLog, EnquiryStatus } from '@/types/enquiry';
 
@@ -113,29 +113,36 @@ export function EnquiryFollowUpNotesPanel({
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="enq-call">Call remarks</Label>
-            <Textarea
-              id="enq-call"
-              rows={2}
-              placeholder="What was discussed on the call?"
-              value={followUp.callRemarks}
-              onChange={(e) => onChange({ callRemarks: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="enq-notes">Internal notes</Label>
-            <Textarea
-              id="enq-notes"
-              rows={2}
-              placeholder="Ops notes, callback plan, objections…"
-              value={followUp.internalNotes}
-              onChange={(e) => onChange({ internalNotes: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-          <Button size="sm" onClick={onSave} disabled={saving || disabled}>
+          <LogTextarea
+            id="enq-call"
+            label="Call remarks"
+            rows={2}
+            placeholder="What was discussed on the call?"
+            value={followUp.callRemarks}
+            onChange={(value) => onChange({ callRemarks: value })}
+            limit="LOG_MEDIUM"
+            disabled={disabled}
+          />
+          <LogTextarea
+            id="enq-notes"
+            label="Internal notes"
+            rows={2}
+            placeholder="Ops notes, callback plan, objections…"
+            value={followUp.internalNotes}
+            onChange={(value) => onChange({ internalNotes: value })}
+            limit="LOG_MEDIUM"
+            disabled={disabled}
+          />
+          <Button
+            size="sm"
+            onClick={onSave}
+            disabled={
+              saving
+              || disabled
+              || !isLogFieldValid(followUp.callRemarks, 'LOG_MEDIUM')
+              || !isLogFieldValid(followUp.internalNotes, 'LOG_MEDIUM')
+            }
+          >
             {saving ? 'Saving…' : 'Add follow-up log'}
           </Button>
         </CardContent>

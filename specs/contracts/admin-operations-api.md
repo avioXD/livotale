@@ -17,6 +17,8 @@ Returns combined KPIs for Operations Hub overview tab.
 }
 ```
 
+Overview KPI **Unpaid orders** maps to `GET /admin/orders?paymentStatus=unpaid` (all orders where payment is not `success`).
+
 ## GET `/admin/operations/orders`
 
 Query: `paymentStatus`, `orderType` (`appointment`|`pharmacy`), `search`, `limit`

@@ -30,7 +30,7 @@ export function PatientNotificationsPage() {
   }, [session.phone]);
 
   const markRead = async (id: string) => {
-    await patientPortalService.markNotificationRead(id);
+    await patientPortalService.markNotificationRead(id, session.phone);
     setNotifications((rows) => rows.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
@@ -38,16 +38,11 @@ export function PatientNotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground">
-            Dummy in-app inbox — {unread} unread
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link to="/patient">Back</Link>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Notifications</h1>
+        <p className="text-muted-foreground">
+          {unread > 0 ? `${unread} unread message${unread === 1 ? '' : 's'}` : 'All caught up'}
+        </p>
       </div>
 
       {loading ? (

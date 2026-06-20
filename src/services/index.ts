@@ -1,8 +1,4 @@
-/** @see ./README.md — all services use BaseApiService + mockOrApi(VITE_MOCK_MODE) */
-
 export { BaseApiService, apiClient } from './base';
-export { isMockMode, mockOrApi } from './mock';
-
 // Auth
 export { authService } from './auth';
 
@@ -27,6 +23,7 @@ export { staffDirectoryService } from './staff/StaffDirectoryService';
 export { staffOnboardingService } from './staff/StaffOnboardingService';
 export { staffProfileService } from './staff/StaffProfileService';
 export { technicianProfileService } from './technician/TechnicianProfileService';
+export { storageService } from './storage/StorageService';
 
 // Admin ops
 export { adminOperationsService, auditLogService } from './admin';
@@ -54,6 +51,7 @@ export {
   doctorConsultationService,
   prescriptionOrderService,
   adminDashboardService,
+  notificationLogService,
 } from './liverCare';
 
 // External dummy integrations

@@ -93,6 +93,22 @@ Dashboard, Timeline, Visits (standalone), Demographics, Medical, Liver, Medicati
 | Edit profile sections | ✗ | ✓ |
 | `canEditPatientProfile()` | false | true |
 
+### Patient list — server zone scoping (2026-06-20)
+
+`GET /patients` and patient detail/history/clinical endpoints are **auto-scoped on the API** (no client-side zone filter in v1).
+
+| Role | List / detail scope |
+|------|---------------------|
+| Super Admin (`admin`) | All patients |
+| Operations (`support`) | Default address `pincode` ∈ assigned service zone pincodes |
+| City Manager | Default address `pincode` ∈ promoted `cityManagerServiceZoneIds` zone pincodes |
+| Doctor | Active `doctor_patient_assignments` **or** order where `doctor_id` matches |
+| Multi-role staff | **Union** of all applicable role predicates (broadest combined scope) |
+
+Patients without a default address pincode are excluded from zone-based ops/CM scope. Empty zone assignment → empty list. UI empty state for ops/CM: *"No patients in your service zone"*.
+
+Spec: `docs/superpowers/specs/2026-06-20-patient-rbac-zones-design.md`
+
 ---
 
 ## Data layer

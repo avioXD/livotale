@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StaffEmployeeProfileView } from '@/app/pages/staff/profile/components/StaffEmployeeProfileView';
 import { TechnicianProfileView } from '@/app/pages/technician/profile/components/TechnicianProfileView';
 import { staffProfileService } from '@/services/staff/StaffProfileService';
+import { staffDirectoryService } from '@/services/staff/StaffDirectoryService';
 import { technicianProfileService } from '@/services/technician/TechnicianProfileService';
 import type { StaffLabPartnerProfile } from '@/types/sampleCollection';
 import type { StaffMemberRow, StaffRoleKey } from '@/types/staffHub';
@@ -33,7 +34,7 @@ export function StaffMemberDetailPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [usingDemo, setUsingDemo] = useState(false);
+  const [usingDemo] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -42,11 +43,9 @@ export function StaffMemberDetailPanel({
       if (roleKey === 'technician') {
         const profile = await technicianProfileService.getAdminProfile(member.id);
         setTechProfile(profile);
-        setUsingDemo(profile.id.startsWith('demo-') || !profile.employee);
       } else {
         const profile = await staffProfileService.getAdminProfile(roleKey, member.id, member);
         setStaffProfile(profile);
-        setUsingDemo(profile.documents.some((d) => d.id.startsWith('demo-')));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load profile');
@@ -124,18 +123,19 @@ export function StaffMemberDetailPanel({
             setIsSaving(true);
             try {
               await technicianProfileService.verifyDocument(documentId, status, notes);
-              setTechProfile((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      documents: prev.documents.map((d) =>
-                        d.id === documentId
-                          ? { ...d, status, notes: notes ?? d.notes, verifiedAt: new Date().toISOString() }
-                          : d,
-                      ),
-                    }
-                  : prev,
-              );
+              await load();
+              onSaved();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Verification failed');
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          onMarkVerified={async () => {
+            setIsSaving(true);
+            try {
+              setTechProfile(await technicianProfileService.markProfileVerified(member.id));
+              onSaved();
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Verification failed');
             } finally {
@@ -162,7 +162,14 @@ export function StaffMemberDetailPanel({
         onSave={async (payload) => {
           setIsSaving(true);
           try {
-            setStaffProfile(await staffProfileService.updateAdminProfile(roleKey, member.id, payload, member));
+            const updated = await staffProfileService.updateAdminProfile(roleKey, member.id, payload, member);
+            setStaffProfile(updated);
+            await staffDirectoryService.updateMember(roleKey, member.id, {
+              fullName: String(payload.fullName ?? updated.fullName),
+              email: (payload.email as string | undefined) ?? updated.email,
+              mobile: (payload.mobile as string | undefined) ?? updated.mobile,
+              status: (payload.status as string | undefined) ?? updated.status,
+            });
             onSaved();
           } catch (err) {
             setError(err instanceof Error ? err.message : 'Save failed');
@@ -186,18 +193,19 @@ export function StaffMemberDetailPanel({
           setIsSaving(true);
           try {
             await staffProfileService.verifyDocument(documentId, status, notes);
-            setStaffProfile((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    documents: prev.documents.map((d) =>
-                      d.id === documentId
-                        ? { ...d, status, notes: notes ?? d.notes, verifiedAt: new Date().toISOString() }
-                        : d,
-                    ),
-                  }
-                : prev,
-            );
+            await load();
+            onSaved();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Verification failed');
+          } finally {
+            setIsSaving(false);
+          }
+        }}
+        onMarkVerified={async () => {
+          setIsSaving(true);
+          try {
+            setStaffProfile(await staffProfileService.markProfileVerified(roleKey, member.id));
+            onSaved();
           } catch (err) {
             setError(err instanceof Error ? err.message : 'Verification failed');
           } finally {

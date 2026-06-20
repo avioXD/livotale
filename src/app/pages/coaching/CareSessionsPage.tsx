@@ -4,9 +4,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { isLogFieldValid, LogTextarea } from '@/components/forms/LogTextarea';
 import { useCareAppointmentsStore } from '@/store';
 
 const FILTERS = ['upcoming', 'today', 'completed'] as const;
@@ -107,30 +105,39 @@ export function CareSessionsPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="session-note">Session note</Label>
-                <Textarea id="session-note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
-                <Button
-                  size="sm"
-                  disabled={isSaving || !note.trim()}
+              <LogTextarea
+                id="session-note"
+                label="Session note"
+                value={note}
+                onChange={setNote}
+                limit="LOG_MEDIUM"
+                rows={3}
+              />
+              <Button
+                size="sm"
+                disabled={isSaving || !note.trim() || !isLogFieldValid(note, 'LOG_MEDIUM')}
                   onClick={() => void addNote(selected.id, note.trim()).then(() => setNote(''))}
                 >
                   Save note
-                </Button>
-              </div>
+              </Button>
 
               <div className="space-y-2 border-t pt-4">
-                <Label htmlFor="follow-up-reason">Recommend follow-up</Label>
-                <Input
+                <LogTextarea
                   id="follow-up-reason"
+                  label="Recommend follow-up"
                   value={followUpReason}
-                  onChange={(e) => setFollowUpReason(e.target.value)}
+                  onChange={setFollowUpReason}
                   placeholder="Reason for follow-up"
+                  limit="LOG_MEDIUM"
                 />
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={isSaving || !followUpReason.trim()}
+                  disabled={
+                    isSaving
+                    || !followUpReason.trim()
+                    || !isLogFieldValid(followUpReason, 'LOG_MEDIUM')
+                  }
                   onClick={() => void recommendFollowUp(selected.id, followUpReason.trim()).then(() => setFollowUpReason(''))}
                 >
                   Create follow-up task

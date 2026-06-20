@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { AIExtractionReviewPanel } from '@/app/pages/admin/orders/components/AIExtractionReviewPanel';
 import { FinalReportSection } from '@/app/pages/admin/orders/components/FinalReportSection';
 import { LabWorkflowChecklist } from '@/app/pages/admin/orders/components/LabWorkflowChecklist';
+import { OrderPathologyScheduleSection } from '@/app/pages/admin/orders/components/OrderPathologyScheduleSection';
 import { OrderSampleProofGallery } from '@/app/pages/admin/orders/components/OrderSampleProofGallery';
 import { getLabWorkflowSteps } from '@/app/pages/admin/orders/components/labWorkflowSteps';
 import { useLabReportsStore } from '@/store';
@@ -29,7 +30,6 @@ export function OrderPathologySection({
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [emailFrom, setEmailFrom] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
-  const [courierRef, setCourierRef] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const activeOrderId = useLabReportsStore((s) => s.activeOrderId);
@@ -43,9 +43,10 @@ export function OrderPathologySection({
 
   const loadOrder = useLabReportsStore((s) => s.loadOrder);
   const assignLab = useLabReportsStore((s) => s.assignLab);
-  const dispatchSample = useLabReportsStore((s) => s.dispatchSample);
   const markReceivedAtLab = useLabReportsStore((s) => s.markReceivedAtLab);
   const markAwaitingReport = useLabReportsStore((s) => s.markAwaitingReport);
+  const markLabPartnerCollected = useLabReportsStore((s) => s.markLabPartnerCollected);
+  const confirmLabPartnerVisit = useLabReportsStore((s) => s.confirmLabPartnerVisit);
   const uploadReportFromEmail = useLabReportsStore((s) => s.uploadReportFromEmail);
 
   const effectiveOrder = storeOrder ?? order;
@@ -112,6 +113,8 @@ export function OrderPathologySection({
     <div className="space-y-4">
       <LabWorkflowChecklist steps={workflowSteps} />
 
+      <OrderPathologyScheduleSection order={order} onUpdated={onUpdated} readOnly={readOnly} />
+
       {orderError && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {orderError}
@@ -174,40 +177,87 @@ export function OrderPathologySection({
           </p>
         )}
 
-        {!readOnly && dispatch?.status === 'pending_dispatch' && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Waiting for technician to collect blood sample and upload proof photos during the field visit.
-          </p>
-        )}
-
-        {!readOnly && dispatch?.status === 'sample_collected' && (
-          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Sample collected with photos on file — technician will select lab partner and submit, or ops can submit
-            below.
-          </p>
-        )}
-
-        {!readOnly && dispatch?.status === 'sample_collected' && (
-          <div className="flex flex-wrap items-end gap-3 rounded-md border border-amber-200 bg-amber-50 p-3">
-            <div className="min-w-[160px] flex-1 space-y-1">
-              <Label>Courier / handoff ref (optional)</Label>
-              <Input
-                value={courierRef}
-                onChange={(e) => setCourierRef(e.target.value)}
-                placeholder="e.g. COUR-MUM-4421"
-              />
+        {!readOnly &&
+          order.pathologyScheduledAt &&
+          dispatch?.status === 'pending_dispatch' &&
+          effectiveOrder.pathologyVisitOutcome !== 'visited' && (
+            <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
+              <p className="font-medium">Update from lab partner portal — collector visit</p>
+              <p>
+                Check {order.partnerLabName}&apos;s portal for order{' '}
+                {effectiveOrder.pathologyExternalAppointmentId ? (
+                  <span className="font-mono">{effectiveOrder.pathologyExternalAppointmentId}</span>
+                ) : (
+                  '—'
+                )}
+                . When their collector has visited the patient, confirm here.
+              </p>
+              {effectiveOrder.pathologyVisitOutcome === 'no_show' && (
+                <p className="text-amber-800">
+                  Previous visit marked as no-show — confirm a new schedule above, then record visit outcome
+                  again.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  disabled={orderSaving}
+                  onClick={() => run(() => confirmLabPartnerVisit(order.id, 'visited'))}
+                >
+                  Collector visited
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={orderSaving}
+                  onClick={() => run(() => confirmLabPartnerVisit(order.id, 'no_show'))}
+                >
+                  No-show
+                </Button>
+              </div>
             </div>
+          )}
+
+        {!readOnly && effectiveOrder.pathologyVisitOutcome === 'visited' && (
+          <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
+            Lab collector visit confirmed
+            {effectiveOrder.pathologyVisitConfirmedAt
+              ? ` · ${new Date(effectiveOrder.pathologyVisitConfirmedAt).toLocaleString()}`
+              : ''}
+          </p>
+        )}
+
+        {!readOnly && dispatch?.status === 'pending_dispatch' && order.pathologyScheduledAt && (
+          effectiveOrder.pathologyVisitOutcome === 'visited' ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <span>
+              Check the lab partner portal — when sample collection is complete, mark it here.
+            </span>
             <Button
               size="sm"
-              disabled={orderSaving || !effectiveOrder.partnerLabId}
-              onClick={() => run(() => dispatchSample(order.id, 'operations', courierRef || undefined))}
+              variant="secondary"
+              disabled={orderSaving}
+              onClick={() => run(() => markLabPartnerCollected(order.id))}
             >
-              Submit blood sample to lab (ops)
+              Sample collected (lab portal)
             </Button>
           </div>
+          ) : null
         )}
 
-        {!readOnly && dispatch?.status === 'dispatched' && (
+        {!readOnly && dispatch?.status === 'pending_dispatch' && !order.pathologyScheduledAt && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Assign lab partner, create the lab order, and confirm the pathology schedule above.
+          </p>
+        )}
+
+        {!readOnly && dispatch?.status === 'sample_collected' && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Sample collected — check lab partner portal; mark received at lab when testing has started there.
+          </p>
+        )}
+
+        {!readOnly && dispatch?.status === 'sample_collected' && (
           <Button
             size="sm"
             variant="secondary"

@@ -2,29 +2,34 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiCopy, FiSend } from 'react-icons/fi';
 import { PageHeader } from '@/components/common/PageHeader';
+import { canManageStaff } from '@/app/config/productRoles';
 import { STAFF_ROLE_CONFIGS, staffRoleFromSlug, staffRolePath } from '@/app/pages/admin/staff/staffHubConfig';
 import { staffOnboardingLink, staffRegisterLink } from '@/app/pages/staff/onboarding/staffOnboardingUtils';
+import { orgPath } from '@/app/config/orgRoutes';
+import { useUserRole } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { staffOnboardingService } from '@/services/staff/StaffOnboardingService';
+import { useUrlTabState } from '@/hooks/useUrlTabState';
 import type { StaffOnboardingInvite } from '@/types/staffOnboarding';
+import type { StaffRoleKey } from '@/types/staffHub';
+
+const ONBOARD_TABS = ['send-link', 'admin-complete'] as const;
 
 export function AdminStaffOnboardPage() {
   const { roleSlug } = useParams<{ roleSlug: string }>();
   const navigate = useNavigate();
+  const userRole = useUserRole();
   const roleKey = staffRoleFromSlug(roleSlug);
   const roleConfig = roleKey ? STAFF_ROLE_CONFIGS.find((r) => r.key === roleKey) : undefined;
-
-  if (!roleKey || !roleConfig) {
-    return <Navigate to="/admin/staff/technicians" replace />;
-  }
-
-  if (roleKey === 'lab_partner') {
-    return <Navigate to="/admin/staff/lab-partners" replace />;
-  }
+  const [activeTab, setActiveTab] = useUrlTabState({
+    defaultValue: 'send-link',
+    validValues: ONBOARD_TABS,
+    omitDefault: true,
+  });
 
   const [form, setForm] = useState({ fullName: '', mobile: '', email: '', username: '' });
   const [invite, setInvite] = useState<StaffOnboardingInvite | null>(null);
@@ -33,11 +38,23 @@ export function AdminStaffOnboardPage() {
   const [copied, setCopied] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
 
+  if (!canManageStaff(userRole)) {
+    return <Navigate to={orgPath('/admin/staff/technicians')} replace />;
+  }
+
+  if (!roleKey || !roleConfig) {
+    return <Navigate to={orgPath('/admin/staff/technicians')} replace />;
+  }
+
+  if (roleKey === 'lab_partner') {
+    return <Navigate to={orgPath('/admin/staff/lab-partners/new')} replace />;
+  }
+
   const createInvite = async () => {
     setIsSaving(true);
     setError(null);
     try {
-      const created = await staffOnboardingService.createInvite(roleKey, {
+      const created = await staffOnboardingService.createInvite(roleKey as StaffRoleKey, {
         fullName: form.fullName.trim(),
         mobile: form.mobile.trim(),
         email: form.email.trim() || undefined,
@@ -57,7 +74,7 @@ export function AdminStaffOnboardPage() {
     e.preventDefault();
     const created = await createInvite();
     if (!created) return;
-    navigate(staffRolePath(roleKey) + `/${created.memberId ?? created.id}?tab=profile&onboard=admin`);
+    navigate(`${staffRolePath(roleKey)}/${created.memberId ?? created.id}?tab=profile&onboard=admin`);
   };
 
   const handleSendLink = async (e: FormEvent) => {
@@ -94,8 +111,8 @@ export function AdminStaffOnboardPage() {
           </Link>
         </Button>
         <PageHeader
-          title={`Add ${roleConfig.label.slice(0, -1)}`}
-          description="Provision a new team member. Complete onboarding as admin or send a link to their mobile."
+          title={`Add ${roleConfig.label.replace(/s$/, '')}`}
+          description="Provision a new team member with full profile, documents, and employment details. Send an onboarding link or complete the form as admin."
         />
       </div>
 
@@ -129,7 +146,7 @@ export function AdminStaffOnboardPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="send-link">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="send-link">Send onboarding link</TabsTrigger>
           <TabsTrigger value="admin-complete">Admin completes form</TabsTrigger>
@@ -137,7 +154,7 @@ export function AdminStaffOnboardPage() {
 
         <TabsContent value="send-link" className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Staff stays <strong>inactive</strong> until they complete the profile and HR verifies all required documents.
+            Staff stays inactive until they complete the profile and HR verifies all required documents.
           </p>
           <form onSubmit={(e) => void handleSendLink(e)} className="space-y-4">
             <Button type="submit" disabled={isSaving || !form.fullName || !form.mobile} className="gap-2">
@@ -183,11 +200,11 @@ export function AdminStaffOnboardPage() {
 
         <TabsContent value="admin-complete" className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            You will complete the full onboarding form now. The user remains inactive until document verification is done.
+            You will complete the full employee profile now — employment details, address, role fields, and legal documents.
           </p>
           <form onSubmit={(e) => void handleAdminComplete(e)}>
             <Button type="submit" disabled={isSaving || !form.fullName || !form.mobile}>
-              Continue to onboarding form
+              Continue to full profile form
             </Button>
           </form>
         </TabsContent>

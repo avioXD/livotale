@@ -4,6 +4,7 @@ import { useAuthStore, useJourneyStore, useStaffOnboardingStore, useUserRole } f
 import { AppRole } from '@/types';
 import { resolvePatientHomePath } from '@/utils/journeyHelpers';
 import { getDefaultHomePath } from '@/app/config/navigation';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const STAFF_ONBOARDING_ROLES: AppRole[] = [
   AppRole.TECHNICIAN,
@@ -56,7 +57,7 @@ export function PostAuthRedirect() {
   }
 
   if (needsStaffGate && staffStatus?.required && !staffStatus.canAccessApp) {
-    return <Navigate to="/staff/onboarding" replace />;
+    return <Navigate to={orgPath('/staff/onboarding')} replace />;
   }
 
   return <Navigate to={getDefaultHomePath(userRole)} replace />;

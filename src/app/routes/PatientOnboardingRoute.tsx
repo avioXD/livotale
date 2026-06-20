@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { orgPath } from '@/app/config/orgRoutes';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore, useJourneyStore, useUserRole } from '@/store';
 import { AppRole } from '@/types';
@@ -38,7 +39,7 @@ export function PatientOnboardingRoute({ requireComplete = false }: PatientOnboa
   }
 
   if (!requireComplete && onboardingComplete) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={orgPath('/dashboard')} replace />;
   }
 
   return <Outlet />;

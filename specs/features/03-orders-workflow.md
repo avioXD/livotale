@@ -38,6 +38,92 @@ Required: full pipeline including doctor assign → consultation → prescriptio
 3. Prescription hidden until doctor `published`
 4. Scan/lab data locked after final report publish (admin override only)
 
+## Scan booking model (home FibroScan visit)
+
+After payment, the scan step uses **patient preference → ops atomic confirm**:
+
+| Actor | Action | API | Order fields |
+|-------|--------|-----|--------------|
+| Patient | Submit preferred date + 45-min slot | `POST /patient-portal/orders/{id}/scan-date` | `scan_patient_preferred_at`, `scan_time_slot` (no status change) |
+| Patient | View slot cards | `GET /public/slots/scan?date=` | — |
+| Operations / Super Admin | View slots + patient preference | `GET /admin/orders/{id}/scan-slots?date=` | — |
+| Operations / Super Admin | List technicians free for slot | `GET /admin/technicians/available-for-slot` | — |
+| Operations / Super Admin | Confirm slot + assign technician (one step) | `POST /admin/orders/{id}/confirm-scan-schedule` | `technician_id`, `scan_scheduled_at`, `scan_time_slot` → `scan_scheduled` |
+
+Slot rules: org operating hours from `operations.org_operating_hours` (default Mon–Sat 08:00–18:00, 45-min cards). See [22-org-operating-hours.md](./22-org-operating-hours.md).
+
+Legacy endpoints `assign-technician` and `schedule-scan` remain for reassignment after confirm.
+
+## Consult booking model (PKG-3 teleconsult)
+
+After the letterhead report is ready, the consultation step uses **patient preference → ops atomic confirm** (mirrors scan):
+
+| Actor | Action | API | Order fields |
+|-------|--------|-----|--------------|
+| Patient | Submit preferred tele slot | `POST /patient-portal/orders/{id}/consult-date` | `consultation_patient_preferred_at`, `consultation_time_slot` (no status change) |
+| Patient | View slot cards | `GET /public/slots/consult?date=` | — |
+| Operations / Super Admin | View slots + patient preference | `GET /admin/orders/{id}/consult-slots?date=` | — |
+| Operations / Super Admin | List doctors free for slot | `GET /admin/doctors/available-for-slot?scheduledAt=&language=` | — |
+| Operations / Super Admin | Confirm slot + assign doctor (one step) | `POST /admin/orders/{id}/confirm-consultation-schedule` | `doctor_id`, `consultation_scheduled_at`, `consultation_time_slot` → `consultation_pending` |
+
+Slot rules: aggregate tele slots from `operations.doctor_availability` / `operations.appointment_slots` across active doctors. Occupancy includes confirmed PKG-3 `consultation_scheduled_at` per doctor.
+
+Legacy endpoints `assign-doctor` and `schedule-consultation` remain for reassignment after confirm.
+
+Doctors **cannot** schedule consult times (`POST /doctor/consultations/{id}/schedule` → 403).
+
+### Consult step verification checklist
+
+```
+Step: consultation
+  UI: patient preference banner → slot picker → doctor picker → confirm
+  APIs: GET public/consult-slots, GET consult-slots, GET available-for-slot,
+        POST consult-date, POST confirm-consultation-schedule
+  DB: service_orders, order_consultations, doctor_availability, appointment_slots
+  Test: test_consult_booking_patient_pref_ops_confirm.py, test_consult_notifications.py
+```
+
+### Scan step panel order (`OrderScanReviewPanel`)
+
+Admin scan step (`?step=scan`) renders sections in this order:
+
+1. **Patient details** — `OrderPatientIntakePanel` (ops may optionally pre-fill; no approve/reject gate)
+2. **Home visit schedule** — `OrderScanScheduleSection` (patient preference + ops slot/technician confirm)
+3. **FibroScan intake review** — `OrderFibroScanIntakePanel`
+4. **Visit status tracker** — `OrderVisitTrackerCard` (horizontal stepper)
+5. **Fibrosis scan data** — post-capture review card
+
+### Patient intake (scan step)
+
+| Actor | Action | Notes |
+|-------|--------|-------|
+| Operations | Optionally save patient details | Name, sex, age, phone, weight, height, comorbidities (BP, diabetes, thyroid) |
+| Technician | View after payment | Pre-filled from ops save or order defaults; not blocked if ops has not saved |
+| Technician | Verify at home visit | Phone OTP required at `reached_location`; auto-completes intake (no ops approval) |
+
+Legacy `operator_verify_intake` API is deprecated; UI does not expose validate/reject for **patient** intake.
+
+### FibroScan intake (scan step)
+
+| Actor | Action | API | Notes |
+|-------|--------|-----|-------|
+| Technician | Submit device code + machine demographics | `POST /technician/orders/{id}/fibroscan-intake` | Requires patient OTP verify first |
+| Operations | Approve or reject technician submission | `PATCH /admin/orders/{id}/fibroscan-intake/verify` | Requires `fibroscanIntakeSubmittedAt`; sets `fibroscan_intake_verified` on approve |
+| Technician | Resubmit after rejection | `POST .../fibroscan-intake` | Resets ops status to `pending` |
+
+Timeline events: `fibroscan_intake_submitted`, `fibroscan_intake_approved`, `fibroscan_intake_rejected`.
+
+### Scan step verification checklist
+
+```
+Step: scan
+  UI: panel order patient → schedule → fibro intake → visit → scan data
+  APIs: GET scan-slots, GET available-for-slot, POST confirm-scan-schedule, POST scan-date,
+        POST fibroscan-intake, PATCH fibroscan-intake/verify, GET patient-intake
+  DB: scan_patient_intake, service_orders, order_timeline_events, technicians, org_operating_hours
+  Test: test_fibroscan_intake.py, test_scan_booking_patient_pref_ops_confirm.py, test_scan_notifications.py
+```
+
 ---
 
 ## Ops order detail UI — step workflow (not tabs)

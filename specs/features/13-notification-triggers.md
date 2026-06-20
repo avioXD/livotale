@@ -34,10 +34,13 @@
 
 | Trigger action | When | Recipients | Channels |
 |----------------|------|------------|----------|
-| `technician_assigned` | Ops assigns technician | Tech, Patient | in-app, WhatsApp |
-| `scan_scheduled` | Visit date set | Tech, Patient | in-app, SMS |
-| `scan_started` | Tech starts visit | Ops | in-app |
-| `scan_completed` | Fibrosis scan saved | Ops, Patient | in-app, WhatsApp |
+| `scan_date_requested` | Patient submits preferred scan slot | Ops, Admin | in-app |
+| `scan_schedule_confirmed` | Ops atomic confirm (slot + technician) | Patient, Tech | in-app, SMS |
+| `technician_assigned` | Ops assigns technician (legacy path) | Tech, Patient | in-app, WhatsApp |
+| `scan_scheduled` | Visit date set (legacy / internal) | Tech, Patient | in-app, SMS |
+| `visit_started` | Tech marks en route | Ops, Admin | in-app |
+| `visit_reached` | Tech marks at patient location | Ops, Admin | in-app |
+| `scan_completed` | Fibrosis scan saved / visit complete | Ops, Patient | in-app, SMS |
 | `scan_reviewed` | Ops reviews scan data | Doctor (if PKG-3) | in-app |
 
 ---
@@ -64,10 +67,21 @@
 |----------------|------|------------|----------|
 | `final_report_generated` | Ops generates letterhead report | Ops, Admin | in-app |
 | `final_report_published` | Report published to patient | Patient, Ops | in-app, WhatsApp |
+| `consultation_date_requested` | Patient submits preferred consult slot | Ops, Admin | in-app |
+| `consultation_schedule_confirmed` | Ops atomic confirm (slot + doctor) | Patient, Doctor | in-app, WhatsApp |
 | `doctor_assigned` | Ops assigns doctor (PKG-3) | Doctor, Patient | in-app, WhatsApp |
 | `consultation_scheduled` | Video consult scheduled | Doctor, Patient | in-app, WhatsApp |
 | `consultation_completed` | Doctor completes consult | Ops | in-app |
 | `prescription_published` | Doctor publishes Rx | Patient, Ops | in-app, WhatsApp |
+
+---
+
+## Care tasks
+
+| Trigger action | When | Recipients | Channels |
+|----------------|------|------------|----------|
+| `care_task_assigned` | Follow-up task created with assignee | Assigned user | in-app |
+| `care_task_escalation` | Doctor escalation task (no assignee) | Doctor role | in-app |
 
 ---
 
@@ -80,9 +94,26 @@
 
 ---
 
+## User vs role targeting
+
+| Trigger | Targeting |
+|---------|-----------|
+| `enquiry_assigned` | **User** — assigned executive only |
+| `technician_visit_assigned` | **User** — assigned technician only |
+| `technician_assigned` | **User** (tech) + **phone** (patient) |
+| `doctor_assigned` | **User** (doctor) + **phone** (patient) |
+| `lab_assigned` | **Role** (Ops) + **User** (technician if set) |
+| `scan_date_requested`, `consultation_date_requested`, `visit_started`, … | **Role** broadcast |
+
+Inbox stores `recipient_type` = `role` | `phone` | `user` and `trigger_action` for filtering. Staff bell merges role + user rows for the logged-in user.
+
+---
+
 ## Implementation notes
 
-- `InboxNotificationService.push()` called from domain services on each action (mock layer).
-- Bell shows unread count for current user's role.
+- Backend `WorkflowNotificationService` + `NotificationDispatchService` enqueue and inline-process outbox → `audit.inbox_notifications`.
+- WebSocket channels: `ws:notifications:{role}` and `ws:notifications:user:{userId}`.
+- Bell shows unread count for merged inbox (role + user).
 - Full history at `/notifications` (staff) or `/patient/notifications` (patient portal).
 - Admin **Notification log** (`/admin/notifications`) remains channel dispatch audit for ops/admin.
+- Care tasks (legacy Node) call `POST /internal/notifications/emit`.

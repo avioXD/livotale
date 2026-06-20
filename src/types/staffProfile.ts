@@ -51,6 +51,7 @@ export interface StaffEmployeeDetails {
   registrationNumber: string | null;
   clinicOrOrgName: string | null;
   specialization: string | null;
+  languagesKnown?: string[];
   vehicleType: string | null;
   vehicleNumber: string | null;
   joinedOn: string | null;

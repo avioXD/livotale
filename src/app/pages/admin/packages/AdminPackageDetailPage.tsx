@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePackageDetailStore } from '@/store/packages';
 import type { LiverCarePackage } from '@/types/package';
+import { orgPath } from '@/app/config/orgRoutes';
 
-const LIST_PATH = '/admin/packages';
+const LIST_PATH = orgPath('/admin/packages');
 
 export function AdminPackageDetailPage() {
   const { id } = useParams<{ id: string }>();

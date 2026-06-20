@@ -72,6 +72,7 @@ export interface UpdateBasicPayload {
   mobile?: string;
   gender?: string;
   dob?: string;
+  profilePhotoUrl?: string;
 }
 
 export interface UpdateEmergencyContactPayload {
@@ -89,10 +90,11 @@ export interface ConsentPurpose {
 
 export interface UserConsent {
   id: string;
-  purpose_id: string;
-  purpose_code: string;
-  purpose_name: string;
+  purposeId: string;
+  purposeCode: string;
+  purposeName: string;
+  purposeDescription?: string | null;
   accepted: boolean;
-  accepted_at: string | null;
-  withdrawn_at: string | null;
+  acceptedAt: string | null;
+  withdrawnAt: string | null;
 }

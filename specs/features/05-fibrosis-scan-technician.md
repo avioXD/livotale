@@ -37,7 +37,12 @@
 
 ## API
 
+See [21-technician-field-portal.md](./21-technician-field-portal.md) for the full technician API matrix.
+
 - `GET /technician/orders` (assigned)
-- `POST /technician/orders/:id/visit-started|reached|scan|complete|failed`
-- `POST /integrations/fibrosis-scan/fetch` (dummy device)
-- `PATCH /admin/orders/:id/fibrosis-scan` (review edit)
+- `GET /technician/orders/:id` (assigned detail with address)
+- `POST /technician/orders/:id/visit-started|reached|complete|unable`
+- `POST /technician/orders/:id/fibrosis-scan/fetch|attach` (dummy device)
+- `PATCH /admin/orders/:id/fibrosis-scan` (ops review edit only)
+
+**Not in technician UI:** sample dispatch / blood collection — ops + lab partner only.

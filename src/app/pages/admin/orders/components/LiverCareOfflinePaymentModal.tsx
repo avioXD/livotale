@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { isLogFieldValid, LogTextarea } from '@/components/forms/LogTextarea';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import type { OfflinePaymentMethod } from '@/types/payment';
 
@@ -92,19 +93,24 @@ export function LiverCareOfflinePaymentModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="remarks">Remarks</Label>
-            <Input
-              id="remarks"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
-          </div>
+          <LogTextarea
+            id="remarks"
+            label="Remarks"
+            value={remarks}
+            onChange={setRemarks}
+            limit="LOG_SHORT"
+          />
 
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button
-              disabled={isSaving || !amount || Number(amount) <= 0 || !collectedBy.trim()}
+              disabled={
+                isSaving
+                || !amount
+                || Number(amount) <= 0
+                || !collectedBy.trim()
+                || !isLogFieldValid(remarks, 'LOG_SHORT')
+              }
               onClick={() =>
                 void onSubmit({
                   method,

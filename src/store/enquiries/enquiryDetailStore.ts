@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import { enquiryService, liverCareOrderService, packageService } from '@/services/liverCare';
+import { isPatientIntakeValid } from '@/app/pages/shared/components/PatientIntakeForm';
+import { patientIntakeFromEnquiry, EMPTY_ORDER_INTAKE } from '@/app/pages/shared/components/patientIntakeUtils';
+import { enquiryService, liverCareOrderService, packageService, technicianOrderService } from '@/services/liverCare';
+import type { ScanPatientIntakeInput } from '@/types/scanPatientIntake';
 import type {
   CreateEnquiryInput,
   Enquiry,
@@ -25,6 +28,10 @@ export interface EnquiryDetailsDraft {
   city: string;
   message: string;
   preferredPackageId: string;
+  age: string;
+  gender: string;
+  address: string;
+  assignedExecutiveId: string;
 }
 
 export interface EnquiryOrderOutcomeDraft {
@@ -37,6 +44,7 @@ interface EnquiryDetailStore {
   threadEnquiries: Enquiry[];
   packages: LiverCarePackage[];
   followUp: EnquiryFollowUpDraft;
+  orderIntake: ScanPatientIntakeInput;
   details: EnquiryDetailsDraft;
   orderOutcome: EnquiryOrderOutcomeDraft;
   isLoading: boolean;
@@ -47,6 +55,7 @@ interface EnquiryDetailStore {
   loadById: (id: string) => Promise<void>;
   initCreate: () => Promise<void>;
   patchFollowUp: (patch: Partial<EnquiryFollowUpDraft>) => void;
+  patchOrderIntake: (patch: Partial<ScanPatientIntakeInput>) => void;
   patchDetails: (patch: Partial<EnquiryDetailsDraft>) => void;
   patchOrderOutcome: (patch: Partial<EnquiryOrderOutcomeDraft>) => void;
   createLead: (input: CreateEnquiryInput) => Promise<Enquiry>;
@@ -55,6 +64,7 @@ interface EnquiryDetailStore {
   saveDetails: (id: string) => Promise<Enquiry>;
   saveOrderOutcome: (id: string) => Promise<Enquiry>;
   convertToOrder: (id: string) => Promise<string>;
+  archiveLead: (id: string) => Promise<void>;
   clear: () => void;
 }
 
@@ -78,6 +88,10 @@ const emptyDetails = (): EnquiryDetailsDraft => ({
   city: '',
   message: '',
   preferredPackageId: '',
+  age: '',
+  gender: '',
+  address: '',
+  assignedExecutiveId: '',
 });
 
 function detailsFromEnquiry(enquiry: Enquiry): EnquiryDetailsDraft {
@@ -88,6 +102,10 @@ function detailsFromEnquiry(enquiry: Enquiry): EnquiryDetailsDraft {
     city: enquiry.city ?? '',
     message: enquiry.message ?? '',
     preferredPackageId: enquiry.preferredPackageId ?? '',
+    age: enquiry.age != null ? String(enquiry.age) : '',
+    gender: enquiry.gender ?? '',
+    address: enquiry.address ?? '',
+    assignedExecutiveId: enquiry.assignedExecutiveId ?? '',
   };
 }
 
@@ -96,6 +114,7 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
   threadEnquiries: [],
   packages: [],
   followUp: emptyFollowUp(),
+  orderIntake: EMPTY_ORDER_INTAKE,
   details: emptyDetails(),
   orderOutcome: emptyOrderOutcome(),
   isLoading: false,
@@ -122,6 +141,7 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
         threadEnquiries,
         packages,
         followUp: emptyFollowUp(enquiry.status, preferredPackageId),
+        orderIntake: patientIntakeFromEnquiry(enquiry),
         details: detailsFromEnquiry({ ...enquiry, preferredPackageId }),
         orderOutcome: {
           orderOutcome: enquiry.orderOutcome ?? 'confirmed',
@@ -158,6 +178,7 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
       enquiry: null,
       threadEnquiries: [],
       followUp: emptyFollowUp(),
+      orderIntake: EMPTY_ORDER_INTAKE,
       details: emptyDetails(),
       orderOutcome: emptyOrderOutcome(),
     });
@@ -174,6 +195,10 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
 
   patchFollowUp: (patch) => {
     set({ followUp: { ...get().followUp, ...patch } });
+  },
+
+  patchOrderIntake: (patch) => {
+    set({ orderIntake: { ...get().orderIntake, ...patch } });
   },
 
   patchDetails: (patch) => {
@@ -257,6 +282,10 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
         city: details.city.trim() || undefined,
         message: details.message.trim() || undefined,
         preferredPackageId: details.preferredPackageId || null,
+        age: details.age.trim() ? Number(details.age) : undefined,
+        gender: details.gender.trim() || undefined,
+        address: details.address.trim() || undefined,
+        assignedExecutiveId: details.assignedExecutiveId.trim() || null,
       };
       const updated = await enquiryService.update(id, payload);
       const preferredPackageId = updated.preferredPackageId ?? get().followUp.preferredPackageId;
@@ -308,23 +337,27 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
   },
 
   convertToOrder: async (id) => {
-    const { enquiry, followUp } = get();
+    const { enquiry, followUp, orderIntake } = get();
     if (!enquiry || !followUp.preferredPackageId) {
       throw new Error('Select a package before creating an order');
+    }
+    if (!isPatientIntakeValid(orderIntake)) {
+      throw new Error('Enter patient name, age, and phone before creating an order');
     }
     set({ isConverting: true, error: null });
     try {
       const reuseExistingPatient = Boolean(enquiry.patientId);
-      const patientId =
-        enquiry.patientId ?? `patient-${enquiry.phone.replace(/\D/g, '')}`;
       const order = await liverCareOrderService.create({
-        patientId,
-        patientName: enquiry.patientName,
-        patientPhone: enquiry.phone,
+        patientId: enquiry.patientId,
+        patientName: orderIntake.name.trim(),
+        patientPhone: orderIntake.phone.trim(),
+        patientIntake: orderIntake,
         enquiryId: enquiry.id,
         packageId: followUp.preferredPackageId,
         skipPatientCreation: reuseExistingPatient,
       });
+
+      await technicianOrderService.saveOperatorIntake(order.id, orderIntake);
 
       const callRemarks = followUp.callRemarks.trim();
       const internalNotes = followUp.internalNotes.trim();
@@ -358,12 +391,26 @@ export const useEnquiryDetailStore = create<EnquiryDetailStore>((set, get) => ({
     }
   },
 
+  archiveLead: async (id) => {
+    set({ isSaving: true, error: null });
+    try {
+      await enquiryService.archive(id);
+      useEnquiriesAdminStore.getState().removeEnquiry(id);
+      set({ isSaving: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Archive failed';
+      set({ isSaving: false, error: message });
+      throw err;
+    }
+  },
+
   clear: () =>
     set({
       enquiry: null,
       threadEnquiries: [],
       packages: [],
       followUp: emptyFollowUp(),
+      orderIntake: EMPTY_ORDER_INTAKE,
       details: emptyDetails(),
       orderOutcome: emptyOrderOutcome(),
       isLoading: false,

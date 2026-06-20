@@ -13,6 +13,7 @@ import { DoctorStep } from '@/app/pages/appointments/wizard/DoctorStep';
 import { PaymentStep } from '@/app/pages/appointments/wizard/PaymentStep';
 import { TypeStep } from '@/app/pages/appointments/wizard/TypeStep';
 import { VisitModeStep } from '@/app/pages/appointments/wizard/VisitModeStep';
+import { orgPath } from '@/app/config/orgRoutes';
 import {
   INITIAL_WIZARD_STATE,
   needsDoctorSelection,
@@ -131,7 +132,7 @@ export function BookAppointmentWizardPage() {
         symptoms: state.symptoms.trim() || undefined,
         notes: state.notes.trim() || undefined,
       });
-      navigate(`/appointments/${created.id}`, { replace: true });
+      navigate(orgPath(`/appointments/${created.id}`), { replace: true });
     } catch {
       /* store sets error */
     }
@@ -143,7 +144,7 @@ export function BookAppointmentWizardPage() {
         title="Book appointment"
         description={`Step ${stepIndex + 1} of ${steps.length}: ${STEP_LABELS[currentStep]}`}
         actions={
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/appointments')}>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate(orgPath('/appointments'))}>
             <FiArrowLeft className="h-4 w-4" />
             Back to list
           </Button>

@@ -40,6 +40,9 @@ export interface LabReportQueueRow {
   reportFileName: string | null;
   reportUploadedAt: string | null;
   courierRef: string | null;
+  pathologyExternalAppointmentId?: string | null;
+  pathologyVisitOutcome?: 'visited' | 'no_show' | null;
+  pathologyVisitConfirmedAt?: string | null;
   updatedAt: string;
 }
 

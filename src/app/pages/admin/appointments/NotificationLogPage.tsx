@@ -1,21 +1,82 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 import { FiArrowLeft } from 'react-icons/fi';
-import { PageHeader } from '@/components/common/PageHeader';
+import {
+  DataTable,
+  PageHeader,
+  PaginationControls,
+} from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAdminAppointmentsStore } from '@/store';
+import type { AppointmentReminderLog, TableColumn } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
+import { useStorePaged } from '@/hooks/useStorePaged';
 
 export function NotificationLogPage() {
-  const reminderLogs = useAdminAppointmentsStore((s) => s.reminderLogs);
-  const isLoading = useAdminAppointmentsStore((s) => s.isLoading);
-  const error = useAdminAppointmentsStore((s) => s.error);
-  const loadReminderLogs = useAdminAppointmentsStore((s) => s.loadReminderLogs);
+  const {
+    reminderLogsPageSize,
+    isLoading,
+    error,
+    loadReminderLogs,
+    setReminderLogsPage,
+    setReminderLogsPageSize,
+  } = useAdminAppointmentsStore(
+    useShallow((s) => ({
+      reminderLogsPageSize: s.reminderLogsPageSize,
+      isLoading: s.isLoading,
+      error: s.error,
+      loadReminderLogs: s.loadReminderLogs,
+      setReminderLogsPage: s.setReminderLogsPage,
+      setReminderLogsPageSize: s.setReminderLogsPageSize,
+    })),
+  );
 
   useEffect(() => {
     void loadReminderLogs();
   }, [loadReminderLogs]);
+
+  const paged = useStorePaged(
+    useAdminAppointmentsStore,
+    (s) => ({
+      items: s.reminderLogs,
+      page: s.reminderLogsPage,
+      pageSize: s.reminderLogsPageSize,
+    }),
+    (s) => s.setReminderLogsPage,
+  );
+
+  const columns: TableColumn<AppointmentReminderLog>[] = useMemo(
+    () => [
+      {
+        key: 'when',
+        header: 'When',
+        render: (log) => new Date(log.sentAt ?? log.createdAt).toLocaleString(),
+      },
+      {
+        key: 'patient',
+        header: 'Patient',
+        render: (log) => log.patientName ?? '—',
+      },
+      {
+        key: 'appointment',
+        header: 'Appointment',
+        render: (log) => log.appointmentCode ?? log.appointmentId.slice(0, 8),
+      },
+      {
+        key: 'type',
+        header: 'Type',
+        render: (log) => log.reminderType,
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        render: (log) => <Badge variant="outline">{log.status}</Badge>,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">
@@ -24,7 +85,7 @@ export function NotificationLogPage() {
         description="Appointment reminder dispatch history (in-app channel in dev)."
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/appointments">
+            <Link to={orgPath('/admin/appointments')}>
               <FiArrowLeft className="h-4 w-4" />
               Dashboard
             </Link>
@@ -38,44 +99,23 @@ export function NotificationLogPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading logs…</p>
-      ) : reminderLogs.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No reminders logged yet. Run <code className="text-xs">npm run jobs:reminders</code> in the API project.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-muted/40 text-left text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2">When</th>
-                <th className="px-3 py-2">Patient</th>
-                <th className="px-3 py-2">Appointment</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reminderLogs.map((log) => (
-                <tr key={log.id} className="border-t">
-                  <td className="px-3 py-2">
-                    {new Date(log.sentAt ?? log.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2">{log.patientName ?? '—'}</td>
-                  <td className="px-3 py-2">{log.appointmentCode ?? log.appointmentId.slice(0, 8)}</td>
-                  <td className="px-3 py-2">{log.reminderType}</td>
-                  <td className="px-3 py-2">
-                    <Badge variant="outline">{log.status}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={paged.items}
+        isLoading={isLoading}
+        emptyMessage="No reminders logged yet. Run npm run jobs:reminders in the API project."
+        getRowKey={(log) => log.id}
+      />
+
+      <PaginationControls
+        page={paged.page}
+        pageSize={reminderLogsPageSize}
+        total={paged.total}
+        totalPages={paged.totalPages}
+        onPageChange={setReminderLogsPage}
+        onPageSizeChange={setReminderLogsPageSize}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

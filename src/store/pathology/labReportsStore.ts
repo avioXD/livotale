@@ -5,7 +5,8 @@ import {
   partnerLabService,
   pathologyService,
 } from '@/services/liverCare';
-import type { UploadLabReportFromEmailInput, UploadLabReportResult } from '@/services/liverCare/PathologyService';
+import type { UploadLabReportFromEmailInput } from '@/types/labReport';
+import type { UploadLabReportResult } from '@/services/liverCare/PathologyService';
 import type { AIExtractionJob, ExtractedField } from '@/types/aiExtraction';
 import type { LabReportQueueRow, LabReportUpload } from '@/types/labReport';
 import type { PartnerLab } from '@/types/partnerLab';
@@ -13,6 +14,7 @@ import type { LiverCareOrder } from '@/types/serviceOrder';
 import type { SampleDispatch } from '@/types/sampleDispatch';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
 import { paginateList } from '@/utils/pagination';
+import { sortByLatestFirst } from '@/utils/sortByLatestFirst';
 
 interface LabReportsStore {
   queue: LabReportQueueRow[];
@@ -26,6 +28,7 @@ interface LabReportsStore {
   appliedAi: string;
   page: number;
   pageSize: number;
+  filtersExpanded: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -51,6 +54,7 @@ interface LabReportsStore {
   resetFilters: (defaultAi?: string) => void;
   setPage: (page: number) => void;
   setPageSize: (size: number) => void;
+  setFiltersExpanded: (v: boolean) => void;
   getFilteredQueue: () => LabReportQueueRow[];
   getPagedQueue: () => ReturnType<typeof paginateList<LabReportQueueRow>>;
 
@@ -62,6 +66,13 @@ interface LabReportsStore {
   dispatchSample: (orderId: string, dispatchedBy: string, courierRef?: string) => Promise<void>;
   markReceivedAtLab: (orderId: string) => Promise<void>;
   markAwaitingReport: (orderId: string) => Promise<void>;
+  markLabPartnerCollected: (orderId: string) => Promise<void>;
+  updateExternalAppointment: (orderId: string, externalAppointmentId: string) => Promise<void>;
+  confirmLabPartnerVisit: (
+    orderId: string,
+    outcome: 'visited' | 'no_show',
+    notes?: string,
+  ) => Promise<void>;
   uploadReportFromEmail: (
     orderId: string,
     input: UploadLabReportFromEmailInput,
@@ -95,6 +106,7 @@ export const useLabReportsStore = create<LabReportsStore>((set, get) => ({
   appliedAi: '',
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
+  filtersExpanded: false,
   isLoading: false,
   error: null,
 
@@ -121,7 +133,7 @@ export const useLabReportsStore = create<LabReportsStore>((set, get) => ({
         }),
         partnerLabService.list().catch(() => [] as PartnerLab[]),
       ]);
-      set({ queue, partnerLabs, isLoading: false });
+      set({ queue: sortByLatestFirst(queue), partnerLabs, isLoading: false });
     } catch (err) {
       set({
         isLoading: false,
@@ -134,7 +146,7 @@ export const useLabReportsStore = create<LabReportsStore>((set, get) => ({
     const queue = get().queue;
     const idx = queue.findIndex((r) => r.orderId === row.orderId);
     if (idx < 0) {
-      set({ queue: [row, ...queue].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) });
+      set({ queue: sortByLatestFirst([row, ...queue]) });
       return;
     }
     const next = [...queue];
@@ -180,12 +192,15 @@ export const useLabReportsStore = create<LabReportsStore>((set, get) => ({
 
   setPage: (page) => set({ page }),
   setPageSize: (pageSize) => set({ pageSize, page: 1 }),
+  setFiltersExpanded: (filtersExpanded) => set({ filtersExpanded }),
 
   getFilteredQueue: () => get().queue,
 
   getPagedQueue: () => {
     const { queue, page, pageSize } = get();
-    return paginateList(queue, page, pageSize);
+    const paged = paginateList(queue, page, pageSize);
+    if (paged.page !== page) set({ page: paged.page });
+    return paged;
   },
 
   loadOrder: async (orderId) => {
@@ -303,6 +318,65 @@ export const useLabReportsStore = create<LabReportsStore>((set, get) => ({
       set({
         orderSaving: false,
         orderError: err instanceof Error ? err.message : 'Failed to mark awaiting report',
+      });
+      throw err;
+    }
+  },
+
+  markLabPartnerCollected: async (orderId) => {
+    set({ orderSaving: true, orderError: null });
+    try {
+      const dispatch = await pathologyService.markLabPartnerCollected(orderId);
+      const ctx = await reloadOrderContext(orderId);
+      set({
+        activeOrder: ctx.order,
+        report: ctx.report,
+        dispatch,
+        aiJob: ctx.aiJob,
+        orderSaving: false,
+      });
+      await get().refreshQueueRow(orderId);
+    } catch (err) {
+      set({
+        orderSaving: false,
+        orderError: err instanceof Error ? err.message : 'Failed to mark lab collection',
+      });
+      throw err;
+    }
+  },
+
+  updateExternalAppointment: async (orderId, externalAppointmentId) => {
+    set({ orderSaving: true, orderError: null });
+    try {
+      const order = await pathologyService.updateExternalAppointment(orderId, externalAppointmentId);
+      set({ activeOrder: order, orderSaving: false });
+      await get().refreshQueueRow(orderId);
+    } catch (err) {
+      set({
+        orderSaving: false,
+        orderError: err instanceof Error ? err.message : 'Failed to save external appointment ID',
+      });
+      throw err;
+    }
+  },
+
+  confirmLabPartnerVisit: async (orderId, outcome, notes) => {
+    set({ orderSaving: true, orderError: null });
+    try {
+      const order = await pathologyService.confirmLabPartnerVisit(orderId, outcome, notes);
+      const ctx = await reloadOrderContext(orderId);
+      set({
+        activeOrder: order,
+        report: ctx.report,
+        dispatch: ctx.dispatch,
+        aiJob: ctx.aiJob,
+        orderSaving: false,
+      });
+      await get().refreshQueueRow(orderId);
+    } catch (err) {
+      set({
+        orderSaving: false,
+        orderError: err instanceof Error ? err.message : 'Failed to confirm lab visit',
       });
       throw err;
     }

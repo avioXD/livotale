@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { appointmentsService, doctorAppointmentsService } from '@/services';
 import { useUserRole } from '@/store';
 import { AppRole, type TeleconsultationJoinPayload } from '@/types';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function TeleconsultationJoinPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,7 +59,7 @@ export function TeleconsultationJoinPage() {
             variant="ghost"
             size="sm"
             className="gap-2"
-            onClick={() => navigate(isDoctor ? '/doctor/appointments' : `/appointments/${id}`)}
+            onClick={() => navigate(isDoctor ? orgPath('/doctor/appointments') : orgPath(`/appointments/${id}`))}
           >
             <FiArrowLeft className="h-4 w-4" />
             Back

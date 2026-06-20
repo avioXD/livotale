@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { doctorConsultationService } from '@/services/liverCare';
 import type { DoctorAssignedPatient } from '@/types/consultation';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
+import { orgPath } from '@/app/config/orgRoutes';
 
 export function DoctorPatientsPanel() {
   const [patients, setPatients] = useState<DoctorAssignedPatient[]>([]);
@@ -55,7 +56,7 @@ export function DoctorPatientsPanel() {
                   ?? patient.latestOrderStatus}
               </Badge>
               <Button size="sm" asChild>
-                <Link to={`/doctor/consultations/${patient.latestOrderId}`}>Open consultation</Link>
+                <Link to={orgPath(`/doctor/consultations/${patient.latestOrderId}`)}>Open consultation</Link>
               </Button>
             </div>
           </CardContent>

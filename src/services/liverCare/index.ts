@@ -1,6 +1,6 @@
 export { packageService } from './PackageService';
 export { enquiryService } from './EnquiryService';
-export { liverCareOrderService } from './OrderService';
+export { liverCareOrderService, type AssignableTechnician } from './OrderService';
 export { patientPortalService } from './PatientPortalService';
 export { technicianOrderService } from './TechnicianOrderService';
 export { partnerLabService } from './PartnerLabService';
@@ -12,5 +12,6 @@ export { doctorConsultationService } from './DoctorConsultationService';
 export { consultationOpsService } from './ConsultationOpsService';
 export { prescriptionOrderService } from './PrescriptionOrderService';
 export { adminDashboardService } from './AdminDashboardService';
+export { notificationLogService } from './NotificationLogService';
+export { slotService, type ScanTimeSlotOption } from './SlotService';
 export * from './orderWorkflow';
-export { MOCK_PACKAGES, MOCK_ENQUIRIES, MOCK_LIVER_ORDERS } from './liverCare.mock';

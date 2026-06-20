@@ -1,4 +1,8 @@
+import type { LiverCareOrder } from '@/types/serviceOrder';
+
 export type FibrosisScanSource = 'manual' | 'device' | 'upload';
+
+export type ScanReportDocumentType = 'scanner_pdf' | 'report_photo' | 'letter';
 
 export type TechnicianVisitStep =
   | 'assigned'
@@ -33,6 +37,7 @@ export interface FibrosisScanRecord {
   remarks?: string | null;
   scanFileId?: string | null;
   scanFileUrl?: string | null;
+  scanReportDocumentType?: ScanReportDocumentType | null;
   source: FibrosisScanSource;
   locked: boolean;
   createdAt: string;
@@ -53,6 +58,21 @@ export interface TechnicianOrderVisit {
   visitStartedAt?: string | null;
   reachedAt?: string | null;
   completedAt?: string | null;
+  /** OTP sent to patient to confirm visit / scan completion */
+  visitCompletionOtpSentAt?: string | null;
+  visitCompletionOtpVerified?: boolean;
+  visitCompletionOtpVerifiedAt?: string | null;
+  patientIntakeOtpSentAt?: string | null;
+  retryAfterSeconds?: number;
+  demoOtp?: string;
+}
+
+export interface TechnicianOrderDetail extends LiverCareOrder {
+  patientEmail?: string | null;
+  address?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  visitStep?: TechnicianVisitStep;
 }
 
 export type FibrosisScanInput = Omit<

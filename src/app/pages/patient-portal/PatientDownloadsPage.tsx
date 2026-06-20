@@ -27,16 +27,11 @@ export function PatientDownloadsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Download center</h1>
-          <p className="text-muted-foreground">
-            Invoices, published reports, and prescriptions — only available assets are shown.
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link to="/patient">Back</Link>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Download center</h1>
+        <p className="text-muted-foreground">
+          Invoices, published reports, and prescriptions — only available assets are shown.
+        </p>
       </div>
 
       {loading ? (

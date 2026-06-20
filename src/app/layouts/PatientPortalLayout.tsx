@@ -1,19 +1,11 @@
 import { useEffect } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { PatientPortalShell } from '@/app/layouts/patient-portal/PatientPortalShell';
 import { usePatientPortalStore } from '@/store';
-import { cn } from '@/utils';
-
-const NAV = [
-  { to: '/patient', label: 'Dashboard', end: true },
-  { to: '/patient/profile', label: 'Profile' },
-  { to: '/patient/notifications', label: 'Notifications' },
-  { to: '/patient/downloads', label: 'Downloads' },
-];
 
 export function PatientPortalLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const session = usePatientPortalStore((s) => s.session);
   const hydrated = usePatientPortalStore((s) => s.hydrated);
   const hydrate = usePatientPortalStore((s) => s.hydrate);
@@ -25,7 +17,7 @@ export function PatientPortalLayout() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+      <div className="flex min-h-[100dvh] items-center justify-center text-sm text-muted-foreground">
         Loading…
       </div>
     );
@@ -36,42 +28,22 @@ export function PatientPortalLayout() {
     return null;
   }
 
+  if (session.needsOnboarding && !location.pathname.startsWith('/patient/onboarding')) {
+    navigate('/patient/onboarding', { replace: true });
+    return null;
+  }
+
+  const handleLogout = () => {
+    logout();
+    navigate('/patient/login');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link to="/patient" className="text-lg font-bold text-livotale-pink">
-            Livotale Patient
-          </Link>
-          <nav className="flex flex-wrap gap-1 text-sm">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-md px-3 py-1.5 transition-colors',
-                    isActive ? 'bg-livotale-pink/10 font-medium text-livotale-pink' : 'text-muted-foreground hover:text-foreground',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3 text-sm">
-            <NotificationBell inboxPath="/patient/notifications" patientPhone={session.phone} />
-            <span className="text-muted-foreground">{session.patientName}</span>
-            <Button size="sm" variant="outline" onClick={() => { logout(); navigate('/patient/login'); }}>
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Outlet />
-      </main>
-    </div>
+    <PatientPortalShell
+      patientName={session.patientName}
+      patientPhone={session.phone}
+      needsOnboarding={session.needsOnboarding ?? false}
+      onLogout={handleLogout}
+    />
   );
 }

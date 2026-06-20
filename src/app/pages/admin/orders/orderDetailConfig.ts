@@ -10,15 +10,6 @@ export const ORDER_CREATED_BY_PRESETS = [
   { value: 'admin', label: 'Admin' },
 ];
 
-export const ORDER_ASSIGNED_TO_PRESETS = [
-  { value: '', label: 'All assignees' },
-  { value: 'unassigned', label: 'Unassigned' },
-  { value: 'tech-1', label: 'Demo Technician' },
-  { value: 'doc-1', label: 'Dr. Meera Iyer' },
-  { value: 'lab-1', label: 'Metro Diagnostics' },
-  { value: 'lab-2', label: 'LifeCare Pathology' },
-];
-
 const ORDER_STATUS_FILTER_KEYS: OrderStatus[] = [
   'created',
   'payment_pending',
@@ -43,6 +34,7 @@ export const ORDER_STATUS_PRESETS = [
 
 export const ORDER_PAYMENT_PRESETS = [
   { value: '', label: 'All payments' },
+  { value: 'unpaid', label: 'Unpaid (not success)' },
   { value: 'pending', label: 'Pending' },
   { value: 'link_sent', label: 'Link sent' },
   { value: 'success', label: 'Paid' },

@@ -4,6 +4,7 @@ export interface JwtPayload {
   sub: string;
   username?: string;
   roles?: ApiRoleCode[];
+  activeRole?: ApiRoleCode;
   exp: number;
   iat: number;
   iss?: string;

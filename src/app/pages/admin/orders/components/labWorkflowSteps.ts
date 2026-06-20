@@ -4,12 +4,13 @@ import type { SampleDispatch } from '@/types/sampleDispatch';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 
 export const LAB_WORKFLOW_STEP_LABELS = [
-  'Assign lab partner',
-  'Collect blood sample',
-  'Submit blood sample to lab',
-  'Lab receives sample & testing',
-  'Awaiting report (email)',
-  'Upload lab PDF',
+  'Assign lab partner & portal order ID',
+  'Pathology visit schedule confirmed',
+  'Collector visited (from lab portal)',
+  'Sample collected (from lab portal)',
+  'Lab processing at partner',
+  'Awaiting report on lab portal',
+  'Upload lab PDF to Livotale',
   'AI extraction review',
   'Livotale letterhead PDF',
 ] as const;
@@ -65,9 +66,14 @@ export function getLabWorkflowSteps(input: {
   const { order, dispatch, report, aiJob } = input;
 
   const completed = [
-    Boolean(order.partnerLabId),
+    Boolean(
+      order.partnerLabId &&
+        order.pathologyLabOrderRef &&
+        order.pathologyExternalAppointmentId,
+    ),
+    Boolean(order.pathologyScheduledAt),
+    order.pathologyVisitOutcome === 'visited',
     dispatchAtLeast(dispatch?.status, 'sample_collected'),
-    dispatchAtLeast(dispatch?.status, 'dispatched'),
     dispatchAtLeast(dispatch?.status, 'received_at_lab'),
     dispatchAtLeast(dispatch?.status, 'awaiting_report') || Boolean(report),
     Boolean(report),

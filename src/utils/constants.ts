@@ -16,7 +16,7 @@ export const LIVER_FIBROSIS_SCAN_LABEL = 'Liver Fibrosis Scan';
 export const LIVER_FIBROSIS_SCAN_ROUTE = '/liver-fibrosis-scan';
 
 export const APP_TAGLINE =
-  'Tech-enabled liver care ecosystem — Liver Fibrosis Scan, AI treatment plans, and home delivery.';
+  'Non-invasive Liver Fibrosis Scan at your doorstep — hospital-grade FibroScan, interpreted by a specialist.';
 
 export const DEFAULT_PAGE_SIZE = 10;
 

@@ -4,15 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { isPatientIntakeValid, PatientIntakeForm } from '@/app/pages/shared/components/PatientIntakeForm';
 import type { EnquiryFollowUpDraft } from '@/store/enquiries';
 import type { Enquiry } from '@/types/enquiry';
 import type { LiverCarePackage } from '@/types/package';
+import type { ScanPatientIntakeInput } from '@/types/scanPatientIntake';
+import { orgPath } from '@/app/config/orgRoutes';
 
 interface EnquiryCreateOrderPanelProps {
   enquiry: Enquiry;
   packages: LiverCarePackage[];
   followUp: EnquiryFollowUpDraft;
+  orderIntake: ScanPatientIntakeInput;
   onChange: (patch: Partial<EnquiryFollowUpDraft>) => void;
+  onIntakeChange: (patch: Partial<ScanPatientIntakeInput>) => void;
   onConvert: () => void;
   converting?: boolean;
 }
@@ -21,19 +26,23 @@ export function EnquiryCreateOrderPanel({
   enquiry,
   packages,
   followUp,
+  orderIntake,
   onChange,
+  onIntakeChange,
   onConvert,
   converting = false,
 }: EnquiryCreateOrderPanelProps) {
   const isConverted = enquiry.status === 'converted';
   const reusesPatient = Boolean(enquiry.patientId);
+  const intakeValid = isPatientIntakeValid(orderIntake);
 
   return (
     <Card className="max-w-3xl">
       <CardHeader>
         <CardTitle className="text-base">Create order</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Book a liver care package order for this lead. You will be taken to the order detail after creation.
+          Book a liver care package for this lead. Enter patient details now — the field technician will see them
+          after payment, when the home visit is scheduled.
         </p>
         {isConverted && (
           <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -45,18 +54,19 @@ export function EnquiryCreateOrderPanel({
             )}
             {enquiry.orderId && (
               <Button size="sm" variant="outline" asChild>
-                <Link to={`/admin/orders/${enquiry.orderId}`}>Open previous order</Link>
+                <Link to={orgPath(`/admin/orders/${enquiry.orderId}`)}>Open previous order</Link>
               </Button>
             )}
           </div>
         )}
         {!isConverted && (
           <p className="text-xs text-muted-foreground">
-            First order from this enquiry will create a new patient record from the lead details.
+            After payment, operations or the patient can schedule the fibrosis scan home visit from the order detail
+            page.
           </p>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="enq-pkg">Package</Label>
           <select
@@ -71,6 +81,21 @@ export function EnquiryCreateOrderPanel({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="space-y-3 rounded-md border bg-muted/20 p-4">
+          <div>
+            <p className="text-sm font-medium">Patient details</p>
+            <p className="text-xs text-muted-foreground">
+              Required at order creation. Weight, height, and comorbidities are optional but help the technician
+              prepare for the visit.
+            </p>
+          </div>
+          <PatientIntakeForm
+            idPrefix="create-order"
+            value={orderIntake}
+            onChange={(next) => onIntakeChange(next)}
+          />
         </div>
 
         <div className="space-y-3 rounded-md border bg-muted/20 p-3">
@@ -97,7 +122,10 @@ export function EnquiryCreateOrderPanel({
           </div>
         </div>
 
-        <Button onClick={onConvert} disabled={converting || !followUp.preferredPackageId}>
+        <Button
+          onClick={onConvert}
+          disabled={converting || !followUp.preferredPackageId || !intakeValid}
+        >
           {converting ? 'Creating order…' : 'Create order'}
         </Button>
       </CardContent>

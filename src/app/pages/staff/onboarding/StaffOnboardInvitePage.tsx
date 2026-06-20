@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { orgPath, ORG_LOGIN_PATH } from '@/app/config/orgRoutes';
 import { AuthLayout } from '@/app/pages/auth/components/AuthLayout';
 import { STAFF_ROLE_CONFIGS } from '@/app/pages/admin/staff/staffHubConfig';
 import { Button } from '@/components/ui/button';
@@ -34,10 +35,14 @@ export function StaffOnboardInvitePage() {
       } catch {
         // demo attach may noop
       }
-      navigate(`/staff/onboarding?invite=${token}`, { replace: true });
+      navigate(orgPath(`/staff/onboarding?invite=${token}`), { replace: true });
       return;
     }
-    navigate(`/staff/register?invite=${token}`, { replace: true });
+    navigate(`${orgPath('/staff/register')}?invite=${token}`, { replace: true });
+  };
+
+  const handleRoleSelected = async () => {
+    await continueFlow();
   };
 
   const roleLabel = invite
@@ -48,6 +53,7 @@ export function StaffOnboardInvitePage() {
     <AuthLayout
       title="Staff onboarding"
       subtitle={invite ? `${invite.fullName}, complete your ${roleLabel} profile to get started.` : 'Loading invite…'}
+      onRoleSelected={handleRoleSelected}
     >
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
       {invite && (
@@ -63,7 +69,7 @@ export function StaffOnboardInvitePage() {
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             Already have an account?{' '}
-            <Link to={`/login?next=/staff/onboard/${token}`} className="text-primary hover:underline">
+            <Link to={`${ORG_LOGIN_PATH}?next=${orgPath(`/staff/onboard/${token}`)}`} className="text-primary hover:underline">
               Sign in
             </Link>
           </p>

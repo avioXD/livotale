@@ -6,18 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { LiverCarePrescriptionPreview } from '@/app/pages/doctor/consultations/components/LiverCarePrescriptionPreview';
-import { adminAppointmentsService } from '@/services';
+import { DOCTOR_LANGUAGES } from '@/app/config/doctorLanguages';
 import { liverCareOrderService, prescriptionOrderService } from '@/services/liverCare';
-import type { DoctorAvailabilityCalendar, DoctorOption, TimeSlotOption } from '@/types';
+import type { AssignableDoctor } from '@/services/liverCare/OrderService';
+import type { ConsultTimeSlotOption } from '@/services/liverCare/SlotService';
+import {
+  canOpsConfirmConsultSchedule,
+  defaultEditableConsultDate,
+  formatConsultVisitSummary,
+  isConsultReportReady,
+} from '@/services/liverCare/consultSchedule';
+import type { TimeSlotOption } from '@/types';
 import type { LiverCarePrescription } from '@/types/consultation';
 import type { LiverCareOrder } from '@/types/serviceOrder';
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 function formatDateTime(iso?: string | null): string {
   if (!iso) return '—';
@@ -30,51 +39,13 @@ function formatDateTime(iso?: string | null): string {
   });
 }
 
-interface AvailabilityCalendarProps {
-  calendar: DoctorAvailabilityCalendar | null;
-  selectedDate: string;
-  onSelectDate: (date: string) => void;
-  isLoading?: boolean;
-}
-
-function AvailabilityCalendar({ calendar, selectedDate, onSelectDate, isLoading }: AvailabilityCalendarProps) {
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading availability…</p>;
-  }
-  if (!calendar?.days.length) {
-    return <p className="text-sm text-muted-foreground">No availability in this range.</p>;
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {calendar.days.map((day) => {
-        const selected = selectedDate === day.date;
-        const closed = day.total_slots === 0;
-        return (
-          <button
-            key={day.date}
-            type="button"
-            disabled={closed}
-            onClick={() => onSelectDate(day.date)}
-            className={`rounded-lg border p-3 text-left text-sm transition-colors ${
-              selected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
-            } ${closed ? 'cursor-not-allowed opacity-50' : ''}`}
-          >
-            <p className="font-medium">
-              {new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              {closed ? 'Closed' : `${day.available_slots} / ${day.total_slots} open`}
-            </p>
-          </button>
-        );
-      })}
-    </div>
-  );
+function toTimeSlotOptions(slots: ConsultTimeSlotOption[]): TimeSlotOption[] {
+  return slots.map((s) => ({
+    code: s.code,
+    label: s.label,
+    available: s.available,
+    scheduledAt: s.scheduledAt ?? undefined,
+  }));
 }
 
 interface OrderConsultationSectionProps {
@@ -84,61 +55,29 @@ interface OrderConsultationSectionProps {
 }
 
 export function OrderConsultationSection({ order, onUpdated, readOnly = false }: OrderConsultationSectionProps) {
-  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
-  const [selectedDoctorId, setSelectedDoctorId] = useState(order.doctorId ?? '');
-  const [calendar, setCalendar] = useState<DoctorAvailabilityCalendar | null>(null);
-  const [scheduleCalendar, setScheduleCalendar] = useState<DoctorAvailabilityCalendar | null>(null);
-  const [selectedDate, setSelectedDate] = useState(tomorrowIso());
-  const [scheduleDate, setScheduleDate] = useState(tomorrowIso());
-  const [slots, setSlots] = useState<TimeSlotOption[]>([]);
-  const [slotId, setSlotId] = useState('');
+  const [scheduleDate, setScheduleDate] = useState(defaultEditableConsultDate(order));
+  const [slotCode, setSlotCode] = useState('');
   const [slotLabel, setSlotLabel] = useState('');
-  const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [loadingCalendar, setLoadingCalendar] = useState(false);
-  const [loadingScheduleCalendar, setLoadingScheduleCalendar] = useState(false);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [assigning, setAssigning] = useState(false);
+  const [scheduledAtIso, setScheduledAtIso] = useState<string | null>(null);
+  const [apiSlots, setApiSlots] = useState<ConsultTimeSlotOption[]>([]);
+  const [doctors, setDoctors] = useState<AssignableDoctor[]>([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [languageFilter, setLanguageFilter] = useState(order.patientPreferredLanguage ?? '');
   const [scheduling, setScheduling] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prescription, setPrescription] = useState<LiverCarePrescription | null>(null);
   const [loadingPrescription, setLoadingPrescription] = useState(false);
 
-  const selectedDoctor = useMemo(
-    () => doctors.find((d) => d.id === selectedDoctorId) ?? null,
-    [doctors, selectedDoctorId],
-  );
+  const canEdit = canOpsConfirmConsultSchedule(order, readOnly);
+  const letterheadReady = isConsultReportReady(order);
 
-  const assignedDoctor = useMemo(
-    () => doctors.find((d) => d.id === order.doctorId) ?? null,
-    [doctors, order.doctorId],
-  );
-
-  const canAssign =
-    !readOnly && order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed';
-  const canSchedule =
-    !readOnly &&
-    Boolean(order.doctorId) &&
-    !order.consultationScheduledAt &&
-    ['doctor_assigned', 'consultation_pending'].includes(order.orderStatus);
-
-  const letterheadReady = [
-    'final_report_generated',
-    'doctor_assignment_pending',
-    'doctor_assigned',
-    'consultation_pending',
-    'prescription_pending',
-    'prescription_generated',
-    'completed',
-  ].includes(order.orderStatus);
+  const slots = toTimeSlotOptions(apiSlots);
 
   useEffect(() => {
-    setLoadingDoctors(true);
-    void adminAppointmentsService
-      .listDoctors()
-      .then(setDoctors)
-      .catch(() => setDoctors([]))
-      .finally(() => setLoadingDoctors(false));
-  }, []);
+    setLanguageFilter(order.patientPreferredLanguage ?? '');
+  }, [order.patientPreferredLanguage]);
 
   useEffect(() => {
     setLoadingPrescription(true);
@@ -150,80 +89,61 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
   }, [order.id, order.orderStatus, order.updatedAt]);
 
   useEffect(() => {
-    setSelectedDoctorId(order.doctorId ?? '');
-  }, [order.doctorId]);
-
-  useEffect(() => {
-    if (!selectedDoctorId || readOnly) {
-      setCalendar(null);
-      return;
-    }
-    const fromDate = tomorrowIso();
-    const toDate = addDays(fromDate, 13);
-    setLoadingCalendar(true);
-    void adminAppointmentsService
-      .getDoctorAvailability(selectedDoctorId, { fromDate, toDate })
-      .then(setCalendar)
-      .catch(() => setCalendar(null))
-      .finally(() => setLoadingCalendar(false));
-  }, [selectedDoctorId, readOnly]);
-
-  useEffect(() => {
-    if (!order.doctorId || readOnly) {
-      setScheduleCalendar(null);
-      return;
-    }
-    const fromDate = tomorrowIso();
-    const toDate = addDays(fromDate, 13);
-    setLoadingScheduleCalendar(true);
-    void adminAppointmentsService
-      .getDoctorAvailability(order.doctorId, { fromDate, toDate })
-      .then(setScheduleCalendar)
-      .catch(() => setScheduleCalendar(null))
-      .finally(() => setLoadingScheduleCalendar(false));
-  }, [order.doctorId, readOnly]);
-
-  useEffect(() => {
-    if (!order.doctorId || !scheduleDate || !canSchedule) {
-      setSlots([]);
+    if (!canEdit || !scheduleDate) {
+      setApiSlots([]);
       return;
     }
     setLoadingSlots(true);
-    void adminAppointmentsService
-      .listDoctorSlots(order.doctorId, scheduleDate, 'tele')
-      .then(setSlots)
-      .catch(() => setSlots([]))
+    void liverCareOrderService
+      .getConsultSlots(order.id, scheduleDate)
+      .then(setApiSlots)
+      .catch(() => setApiSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [order.doctorId, scheduleDate, canSchedule]);
+  }, [canEdit, scheduleDate, order.id]);
 
-  const handleAssign = async () => {
-    const doctor = doctors.find((d) => d.id === selectedDoctorId);
-    if (!doctor) {
-      setError('Select a doctor to assign.');
+  useEffect(() => {
+    if (!scheduledAtIso || !canEdit) {
+      setDoctors([]);
+      setSelectedDoctorId('');
       return;
     }
-    setAssigning(true);
-    setError(null);
-    try {
-      await liverCareOrderService.assignDoctor(order.id, doctor.id, doctor.fullName);
-      onUpdated();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Doctor assignment failed');
-    } finally {
-      setAssigning(false);
-    }
-  };
+    setLoadingDoctors(true);
+    void liverCareOrderService
+      .listDoctorsForConsultSlot(scheduledAtIso, {
+        language: languageFilter || undefined,
+        orderId: order.id,
+      })
+      .then((rows) => {
+        setDoctors(rows);
+        setSelectedDoctorId((prev) => (rows.some((d) => d.id === prev) ? prev : rows[0]?.id ?? ''));
+      })
+      .catch(() => {
+        setDoctors([]);
+        setSelectedDoctorId('');
+      })
+      .finally(() => setLoadingDoctors(false));
+  }, [scheduledAtIso, languageFilter, canEdit, order.id]);
 
-  const handleSchedule = async () => {
-    const slot = slots.find((s) => s.code === slotId);
+  const handleConfirm = async () => {
+    const slot = slots.find((s) => s.code === slotCode);
+    const doctor = doctors.find((d) => d.id === selectedDoctorId);
     if (!slot?.available || !slot.scheduledAt) {
       setError('Select an available consultation slot.');
+      return;
+    }
+    if (!doctor) {
+      setError('Select an available doctor for this slot.');
       return;
     }
     setScheduling(true);
     setError(null);
     try {
-      await liverCareOrderService.scheduleConsultation(order.id, slot.scheduledAt, slot.label);
+      await liverCareOrderService.confirmConsultationSchedule(order.id, {
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        scheduledAt: slot.scheduledAt,
+        timeSlot: slotLabel || slot.label,
+      });
       onUpdated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Scheduling failed');
@@ -232,119 +152,37 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
     }
   };
 
+  const filteredDoctors = useMemo(() => {
+    if (!languageFilter) return doctors;
+    return doctors.filter((d) => d.languages.some((l) => l.toLowerCase() === languageFilter.toLowerCase()));
+  }, [doctors, languageFilter]);
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Doctor assignment</CardTitle>
+          <CardTitle className="text-base">Teleconsult schedule</CardTitle>
           <CardDescription>
-            Operations assigns the consulting hepatologist. Each doctor&apos;s teleconsult availability is shown for
-            the next two weeks before you confirm.
+            Pick a video consultation slot, then assign an available doctor in one step. Patient preferences appear
+            below when submitted.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 text-sm">
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           {!letterheadReady && (
             <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-800">
-              Letterhead report must be ready before doctor assignment unlocks.
+              Letterhead report must be ready before consultation scheduling unlocks.
             </p>
           )}
 
-          {order.doctorName ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Currently assigned:</span>
-              <Badge variant="secondary">{order.doctorName}</Badge>
-              {assignedDoctor?.specialization && (
-                <span className="text-xs text-muted-foreground">{assignedDoctor.specialization}</span>
-              )}
+          {order.consultationPatientPreferredAt && !order.consultationScheduledAt && (
+            <div className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
+              <p className="font-medium">Patient preferred slot</p>
+              <p className="mt-1">{formatConsultVisitSummary(order)}</p>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No doctor assigned yet.</p>
           )}
 
-          {canAssign && letterheadReady && (
-            <>
-              {loadingDoctors && <p className="text-sm text-muted-foreground">Loading doctors…</p>}
-              <div className="space-y-2">
-                {doctors.map((doctor) => {
-                  const selected = selectedDoctorId === doctor.id;
-                  return (
-                    <button
-                      key={doctor.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDoctorId(doctor.id);
-                        setSlotId('');
-                      }}
-                      className={`w-full rounded-lg border p-4 text-left transition-colors ${
-                        selected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
-                      }`}
-                    >
-                      <p className="font-medium">{doctor.fullName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {doctor.specialization ?? 'General'}
-                        {doctor.clinicName ? ` · ${doctor.clinicName}` : ''}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedDoctor && (
-                <div className="space-y-3 rounded-md border bg-muted/20 p-4">
-                  <div>
-                    <p className="text-sm font-medium">Availability — {selectedDoctor.fullName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      30-minute teleconsult slots · tap a day to preview open times
-                    </p>
-                  </div>
-                  <AvailabilityCalendar
-                    calendar={calendar}
-                    selectedDate={selectedDate}
-                    onSelectDate={(date) => {
-                      setSelectedDate(date);
-                      setSlotId('');
-                    }}
-                    isLoading={loadingCalendar}
-                  />
-                  {calendar?.weeklyRules.length ? (
-                    <p className="text-xs text-muted-foreground">
-                      Weekly hours:{' '}
-                      {calendar.weeklyRules
-                        .map(
-                          (r) =>
-                            `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][r.dayOfWeek]} ${r.startTime}–${r.endTime}`,
-                        )
-                        .join(' · ')}
-                    </p>
-                  ) : null}
-                </div>
-              )}
-
-              <Button
-                onClick={() => void handleAssign()}
-                disabled={assigning || !selectedDoctorId || selectedDoctorId === order.doctorId}
-              >
-                {assigning
-                  ? 'Assigning…'
-                  : order.doctorId
-                    ? 'Reassign doctor'
-                    : 'Assign doctor'}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Consultation slot</CardTitle>
-          <CardDescription>
-            Video consultation included in this package. Pick an open slot from the assigned doctor&apos;s calendar.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <span className="text-muted-foreground">Assigned doctor</span>
@@ -358,25 +196,13 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
 
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{order.orderStatus.replace(/_/g, ' ')}</Badge>
-            {order.consultationScheduledAt && (
-              <Badge variant="secondary">Video consult booked</Badge>
-            )}
+            {order.consultationScheduledAt && <Badge variant="secondary">Video consult booked</Badge>}
           </div>
 
-          {canSchedule && order.doctorId && (
+          {canEdit && letterheadReady && (
             <div className="space-y-4 rounded-md border p-4">
-              <AvailabilityCalendar
-                calendar={scheduleCalendar}
-                selectedDate={scheduleDate}
-                onSelectDate={(date) => {
-                  setScheduleDate(date);
-                  setSlotId('');
-                }}
-                isLoading={loadingScheduleCalendar}
-              />
-
               <div className="space-y-2">
-                <Label htmlFor="consult-slot-date">Or pick a date</Label>
+                <Label htmlFor="consult-slot-date">Consult date</Label>
                 <Input
                   id="consult-slot-date"
                   type="date"
@@ -384,41 +210,94 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
                   value={scheduleDate}
                   onChange={(e) => {
                     setScheduleDate(e.target.value);
-                    setSlotId('');
+                    setSlotCode('');
+                    setScheduledAtIso(null);
                   }}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Available times (teleconsult)</Label>
+                <Label>Available teleconsult slots</Label>
                 <TimeSlotGrid
                   slots={slots}
-                  selectedCode={slotId}
+                  selectedCode={slotCode}
                   isLoading={loadingSlots}
                   onSelect={(code, label) => {
-                    setSlotId(code);
+                    setSlotCode(code);
                     setSlotLabel(label);
+                    const slot = slots.find((s) => s.code === code);
+                    setScheduledAtIso(slot?.scheduledAt ?? null);
                   }}
                 />
               </div>
 
+              {scheduledAtIso && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="consult-doctor-language">Filter doctors by language</Label>
+                    <Select
+                      value={languageFilter || 'all'}
+                      onValueChange={(value) => setLanguageFilter(value === 'all' ? '' : value)}
+                    >
+                      <SelectTrigger id="consult-doctor-language">
+                        <SelectValue placeholder="All languages" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All languages</SelectItem>
+                        {DOCTOR_LANGUAGES.map((language) => (
+                          <SelectItem key={language} value={language}>
+                            {language}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {loadingDoctors && <p className="text-sm text-muted-foreground">Loading available doctors…</p>}
+
+                  {!loadingDoctors && filteredDoctors.length === 0 && (
+                    <p className="text-sm text-amber-700">No doctors are free for this slot. Pick another time.</p>
+                  )}
+
+                  <div className="space-y-2">
+                    {filteredDoctors.map((doctor) => {
+                      const selected = selectedDoctorId === doctor.id;
+                      return (
+                        <button
+                          key={doctor.id}
+                          type="button"
+                          onClick={() => setSelectedDoctorId(doctor.id)}
+                          className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                            selected ? 'border-livotale-pink bg-livotale-pink/5' : 'hover:bg-muted/40'
+                          }`}
+                        >
+                          <p className="font-medium">{doctor.name}</p>
+                          {doctor.specialty && (
+                            <p className="text-xs text-muted-foreground">{doctor.specialty}</p>
+                          )}
+                          {doctor.languages.length > 0 && (
+                            <p className="mt-1 text-xs text-muted-foreground">{doctor.languages.join(', ')}</p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
               <Button
-                onClick={() => void handleSchedule()}
-                disabled={scheduling || !slotId || !slots.find((s) => s.code === slotId)?.available}
+                onClick={() => void handleConfirm()}
+                disabled={scheduling || !slotCode || !selectedDoctorId}
               >
-                {scheduling ? 'Scheduling…' : `Schedule consultation${slotLabel ? ` · ${slotLabel}` : ''}`}
+                {scheduling ? 'Confirming…' : `Confirm consult${slotLabel ? ` · ${slotLabel}` : ''}`}
               </Button>
             </div>
           )}
 
-          {!order.doctorId && (
-            <p className="text-xs text-muted-foreground">Assign a doctor above to unlock slot scheduling.</p>
-          )}
-
           {order.consultationScheduledAt && (
             <p className="text-xs text-muted-foreground">
-              Patient and doctor receive the video link after scheduling. Prescription is completed on the doctor portal
-              after the consult.
+              Patient and doctor receive the video link after scheduling. Use legacy reassign endpoints if you need to
+              change doctor or time after confirm.
             </p>
           )}
         </CardContent>
@@ -435,8 +314,7 @@ export function OrderConsultationSection({ order, onUpdated, readOnly = false }:
             )}
           </div>
           <CardDescription>
-            Read-only view of the doctor&apos;s prescription after the consultation. Doctors author and publish Rx on
-            the doctor portal.
+            Read-only view of the doctor&apos;s prescription after the consultation.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

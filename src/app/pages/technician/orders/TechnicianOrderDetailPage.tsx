@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiAlertTriangle, FiArrowLeft } from 'react-icons/fi';
+import { useOrderRealtime } from '@/hooks/useRealtimeNotifications';
 import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { liverCareOrderService, packageService, pathologyService, technicianOrderService } from '@/services/liverCare';
-import { patientsService } from '@/services/patients';
+import { packageService, technicianOrderService } from '@/services/liverCare';
 import { LiverFibrosisScanCapturePanel } from '@/app/pages/technician/orders/components/LiverFibrosisScanCapturePanel';
-import { TechnicianBloodCollectionPanel } from '@/app/pages/technician/orders/components/TechnicianBloodCollectionPanel';
 import { TechnicianOrderIdBanner } from '@/app/pages/technician/orders/components/TechnicianOrderIdBanner';
 import { TechnicianPatientInfoCard } from '@/app/pages/technician/orders/components/TechnicianPatientInfoCard';
+import { TechnicianPatientIntakePanel } from '@/app/pages/technician/orders/components/TechnicianPatientIntakePanel';
+import { TechnicianFibroScanIntakePanel } from '@/app/pages/technician/orders/components/TechnicianFibroScanIntakePanel';
 import { TechnicianScanResultsPanel } from '@/app/pages/technician/orders/components/TechnicianScanResultsPanel';
 import { TechnicianVisitProgressCard } from '@/app/pages/technician/orders/components/TechnicianVisitProgressCard';
-import type { BloodCollectionTiming } from '@/types/package';
-import type { FibrosisScanRecord, TechnicianOrderVisit, TechnicianVisitStep } from '@/types/fibrosisScan';
-import type { LiverCareOrder } from '@/types/serviceOrder';
+import { TechnicianVisitCompletionPanel } from '@/app/pages/technician/orders/components/TechnicianVisitCompletionPanel';
+import type { FibrosisScanRecord, TechnicianOrderDetail, TechnicianOrderVisit, TechnicianVisitStep } from '@/types/fibrosisScan';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
-import type { SampleDispatch } from '@/types/sampleDispatch';
+import { isScanCaptureComplete } from '@/app/pages/shared/components/fibroScanKpiConfig';
+import type { ScanPatientIntake } from '@/types/scanPatientIntake';
+import { orgPath } from '@/app/config/orgRoutes';
 
-const LIST_PATH = '/technician/orders';
+const LIST_PATH = orgPath('/technician/orders');
 
 const STEP_LABELS: Record<TechnicianVisitStep, string> = {
   assigned: 'Assigned',
@@ -34,14 +37,12 @@ const STEP_LABELS: Record<TechnicianVisitStep, string> = {
 export function TechnicianOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [order, setOrder] = useState<LiverCareOrder | null>(null);
+  const [order, setOrder] = useState<TechnicianOrderDetail | null>(null);
   const [visit, setVisit] = useState<TechnicianOrderVisit | null>(null);
   const [scan, setScan] = useState<FibrosisScanRecord | null>(null);
-  const [dispatch, setDispatch] = useState<SampleDispatch | null>(null);
+  const [intake, setIntake] = useState<ScanPatientIntake | null>(null);
   const [patientEmail, setPatientEmail] = useState<string | null>(null);
-  const [pathologyRequired, setPathologyRequired] = useState(false);
   const [fibrosisScanIncluded, setFibrosisScanIncluded] = useState(true);
-  const [bloodCollectionTiming, setBloodCollectionTiming] = useState<BloodCollectionTiming | null>(null);
   const [showCapture, setShowCapture] = useState(false);
   const [unableReason, setUnableReason] = useState('');
   const [acting, setActing] = useState(false);
@@ -49,44 +50,32 @@ export function TechnicianOrderDetailPage() {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [o, v, s] = await Promise.all([
-      liverCareOrderService.getById(id),
+    const [o, v, s, intakeRow] = await Promise.all([
+      technicianOrderService.getOrderDetail(id),
       technicianOrderService.getVisit(id),
       technicianOrderService.getScan(id),
+      technicianOrderService.getPatientIntake(id),
     ]);
     setOrder(o);
     setVisit(v);
     setScan(s);
+    setIntake(intakeRow);
     setShowCapture(false);
+    setPatientEmail(o?.patientEmail ?? v?.patientEmail ?? null);
 
-    if (o) {
-      const pkgs = await packageService.listAdmin();
-      const pkg = pkgs.find((p) => p.id === o.packageId);
-      const pathIncluded = pkg?.pathologyIncluded ?? false;
-      setPathologyRequired(pathIncluded);
+    if (o?.packageCode) {
+      const pkg = await packageService.getByCode(o.packageCode);
       setFibrosisScanIncluded(pkg?.fibrosisScanIncluded ?? true);
-      setBloodCollectionTiming(pkg?.bloodCollectionTiming ?? null);
-
-      if (pathIncluded) {
-        const d = await pathologyService.getSampleDispatch(id);
-        setDispatch(d);
-      } else {
-        setDispatch(null);
-      }
-
-      try {
-        const detail = await patientsService.getById(o.patientId);
-        const email = (detail.patient as { email?: string | null }).email;
-        setPatientEmail(email ?? null);
-      } catch {
-        setPatientEmail(v?.patientEmail ?? null);
-      }
     }
   }, [id]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useOrderRealtime(id, 'technician', () => {
+    void load();
+  });
 
   const run = async (action: () => Promise<unknown>) => {
     setActing(true);
@@ -101,15 +90,20 @@ export function TechnicianOrderDetailPage() {
     }
   };
 
+  const paymentReady = order?.paymentStatus === 'success';
+
+  const patientIntakeSubmitted = Boolean(intake?.technicianVerifiedAt && intake.phoneOtpVerified);
+
+  const scanReady = useMemo(() => {
+    if (!paymentReady) return false;
+    if (!patientIntakeSubmitted) return false;
+    return Boolean(intake?.fibroscanIntakeSubmittedAt);
+  }, [paymentReady, patientIntakeSubmitted, intake]);
+
   const canCompleteScan = useMemo(() => {
-    if (!fibrosisScanIncluded) {
-      if (!pathologyRequired) return true;
-      return dispatch != null && dispatch.status !== 'pending_dispatch';
-    }
-    if (!scan) return false;
-    if (!pathologyRequired) return true;
-    return dispatch != null && dispatch.status !== 'pending_dispatch';
-  }, [scan, pathologyRequired, fibrosisScanIncluded, dispatch]);
+    if (!fibrosisScanIncluded) return true;
+    return isScanCaptureComplete(scan);
+  }, [scan, fibrosisScanIncluded]);
 
   const handleBack = () => {
     if (globalThis.history.length > 1) navigate(-1);
@@ -123,19 +117,8 @@ export function TechnicianOrderDetailPage() {
   const currentStep = visit?.visitStep ?? 'assigned';
   const visitReady = ['reached_location', 'scan_in_progress', 'scan_completed'].includes(currentStep);
   const showScanWorkflow =
-    fibrosisScanIncluded && visitReady && currentStep !== 'unable_to_complete';
-  const hasScanData = Boolean(scan);
-  const bloodBeforeScan = bloodCollectionTiming === 'before_scan';
-
-  const bloodPanel = (
-    <TechnicianBloodCollectionPanel
-      order={order}
-      pathologyRequired={pathologyRequired}
-      visitReady={visitReady}
-      bloodCollectionTiming={bloodCollectionTiming}
-      onUpdated={load}
-    />
-  );
+    fibrosisScanIncluded && visitReady && scanReady && currentStep !== 'unable_to_complete';
+  const hasScanData = isScanCaptureComplete(scan);
 
   const scanPanel =
     showScanWorkflow &&
@@ -156,8 +139,12 @@ export function TechnicianOrderDetailPage() {
       <LiverFibrosisScanCapturePanel
         orderId={id!}
         orderNumber={order.orderNumber}
+        devicePatientCode={intake?.devicePatientCode ?? undefined}
         onUpdated={load}
-        onSaved={() => setShowCapture(false)}
+        onSaved={() => {
+          setShowCapture(false);
+          void load();
+        }}
       />
     ));
 
@@ -173,7 +160,11 @@ export function TechnicianOrderDetailPage() {
             description={`${order.patientName} · ${order.packageCode} — ${order.packageName}`}
           />
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-            <Badge variant="outline">{ORDER_STATUS_LABELS[order.orderStatus]}</Badge>
+            <StatusBadge
+              status={order.orderStatus}
+              domain="order"
+              label={ORDER_STATUS_LABELS[order.orderStatus]}
+            />
             <Badge variant="secondary">{STEP_LABELS[currentStep]}</Badge>
             <span className="text-muted-foreground">{order.patientPhone}</span>
           </div>
@@ -188,7 +179,7 @@ export function TechnicianOrderDetailPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <TechnicianOrderIdBanner order={order} packageCode={order.packageCode} />
-        <TechnicianPatientInfoCard order={order} visit={visit} patientEmail={patientEmail} />
+        <TechnicianPatientInfoCard order={order} visit={visit} patientEmail={patientEmail} intake={intake} />
       </div>
 
       <div className="space-y-4">
@@ -199,34 +190,41 @@ export function TechnicianOrderDetailPage() {
             canCompleteScan={canCompleteScan}
             onStartVisit={() => run(() => technicianOrderService.markVisitStarted(id!))}
             onMarkReached={() => run(() => technicianOrderService.markReached(id!))}
-            onCompleteScan={() => run(() => technicianOrderService.completeScan(id!))}
           />
         )}
 
-        {bloodBeforeScan ? (
-          <>
-            {bloodPanel}
-            {scanPanel}
-          </>
-        ) : (
-          <>
-            {scanPanel}
-            {bloodPanel}
-          </>
-        )}
+        <TechnicianPatientIntakePanel
+          order={order}
+          paymentReady={paymentReady}
+          visitReady={visitReady}
+          intakeOtpSent={Boolean(visit?.patientIntakeOtpSentAt)}
+          onUpdated={load}
+        />
 
-        {!fibrosisScanIncluded && visitReady && pathologyRequired && (
-          <Card>
-            <CardContent className="py-4 text-sm text-muted-foreground">
-              This package includes pathology only — complete blood sample collection above.
-            </CardContent>
-          </Card>
-        )}
+        <TechnicianFibroScanIntakePanel
+          order={order}
+          paymentReady={paymentReady}
+          visitReady={visitReady}
+          patientIntakeSubmitted={patientIntakeSubmitted}
+          onUpdated={load}
+        />
+
+        {scanPanel}
+
+        <TechnicianVisitCompletionPanel
+            order={order}
+            visit={visit}
+            currentStep={currentStep}
+            canComplete={canCompleteScan}
+            acting={acting}
+            onOtpSent={() => void load()}
+            onComplete={(otp) => run(() => technicianOrderService.completeScan(id!, otp))}
+          />
 
         {currentStep === 'scan_completed' && (
           <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30">
             <CardContent className="py-4 text-sm text-emerald-800 dark:text-emerald-200">
-              Visit completed. Operations will review scan data and generate the report.
+              Visit completed. Operations will verify patient intake and review scan data for the report.
             </CardContent>
           </Card>
         )}

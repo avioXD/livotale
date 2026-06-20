@@ -1,6 +1,6 @@
 import type { LiverCarePrescription } from '@/types/consultation';
 import type { LiverCareOrder } from '@/types/serviceOrder';
-import { DEFAULT_LETTERHEAD } from '@/services/liverCare/finalReports.mock';
+import { DEFAULT_LETTERHEAD } from '@/constants/letterhead';
 
 interface LiverCarePrescriptionPreviewProps {
   order: LiverCareOrder;

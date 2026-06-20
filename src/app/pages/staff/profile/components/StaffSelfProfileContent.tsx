@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StaffEmployeeProfileView } from '@/app/pages/staff/profile/components/StaffEmployeeProfileView';
 import { staffProfileConfig } from '@/app/pages/staff/profile/staffProfileConfig';
 import { TechnicianProfileView } from '@/app/pages/technician/profile/components/TechnicianProfileView';
@@ -19,10 +19,30 @@ const ROLE_MAP: Partial<Record<AppRole, StaffRoleKey>> = {
   [AppRole.PHARMACY]: 'pharmacy',
   [AppRole.OPERATIONS]: 'operations',
   [AppRole.CITY_MANAGER]: 'operations',
-  [AppRole.SUPER_ADMIN]: 'operations',
+  [AppRole.SUPER_ADMIN]: 'super_admin',
 };
 
-export function StaffSelfProfileContent() {
+type StaffProfileSection = 'employment' | 'address' | 'legal' | 'coverage';
+
+function resolveTechnicianSection(
+  section?: StaffProfileSection,
+): 'employment' | 'address' | 'coverage' | 'legal' | undefined {
+  if (!section || section === 'legal') return section === 'legal' ? 'legal' : undefined;
+  return section;
+}
+
+function resolveStaffSection(
+  section?: StaffProfileSection,
+): 'employment' | 'address' | 'legal' | undefined {
+  if (!section || section === 'coverage') return undefined;
+  return section;
+}
+
+export function StaffSelfProfileContent({
+  section,
+}: {
+  section?: StaffProfileSection;
+} = {}) {
   const userRole = useUserRole();
   const staffRole = userRole ? ROLE_MAP[userRole] : undefined;
   const config = staffRole ? staffProfileConfig(staffRole) : null;
@@ -33,10 +53,7 @@ export function StaffSelfProfileContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const usingDemo = useMemo(() => {
-    if (staffRole === 'technician') return techProfile?.id.startsWith('demo-') ?? false;
-    return staffProfile?.documents.some((d) => d.id.startsWith('demo-')) ?? false;
-  }, [staffRole, techProfile, staffProfile]);
+  const usingDemo = false;
 
   const load = useCallback(async () => {
     if (!staffRole) return;
@@ -69,9 +86,11 @@ export function StaffSelfProfileContent() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {config.label} employment record, address, and required legal documents for onboarding.
-      </p>
+      {!section && (
+        <p className="text-sm text-muted-foreground">
+          {config.label} employment record, address, and required legal documents for onboarding.
+        </p>
+      )}
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
@@ -83,6 +102,8 @@ export function StaffSelfProfileContent() {
         <TechnicianProfileView
           profile={techProfile}
           mode="technician"
+          section={resolveTechnicianSection(section)}
+          embedded={Boolean(section)}
           isSaving={isSaving}
           usingDemo={usingDemo}
           onSaveEmployee={async (payload) => {
@@ -111,6 +132,8 @@ export function StaffSelfProfileContent() {
         <StaffEmployeeProfileView
           profile={staffProfile}
           actor="self"
+          section={resolveStaffSection(section)}
+          embedded={Boolean(section)}
           isSaving={isSaving}
           usingDemo={usingDemo}
           onSave={async (payload) => {

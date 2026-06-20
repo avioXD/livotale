@@ -88,6 +88,24 @@ export interface PrescriptionMedicine {
   instruction?: string | null;
 }
 
+export interface DoctorClinicalBundle {
+  scan: import('@/types/fibrosisScan').FibrosisScanRecord | null;
+  pathology: import('@/types/labReport').LabReportUpload | null;
+  aiExtraction: import('@/types/aiExtraction').AIExtractionJob | null;
+  finalReport: import('@/types/finalReport').FinalReport | null;
+}
+
+export interface DoctorConsultationContext {
+  order: import('@/types/serviceOrder').LiverCareOrder;
+  consultation: Consultation | null;
+  visitLogs: ConsultationVisitLog[];
+  scan: import('@/types/fibrosisScan').FibrosisScanRecord | null;
+  pathology: import('@/types/labReport').LabReportUpload | null;
+  aiExtraction: import('@/types/aiExtraction').AIExtractionJob | null;
+  finalReport: import('@/types/finalReport').FinalReport | null;
+  liverHealthReport: import('@/types/liverHealthReport').LiverHealthReport | null;
+}
+
 export interface LiverCarePrescription {
   id: string;
   orderId: string;

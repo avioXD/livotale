@@ -38,7 +38,7 @@ All external integrations use **dummy service interfaces** (`mockOrApi`) until r
 | 02 | Enquiry & patient | [02-enquiry-patient.md](./features/02-enquiry-patient.md) · [18-enquiries-crm.md](./features/18-enquiries-crm.md) | Done |
 | 03 | Orders & workflow | [03-orders-workflow.md](./features/03-orders-workflow.md) | UI done |
 | 04 | Payment (dummy) | [04-payment.md](./features/04-payment.md) | UI done |
-| 05 | Fibrosis scan & technician | [05-fibrosis-scan-technician.md](./features/05-fibrosis-scan-technician.md) | Done |
+| 05 | Fibrosis scan & technician | [05-fibrosis-scan-technician.md](./features/05-fibrosis-scan-technician.md) · [21-technician-field-portal.md](./features/21-technician-field-portal.md) | In progress |
 | 06 | Partner lab pathology | [06-partner-lab-pathology.md](./features/06-partner-lab-pathology.md) | Done |
 | 07 | AI extraction | [07-ai-extraction.md](./features/07-ai-extraction.md) | UI done |
 | 08 | Final reports | [08-final-reports.md](./features/08-final-reports.md) | UI done |
@@ -57,10 +57,12 @@ All external integrations use **dummy service interfaces** (`mockOrApi`) until r
 | Doc | Scope |
 |-----|-------|
 | [architecture.md](./platform/architecture.md) | Code alignment map, reuse vs deprecate |
+| [auth-tab-sessions.md](./platform/auth-tab-sessions.md) | Per-tab staff JWT sessions (`sessionStorage`) |
 | [mock-mode.md](./platform/mock-mode.md) | `VITE_MOCK_MODE`, `mockOrApi`, mock accounts |
 | [list-detail-pattern.md](./platform/list-detail-pattern.md) | Admin list → detail (View / Edit tabs); packages reference |
 | [state-management.md](./platform/state-management.md) | Zustand stores — packages admin/public/detail |
 | [ui-page-patterns.md](./platform/ui-page-patterns.md) | List/detail layout, back arrow, filters, pagination |
+| [external-integrations.md](./platform/external-integrations.md) | Twilio, SendGrid, AI, templates, PDF letterheads |
 
 ---
 

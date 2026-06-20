@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft, FiClock } from 'react-icons/fi';
-import { PageHeader } from '@/components/common/PageHeader';
+import { useOrderRealtime } from '@/hooks/useRealtimeNotifications';
+import { ConfirmModal, PageHeader, StatusBadge } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  liverCareOrderService,
-  packageService,
-  type OrderWorkflowEvent,
-} from '@/services/liverCare';
+import { liverCareOrderService, packageService } from '@/services/liverCare';
 import type { LiverCareOrder, OrderTimelineEvent } from '@/types/serviceOrder';
 import { ORDER_STATUS_LABELS } from '@/types/serviceOrder';
 import type { LiverCarePackage } from '@/types/package';
@@ -39,29 +36,10 @@ import {
   parseOrderStep,
   type OrderBusinessStepId,
 } from '@/app/pages/admin/orders/orderBusinessSteps';
+import { orgPath } from '@/app/config/orgRoutes';
+import type { OrderWorkflowEvent } from '@/services/liverCare';
 
-const LIST_PATH = '/admin/operations?tab=orders';
-
-const EVENT_LABELS: Record<OrderWorkflowEvent, string> = {
-  submit: 'Submit order',
-  request_payment: 'Request payment',
-  payment_completed: 'Mark payment completed',
-  assign_technician: 'Assign technician',
-  schedule_scan: 'Schedule scan',
-  start_scan: 'Start scan',
-  complete_scan: 'Complete scan',
-  assign_lab: 'Assign lab partner',
-  upload_lab_report: 'Upload lab report',
-  trigger_ai: 'Trigger AI extraction',
-  verify_ai: 'Verify AI data',
-  generate_report: 'Generate final report',
-  assign_doctor: 'Assign doctor',
-  schedule_consultation: 'Schedule consultation',
-  complete_consultation: 'Complete consultation',
-  publish_prescription: 'Publish prescription',
-  complete: 'Mark completed',
-  cancel: 'Cancel order',
-};
+const LIST_PATH = orgPath('/admin/operations?tab=orders');
 
 export function LiverCareOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,24 +49,27 @@ export function LiverCareOrderDetailPage() {
   const [order, setOrder] = useState<LiverCareOrder | null>(null);
   const [pkg, setPkg] = useState<LiverCarePackage | null>(null);
   const [timeline, setTimeline] = useState<OrderTimelineEvent[]>([]);
-  const [events, setEvents] = useState<OrderWorkflowEvent[]>([]);
+  const [workflowEvents, setWorkflowEvents] = useState<OrderWorkflowEvent[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditLogEntry[]>([]);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [acting, setActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     const o = await liverCareOrderService.getById(id);
     if (!o) return;
     setOrder(o);
     const p = await packageService.listAdmin().then((rows) => rows.find((r) => r.id === o.packageId) ?? null);
     setPkg(p);
-    const [tl, auditAll] = await Promise.all([
+    const [tl, auditAll, events] = await Promise.all([
       liverCareOrderService.getTimeline(id),
       auditLogService.list(),
+      liverCareOrderService.getWorkflowEvents(id),
     ]);
     setTimeline(tl);
+    setWorkflowEvents(events);
     setAuditEntries(
       auditAll.filter(
         (a) =>
@@ -97,12 +78,15 @@ export function LiverCareOrderDetailPage() {
           (o.enquiryId != null && a.entityId === o.enquiryId),
       ),
     );
-    setEvents(await liverCareOrderService.getWorkflowEvents(id));
-  };
+  }, [id]);
 
   useEffect(() => {
     void load();
-  }, [id]);
+  }, [load]);
+
+  useOrderRealtime(id, 'operations', () => {
+    void load();
+  });
 
   const businessSteps = useMemo(() => getBusinessStepsForPackage(pkg), [pkg]);
   const packageSummary = useMemo(() => getPackageWorkflowSummary(pkg), [pkg]);
@@ -143,31 +127,25 @@ export function LiverCareOrderDetailPage() {
     else navigate(LIST_PATH);
   };
 
-  const handleEvent = async (event: OrderWorkflowEvent) => {
-    if (!id) return;
+  const handleTransition = async (event: OrderWorkflowEvent): Promise<boolean> => {
+    if (!id) return false;
     setActing(true);
     setError(null);
     try {
-      const meta: Record<string, string> = {};
-      if (event === 'assign_technician') {
-        meta.technicianId = 'tech-1';
-        meta.technicianName = 'Demo Technician';
-      }
-      if (event === 'assign_doctor') {
-        meta.doctorId = 'doc-1';
-        meta.doctorName = 'Dr. Meera Iyer';
-      }
-      if (event === 'assign_lab') {
-        meta.partnerLabId = 'lab-1';
-        meta.partnerLabName = 'Metro Diagnostics';
-      }
-      await liverCareOrderService.transition(id, event, meta);
+      await liverCareOrderService.transition(id, event);
       await load();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
+      return false;
     } finally {
       setActing(false);
     }
+  };
+
+  const handleCancelConfirm = async () => {
+    const ok = await handleTransition('cancel');
+    if (ok) setCancelModalOpen(false);
   };
 
   if (!order) {
@@ -179,6 +157,8 @@ export function LiverCareOrderDetailPage() {
   const isEditable = stepState === 'active';
   const isReadOnlyCompleted = stepState === 'completed';
   const isUpcoming = stepState === 'upcoming';
+  const canComplete = workflowEvents.includes('complete');
+  const canCancel = workflowEvents.includes('cancel');
 
   const readOnly = isReadOnlyCompleted;
 
@@ -218,10 +198,31 @@ export function LiverCareOrderDetailPage() {
         case 'complete':
           return (
             <Card>
-              <CardContent className="py-6 text-sm text-muted-foreground">
-                {order.orderStatus === 'completed'
-                  ? 'This order is complete. No further actions required.'
-                  : 'Finish the previous steps to complete this order.'}
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Complete order</CardTitle>
+                <CardDescription>
+                  Mark the order complete once all package steps are finished and the patient has received deliverables.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {order.orderStatus === 'completed' ? (
+                  <p className="text-sm text-muted-foreground">This order is complete. No further actions required.</p>
+                ) : canComplete && !readOnly ? (
+                  <Button
+                    size="sm"
+                    disabled={acting}
+                    onClick={() => {
+                      if (!globalThis.confirm('Mark this order as complete?')) return;
+                      void handleTransition('complete');
+                    }}
+                  >
+                    Mark order complete
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Finish the previous workflow steps before completing this order.
+                  </p>
+                )}
               </CardContent>
             </Card>
           );
@@ -271,12 +272,12 @@ export function LiverCareOrderDetailPage() {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <Badge variant="outline">₹{order.finalAmount.toLocaleString('en-IN')}</Badge>
-            <Badge className="capitalize">{order.paymentStatus}</Badge>
-            <Badge variant="secondary">{ORDER_STATUS_LABELS[order.orderStatus]}</Badge>
+            <StatusBadge status={order.paymentStatus} domain="payment" />
+            <StatusBadge status={order.orderStatus} domain="order" label={ORDER_STATUS_LABELS[order.orderStatus]} />
             <span className="text-muted-foreground">
               Created {createdByLabel(order.createdBy)} · {assignedToLabel(order)}
             </span>
-            <Link to={`/patients/${order.patientId}`} className="text-livotale-pink hover:underline">
+            <Link to={orgPath(`/patients/${order.patientId}`)} className="text-livotale-pink hover:underline">
               Patient profile
             </Link>
           </div>
@@ -323,26 +324,23 @@ export function LiverCareOrderDetailPage() {
 
         {renderStepWork()}
 
-        {import.meta.env.DEV && isEditable && events.length > 0 && (
-          <Card className="border-dashed border-amber-500/40 bg-amber-500/5">
+        {order.orderStatus !== 'completed' && order.orderStatus !== 'cancelled' && canCancel && (
+          <Card className="border-destructive/30">
             <CardHeader className="pb-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base">Advance workflow</CardTitle>
-                <Badge variant="outline" className="text-[10px] uppercase tracking-wide text-amber-700 border-amber-500/50">
-                  Dev only
-                </Badge>
-              </div>
+              <CardTitle className="text-base">Cancel order</CardTitle>
               <CardDescription>
-                Not shown to ops in production. Use these shortcuts to simulate order status transitions during local
-                development — real steps above are how staff advance orders.
+                Permanently cancel this order if the patient withdrew or payment cannot be collected.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {events.map((ev) => (
-                <Button key={ev} size="sm" variant="outline" onClick={() => void handleEvent(ev)} disabled={acting}>
-                  {EVENT_LABELS[ev]}
-                </Button>
-              ))}
+            <CardContent>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={acting}
+                onClick={() => setCancelModalOpen(true)}
+              >
+                Cancel order
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -354,6 +352,18 @@ export function LiverCareOrderDetailPage() {
         orderNumber={order.orderNumber}
         timeline={timeline}
         auditEntries={auditEntries}
+      />
+
+      <ConfirmModal
+        open={cancelModalOpen}
+        title="Cancel order"
+        description={`Cancel order ${order.orderNumber} for ${order.patientName}? This cannot be undone.`}
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        confirmVariant="destructive"
+        isConfirming={acting}
+        onConfirm={() => void handleCancelConfirm()}
+        onCancel={() => setCancelModalOpen(false)}
       />
     </div>
   );

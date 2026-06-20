@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { availableModes, tomorrowIso } from '@/app/pages/appointments/wizard/bookingWizardTypes';
 import { TimeSlotGrid } from '@/app/pages/appointments/wizard/TimeSlotGrid';
 import { adminAppointmentsService } from '@/services';
+import { orgPath } from '@/app/config/orgRoutes';
 import type {
   AdminWalkInBookResult,
   AppointmentTypeOption,
@@ -191,13 +192,13 @@ export function AdminBookAppointmentPage() {
             )}
             <div className="flex flex-wrap gap-2 pt-2">
               <Button asChild>
-                <Link to={`/appointments/${result.appointment.id}`}>View appointment</Link>
+                <Link to={orgPath(`/appointments/${result.appointment.id}`)}>View appointment</Link>
               </Button>
-              <Button variant="outline" onClick={() => navigate('/admin/appointments/book')}>
+              <Button variant="outline" onClick={() => navigate(orgPath('/admin/appointments/book'))}>
                 Book another
               </Button>
               <Button variant="ghost" asChild>
-                <Link to="/patients">Patients</Link>
+                <Link to={orgPath('/patients')}>Patients</Link>
               </Button>
             </div>
           </CardContent>
@@ -213,7 +214,7 @@ export function AdminBookAppointmentPage() {
         description={`Step ${stepIndex + 1} of ${STEP_ORDER.length}: ${STEP_LABELS[currentStep]}`}
         actions={
           <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <Link to="/admin/operations">
+            <Link to={orgPath('/admin/operations')}>
               <FiArrowLeft className="h-4 w-4" />
               Ops dashboard
             </Link>
@@ -410,7 +411,8 @@ export function AdminBookAppointmentPage() {
                         })}
                       </p>
                       <p className="mt-1 text-muted-foreground">
-                        {day.available_slots} / {day.total_slots} open
+                        {(day.available_slots ?? (day as { availableSlots?: number }).availableSlots ?? 0)} /{' '}
+                        {(day.total_slots ?? (day as { totalSlots?: number }).totalSlots ?? 0)} open
                       </p>
                     </button>
                   );

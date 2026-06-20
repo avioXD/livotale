@@ -16,6 +16,8 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "snyk:test": "snyk test",
     "snyk:monitor": "snyk monitor",
     "snyk:code": "snyk code test"
@@ -50,6 +52,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@playwright/test": "^1.61.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^29.5.14",
@@ -68,6 +71,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "only-allow": "^1.2.1",
     "postcss": "^8.5.6",
+    "shadcn": "^4.11.0",
     "snyk": "^1.1297.3",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",

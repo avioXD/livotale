@@ -40,6 +40,6 @@ describe('journeyHelpers', () => {
 
   it('resolves patient home path', () => {
     expect(resolvePatientHomePath(false)).toBe('/patient-journey');
-    expect(resolvePatientHomePath(true)).toBe('/dashboard');
+    expect(resolvePatientHomePath(true)).toBe('/org/kolkata/dashboard');
   });
 });

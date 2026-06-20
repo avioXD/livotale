@@ -85,11 +85,14 @@ export interface TimeSlotOption {
 
 export interface DoctorOption {
   id: string;
+  userId?: string;
   fullName: string;
   specialization: string | null;
   qualification: string | null;
   registrationNumber: string | null;
   clinicName: string | null;
+  languagesKnown?: string[];
+  status?: string;
 }
 
 export interface DoctorAvailabilityDay {

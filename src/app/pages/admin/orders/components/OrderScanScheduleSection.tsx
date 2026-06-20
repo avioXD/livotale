@@ -7,20 +7,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { liverCareOrderService } from '@/services/liverCare';
+import type { AssignableTechnician } from '@/services/liverCare/OrderService';
+import type { ScanTimeSlotOption } from '@/services/liverCare/SlotService';
 import {
-  buildScanScheduledAt,
   canOpsConfirmScanSchedule,
   composeScanDateTime,
   defaultEditableScanDate,
+  FIBROSCAN_VISIT_LABEL,
+  FIBROSCAN_VISIT_MODE,
   formatScanVisitSummary,
   getScanSchedulePrerequisites,
   getScanTimeSlots,
   isPaymentReadyForScan,
   normalizeSlotCode,
-  SCAN_CLINIC_LOCATIONS,
-  SCAN_VISIT_MODE_LABELS,
 } from '@/services/liverCare/scanSchedule';
-import type { LiverCareOrder, ScanVisitMode } from '@/types/serviceOrder';
+import { formatTimeSlotDisplay } from '@/services/liverCare/appointmentSlots';
+import type { LiverCareOrder } from '@/types/serviceOrder';
+import type { TimeSlotOption } from '@/types';
 import { FiCheck, FiCircle } from 'react-icons/fi';
 
 function formatDateTime(iso?: string | null): string {
@@ -40,15 +43,26 @@ interface OrderScanScheduleSectionProps {
   readOnly?: boolean;
 }
 
+function toTimeSlotOptions(slots: ScanTimeSlotOption[]): TimeSlotOption[] {
+  return slots.map((s) => ({
+    code: s.code,
+    label: s.label,
+    available: s.available,
+    scheduledAt: s.scheduledAt,
+  }));
+}
+
 export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }: OrderScanScheduleSectionProps) {
-  const [visitMode, setVisitMode] = useState<ScanVisitMode>(order.scanVisitMode ?? 'home');
   const [scheduleDate, setScheduleDate] = useState(defaultEditableScanDate(order));
   const [slotCode, setSlotCode] = useState(normalizeSlotCode(order.scanTimeSlot));
-  const [slotLabel, setSlotLabel] = useState(order.scanTimeSlot ?? '');
-  const [clinicLocation, setClinicLocation] = useState(
-    order.scanClinicLocation ?? SCAN_CLINIC_LOCATIONS[0],
-  );
+  const [slotLabel, setSlotLabel] = useState(formatTimeSlotDisplay(order.scanTimeSlot));
+  const [scheduledAtIso, setScheduledAtIso] = useState<string | null>(null);
+  const [apiSlots, setApiSlots] = useState<ScanTimeSlotOption[]>([]);
+  const [technicians, setTechnicians] = useState<AssignableTechnician[]>([]);
+  const [selectedTechId, setSelectedTechId] = useState('');
   const [scheduling, setScheduling] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingTechs, setLoadingTechs] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canEdit =
@@ -57,10 +71,12 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
     order.orderStatus !== 'completed' &&
     !['scan_in_progress', 'scan_completed'].includes(order.orderStatus);
 
-  const slots = useMemo(
-    () => (canEdit ? getScanTimeSlots(scheduleDate, visitMode) : []),
-    [canEdit, scheduleDate, visitMode],
+  const fallbackSlots = useMemo(
+    () => (canEdit ? getScanTimeSlots(scheduleDate) : []),
+    [canEdit, scheduleDate],
   );
+
+  const slots = apiSlots.length > 0 ? toTimeSlotOptions(apiSlots) : fallbackSlots;
 
   const draftOrder = useMemo((): LiverCareOrder => {
     const preferredAt = slotCode
@@ -68,29 +84,65 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
       : order.scanPatientPreferredAt ?? null;
     return {
       ...order,
-      scanVisitMode: visitMode,
+      scanVisitMode: FIBROSCAN_VISIT_MODE,
       scanTimeSlot: slotCode ? slotLabel || slotCode : order.scanTimeSlot,
       scanPatientPreferredAt: preferredAt,
+      scanClinicLocation: null,
+      technicianId: selectedTechId || order.technicianId,
+      technicianName:
+        technicians.find((t) => t.id === selectedTechId)?.name ?? order.technicianName,
     };
-  }, [order, visitMode, slotCode, slotLabel, scheduleDate]);
+  }, [order, slotCode, slotLabel, scheduleDate, selectedTechId, technicians]);
 
   const prerequisites = useMemo(() => getScanSchedulePrerequisites(draftOrder), [draftOrder]);
-  const canSchedule = canOpsConfirmScanSchedule(draftOrder) && slotCode && isPaymentReadyForScan(order);
+  const canSchedule =
+    canOpsConfirmScanSchedule(draftOrder) &&
+    Boolean(slotCode) &&
+    Boolean(selectedTechId) &&
+    isPaymentReadyForScan(order);
 
   useEffect(() => {
-    setVisitMode(order.scanVisitMode ?? 'home');
     setScheduleDate(defaultEditableScanDate(order));
     setSlotCode(normalizeSlotCode(order.scanTimeSlot));
-    setSlotLabel(order.scanTimeSlot ?? '');
-    setClinicLocation(order.scanClinicLocation ?? SCAN_CLINIC_LOCATIONS[0]);
-  }, [order.id, order.scanScheduledAt, order.scanPatientPreferredAt, order.scanVisitMode, order.scanTimeSlot, order.scanClinicLocation]);
+    setSlotLabel(formatTimeSlotDisplay(order.scanTimeSlot));
+    setSelectedTechId(order.technicianId ?? '');
+  }, [order.id, order.scanScheduledAt, order.scanPatientPreferredAt, order.scanTimeSlot, order.technicianId]);
+
+  useEffect(() => {
+    if (!canEdit || !scheduleDate) {
+      setApiSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    void liverCareOrderService
+      .getScanSlots(order.id, scheduleDate)
+      .then(setApiSlots)
+      .catch(() => setApiSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [canEdit, order.id, scheduleDate]);
+
+  useEffect(() => {
+    if (!canEdit || !scheduledAtIso) {
+      setTechnicians([]);
+      return;
+    }
+    setLoadingTechs(true);
+    void liverCareOrderService
+      .listTechniciansForSlot(scheduledAtIso, order.id)
+      .then((rows) => {
+        setTechnicians(rows);
+        if (rows.length === 1) setSelectedTechId(rows[0].id);
+      })
+      .catch(() => setTechnicians([]))
+      .finally(() => setLoadingTechs(false));
+  }, [canEdit, scheduledAtIso, order.id]);
 
   if (readOnly) {
-    const prerequisites = getScanSchedulePrerequisites(order);
+    const readOnlyPrereqs = getScanSchedulePrerequisites(order);
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Scan schedule</CardTitle>
+          <CardTitle className="text-base">Home visit schedule</CardTitle>
           <CardDescription>Completed step — schedule details are read-only.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -105,11 +157,11 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No scan schedule recorded.</p>
+            <p className="text-sm text-muted-foreground">No home visit scheduled.</p>
           )}
 
           <ul className="space-y-1.5 text-sm">
-            {prerequisites.map((item) => (
+            {readOnlyPrereqs.map((item) => (
               <li key={item.id} className="flex items-start gap-2 text-muted-foreground">
                 {item.met ? (
                   <FiCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
@@ -132,19 +184,20 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
   }
 
   const handleSchedule = async () => {
-    if (!slotCode) {
-      setError('Select a time slot.');
+    const tech = technicians.find((t) => t.id === selectedTechId);
+    if (!slotCode || !tech || !scheduledAtIso) {
+      setError('Select a time slot and available technician.');
       return;
     }
     setScheduling(true);
     setError(null);
     try {
-      const scheduledAt = buildScanScheduledAt(scheduleDate, slotCode);
-      await liverCareOrderService.scheduleScan(order.id, {
-        scheduledAt,
-        visitMode,
+      await liverCareOrderService.confirmScanSchedule(order.id, {
+        scheduledAt: scheduledAtIso,
+        visitMode: FIBROSCAN_VISIT_MODE,
         timeSlot: slotLabel || slotCode,
-        clinicLocation: visitMode === 'clinic' ? clinicLocation : undefined,
+        technicianId: tech.id,
+        technicianName: tech.name,
       });
       onUpdated();
     } catch (err) {
@@ -157,78 +210,42 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Scan schedule</CardTitle>
+        <CardTitle className="text-base">Home visit schedule</CardTitle>
         <CardDescription>
-          Operations confirms date, visit type, and time slot. Patients may submit a preferred date; technician
-          assignment is done separately below.
+          Review patient preference, confirm a 45-minute slot, and assign an available field technician in one step.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
 
+        {order.scanPatientPreferredAt && !order.scanScheduledAt && (
+          <div className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
+            <p className="font-medium">Patient preferred slot</p>
+            <p className="mt-1">{formatScanVisitSummary(order)}</p>
+          </div>
+        )}
+
         {order.scanScheduledAt ? (
           <div className="rounded-md border border-green-200 bg-green-50/60 px-3 py-2 text-sm text-green-900">
             <p className="font-medium">Confirmed schedule</p>
             <p className="mt-1">{formatScanVisitSummary(order)}</p>
-          </div>
-        ) : order.scanPatientPreferredAt ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
-            <p className="font-medium">Patient preferred date</p>
-            <p className="mt-1">{formatScanVisitSummary(order)}</p>
-            <p className="mt-1 text-xs">Assign a technician and confirm below to lock the schedule.</p>
+            {order.technicianName && (
+              <p className="mt-1 text-xs">Technician: {order.technicianName}</p>
+            )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No scan date selected yet.</p>
+          <p className="text-sm text-muted-foreground">No home visit confirmed yet.</p>
         )}
 
-        <div className="space-y-2">
-          <Label>Visit type</Label>
-          <div className="flex flex-wrap gap-2">
-            {(['home', 'clinic'] as ScanVisitMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                disabled={!canEdit}
-                onClick={() => setVisitMode(mode)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                  visitMode === mode
-                    ? 'border-livotale-pink bg-livotale-pink/10 text-livotale-pink'
-                    : 'hover:bg-muted/50'
-                } ${!canEdit ? 'cursor-not-allowed opacity-60' : ''}`}
-              >
-                {SCAN_VISIT_MODE_LABELS[mode]}
-              </button>
-            ))}
-          </div>
-          {visitMode === 'clinic' && (
-            <div className="space-y-1 pt-1">
-              <Label htmlFor="scan-clinic-location">Clinic location</Label>
-              <select
-                id="scan-clinic-location"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={clinicLocation}
-                onChange={(e) => setClinicLocation(e.target.value)}
-                disabled={!canEdit}
-              >
-                {SCAN_CLINIC_LOCATIONS.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {visitMode === 'home' && (
-            <p className="text-xs text-muted-foreground">
-              Home visit uses the patient address on file. Confirm pin code is serviceable before scheduling.
-            </p>
-          )}
-        </div>
+        <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{FIBROSCAN_VISIT_LABEL}</span> — technician visits the
+          patient&apos;s registered address.
+        </p>
 
-        {canEdit && (
+        {canEdit && !order.scanScheduledAt && (
           <>
             <div className="space-y-1">
-              <Label htmlFor="scan-schedule-date">Scan date</Label>
+              <Label htmlFor="scan-schedule-date">Home visit date</Label>
               <Input
                 id="scan-schedule-date"
                 type="date"
@@ -238,22 +255,60 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
                   setScheduleDate(e.target.value);
                   setSlotCode('');
                   setSlotLabel('');
+                  setScheduledAtIso(null);
+                  setSelectedTechId('');
                 }}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Time slot</Label>
-              <TimeSlotGrid
-                slots={slots}
-                selectedCode={slotCode}
-                onSelect={(code, label) => {
-                  setSlotCode(code);
-                  setSlotLabel(label);
-                }}
-                emptyMessage="No slots on this date. Try another day or visit type."
-              />
+              <Label>Time slot (45 min)</Label>
+              {loadingSlots ? (
+                <p className="text-sm text-muted-foreground">Loading slots…</p>
+              ) : (
+                <TimeSlotGrid
+                  slots={slots}
+                  selectedCode={slotCode}
+                  onSelect={(code, label) => {
+                    setSlotCode(code);
+                    setSlotLabel(label);
+                    const match = apiSlots.find((s) => s.code === code);
+                    setScheduledAtIso(match?.scheduledAt ?? composeScanDateTime(scheduleDate, code));
+                    setSelectedTechId('');
+                  }}
+                  emptyMessage="No slots on this date. Try another day."
+                />
+              )}
             </div>
+
+            {slotCode && (
+              <div className="space-y-2">
+                <Label>Available technician for this slot</Label>
+                {loadingTechs ? (
+                  <p className="text-sm text-muted-foreground">Loading technicians…</p>
+                ) : technicians.length === 0 ? (
+                  <p className="text-sm text-amber-700">No technicians available for this slot.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {technicians.map((tech) => (
+                      <button
+                        key={tech.id}
+                        type="button"
+                        className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                          selectedTechId === tech.id
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => setSelectedTechId(tech.id)}
+                      >
+                        <p className="font-medium">{tech.name}</p>
+                        <p className="text-xs text-muted-foreground">{tech.zone}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -282,10 +337,9 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
 
         {canEdit && !order.scanScheduledAt && (
           <Button size="sm" disabled={scheduling || !canSchedule} onClick={() => void handleSchedule()}>
-            {scheduling ? 'Confirming…' : 'Confirm scan schedule'}
+            {scheduling ? 'Confirming…' : 'Confirm home visit schedule'}
           </Button>
         )}
-
       </CardContent>
     </Card>
   );

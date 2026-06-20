@@ -1,3 +1,5 @@
+import { useEffect, useMemo } from 'react';
+import { FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useServiceZonesStore } from '@/store';
+import { evaluatePincode } from '@/types/serviceZone';
 import type { PatientAddress } from '@/types';
 
 interface AddressStepProps {
@@ -18,8 +22,45 @@ interface AddressStepProps {
   onNext: () => void;
 }
 
-export function AddressStep({ addresses, addressId, onAddressChange, onBack, onNext }: AddressStepProps) {
-  const valid = Boolean(addressId || addresses.length === 0);
+export function AddressStep({ addresses, addressId, onAddressChange, onBack, onNext }: Readonly<AddressStepProps>) {
+  const zones = useServiceZonesStore((s) => s.zones);
+  const fetchZones = useServiceZonesStore((s) => s.fetchZones);
+
+  useEffect(() => {
+    void fetchZones();
+  }, [fetchZones]);
+
+  const selectedAddress = addresses.find((a) => a.id === addressId) ?? null;
+
+  const serviceability = useMemo(() => {
+    if (!selectedAddress?.pincode) return null;
+    return evaluatePincode(zones, selectedAddress.pincode);
+  }, [zones, selectedAddress]);
+
+  const pincodeBlocked = serviceability != null && !serviceability.serviceable;
+  const valid = Boolean(addressId || addresses.length === 0) && !pincodeBlocked;
+
+  const serviceabilityMessage = () => {
+    if (!serviceability || !selectedAddress?.pincode) return null;
+    if (serviceability.serviceable) {
+      return (
+        <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+          <FiCheckCircle className="h-4 w-4 shrink-0" />
+          Serviceable in {serviceability.zone?.city} ({selectedAddress.pincode}).
+        </div>
+      );
+    }
+    const reason =
+      serviceability.reason === 'city_inactive'
+        ? `Home visits are temporarily paused in ${serviceability.zone?.city}.`
+        : `Pincode ${selectedAddress.pincode} is outside our current service zones.`;
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <FiAlertTriangle className="h-4 w-4 shrink-0" />
+        {reason}
+      </div>
+    );
+  };
 
   return (
     <Card>
@@ -49,6 +90,8 @@ export function AddressStep({ addresses, addressId, onAddressChange, onBack, onN
             </Select>
           </div>
         )}
+
+        {serviceabilityMessage()}
 
         <div className="flex gap-2 pt-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onBack}>

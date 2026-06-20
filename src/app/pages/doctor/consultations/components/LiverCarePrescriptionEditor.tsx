@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LogTextarea } from '@/components/forms/LogTextarea';
 import { Textarea } from '@/components/ui/textarea';
 import { prescriptionOrderService } from '@/services/liverCare';
 import type { ConsultationVisitLog, LiverCarePrescription, PrescriptionMedicine } from '@/types/consultation';
@@ -197,10 +198,14 @@ export function LiverCarePrescriptionEditor({ order, visitLog, onPublished }: Li
             <Label htmlFor="rx-diagnosis">Diagnosis</Label>
             <Input id="rx-diagnosis" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} disabled={isPublished} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="rx-notes">Clinical notes</Label>
-            <Input id="rx-notes" value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)} disabled={isPublished} />
-          </div>
+          <LogTextarea
+            id="rx-notes"
+            label="Clinical notes"
+            value={clinicalNotes}
+            onChange={setClinicalNotes}
+            limit="LOG_LONG"
+            disabled={isPublished}
+          />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">

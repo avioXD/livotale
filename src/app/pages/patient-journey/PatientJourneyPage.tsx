@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useJourneyStore, JOURNEY_STEPS } from '@/store';
 import type { JourneyStep } from '@/store/journey/journeyStore';
+import { orgPath } from '@/app/config/orgRoutes';
 
 const STEP_LABELS: Record<JourneyStep, string> = {
   profile: 'Profile & Risk',
@@ -81,7 +83,30 @@ export function PatientJourneyPage() {
     symptomsAnswers, riskAnswers, assessment, isLoading, error,
     setStep, loadJourney, loadQuestionnaires, setAnswer,
     submitProfile, submitSymptoms, submitRisk, uploadReport, runPreScreen, bookVisit, clearError,
-  } = useJourneyStore();
+  } = useJourneyStore(
+    useShallow((s) => ({
+      step: s.step,
+      journey: s.journey,
+      symptomsQuestionnaire: s.symptomsQuestionnaire,
+      riskQuestionnaire: s.riskQuestionnaire,
+      symptomsAnswers: s.symptomsAnswers,
+      riskAnswers: s.riskAnswers,
+      assessment: s.assessment,
+      isLoading: s.isLoading,
+      error: s.error,
+      setStep: s.setStep,
+      loadJourney: s.loadJourney,
+      loadQuestionnaires: s.loadQuestionnaires,
+      setAnswer: s.setAnswer,
+      submitProfile: s.submitProfile,
+      submitSymptoms: s.submitSymptoms,
+      submitRisk: s.submitRisk,
+      uploadReport: s.uploadReport,
+      runPreScreen: s.runPreScreen,
+      bookVisit: s.bookVisit,
+      clearError: s.clearError,
+    })),
+  );
 
   const [profile, setProfile] = useState({
     line1: '', line2: '', pincode: '', gender: 'undisclosed', dob: '',
@@ -346,7 +371,7 @@ export function PatientJourneyPage() {
             {journey?.visits[0] && (
               <p className="text-sm">Next visit: {new Date(journey.visits[0].scheduled_at).toLocaleString()}</p>
             )}
-            <Button onClick={() => navigate('/dashboard')}>Enter app</Button>
+            <Button onClick={() => navigate(orgPath('/dashboard'))}>Enter app</Button>
           </CardContent>
         </Card>
       )}

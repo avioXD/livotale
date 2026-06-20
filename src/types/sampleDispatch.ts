@@ -65,8 +65,8 @@ export interface SampleDispatch {
 
 export const SAMPLE_DISPATCH_LABELS: Record<SampleDispatchStatus, string> = {
   not_required: 'Not required',
-  pending_dispatch: 'Awaiting blood collection',
-  sample_collected: 'Blood sample collected',
+  pending_dispatch: 'Awaiting schedule confirmation',
+  sample_collected: 'Sample collected by lab partner',
   dispatched: 'Handed over to lab',
   received_at_lab: 'Lab received — testing',
   awaiting_report: 'Awaiting report (email)',

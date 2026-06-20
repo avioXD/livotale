@@ -1,25 +1,31 @@
 import { AppRole, type JwtPayload } from '@/types';
 import { mapApiRoleCode, pickPrimaryRole } from '@/utils/authMappers';
+import {
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  getStaffAuthItem,
+  removeStaffAuthItem,
+  setStaffAuthItem,
+} from '@/rbac/authStorage';
 
-const ACCESS_TOKEN_KEY = 'livotale_access_token';
-const REFRESH_TOKEN_KEY = 'livotale_refresh_token';
+export { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, AUTH_PERSIST_KEY } from '@/rbac/authStorage';
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getStaffAuthItem(ACCESS_TOKEN_KEY);
 }
 
 export function getStoredRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return getStaffAuthItem(REFRESH_TOKEN_KEY);
 }
 
 export function setStoredTokens(accessToken: string, refreshToken?: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  setStaffAuthItem(ACCESS_TOKEN_KEY, accessToken);
+  if (refreshToken) setStaffAuthItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function clearStoredTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  removeStaffAuthItem(ACCESS_TOKEN_KEY);
+  removeStaffAuthItem(REFRESH_TOKEN_KEY);
 }
 
 export function decodeJwt(token: string): JwtPayload | null {
@@ -42,6 +48,10 @@ export function getRoleFromToken(token: string): AppRole | null {
   const payload = decodeJwt(token);
   if (!payload?.roles?.length) return null;
   const roles = payload.roles.map(mapApiRoleCode);
+  if (payload.activeRole) {
+    const active = mapApiRoleCode(payload.activeRole);
+    if (roles.includes(active)) return active;
+  }
   return pickPrimaryRole(roles);
 }
 
