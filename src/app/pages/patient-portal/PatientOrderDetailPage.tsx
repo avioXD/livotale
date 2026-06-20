@@ -24,6 +24,7 @@ export function PatientOrderDetailPage() {
   const [searchParams] = useSearchParams();
   const session = usePatientPortalStore((s) => s.session)!;
   const [order, setOrder] = useState<LiverCareOrder | null>(null);
+  const [loading, setLoading] = useState(true);
   const [timeline, setTimeline] = useState<OrderTimelineEvent[]>([]);
   const [invoice, setInvoice] = useState<OrderInvoice | null>(null);
   const [report, setReport] = useState<FinalReport | null>(null);
@@ -32,20 +33,25 @@ export function PatientOrderDetailPage() {
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [o, tl, inv, rpt, rx, packages] = await Promise.all([
-      patientPortalService.getMyOrder(session.phone, id),
-      patientPortalService.getTimeline(session.phone, id),
-      patientPortalService.getInvoice(id, session.phone),
-      finalReportService.getPublishedForPatient(id, session.phone),
-      prescriptionOrderService.getPublishedForPatient(id, session.phone),
-      packageService.listAdmin(),
-    ]);
-    setOrder(o);
-    setTimeline(tl);
-    setInvoice(inv);
-    setReport(rpt);
-    setPrescription(rx);
-    if (o) setPkg(packages.find((p) => p.id === o.packageId) ?? null);
+    setLoading(true);
+    try {
+      const [o, tl, inv, rpt, rx, packages] = await Promise.all([
+        patientPortalService.getMyOrder(session.phone, id),
+        patientPortalService.getTimeline(session.phone, id),
+        patientPortalService.getInvoice(id, session.phone),
+        finalReportService.getPublishedForPatient(id, session.phone),
+        prescriptionOrderService.getPublishedForPatient(id, session.phone),
+        packageService.listAdmin(),
+      ]);
+      setOrder(o);
+      setTimeline(tl);
+      setInvoice(inv);
+      setReport(rpt);
+      setPrescription(rx);
+      if (o) setPkg(packages.find((p) => p.id === o.packageId) ?? null);
+    } finally {
+      setLoading(false);
+    }
   }, [id, session.phone]);
 
   useEffect(() => {
@@ -61,6 +67,10 @@ export function PatientOrderDetailPage() {
       document.getElementById('patient-scan-schedule')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [searchParams, order]);
+
+  if (loading) {
+    return <p className="text-muted-foreground">Loading order…</p>;
+  }
 
   if (!order) {
     return <p className="text-muted-foreground">Order not found.</p>;

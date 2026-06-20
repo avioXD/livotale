@@ -30,8 +30,6 @@ function buildCrumbs(pathname: string, orderId?: string): Crumb[] {
     crumbs.push({ label: 'Notifications' });
   } else if (pathname === '/patient/downloads') {
     crumbs.push({ label: 'Downloads' });
-  } else if (pathname === '/patient/orders' && !orderId) {
-    crumbs.push({ label: 'Orders' });
   }
 
   if (crumbs.length === 1 && pathname === '/patient') {

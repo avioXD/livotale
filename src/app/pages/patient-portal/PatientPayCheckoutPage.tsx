@@ -13,7 +13,7 @@ export function PatientPayCheckoutPage() {
   const session = usePatientPortalStore((s) => s.session)!;
   const [order, setOrder] = useState<LiverCareOrder | null>(null);
   const [method, setMethod] = useState<'upi' | 'card'>('upi');
-  const [phase, setPhase] = useState<'checkout' | 'processing' | 'done'>('checkout');
+  const [phase, setPhase] = useState<'checkout' | 'processing' | 'success'>('checkout');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,9 +27,12 @@ export function PatientPayCheckoutPage() {
     setError(null);
     try {
       await liverCareOrderService.completePortalPayment(id, session.phone, method, outcome);
-      setPhase('done');
       if (outcome === 'success') {
+        setPhase('success');
         setTimeout(() => navigate(`/patient/orders/${id}?focus=scan-schedule`), 1500);
+      } else {
+        setError('Payment was not completed. Please try again.');
+        setPhase('checkout');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed');
@@ -95,7 +98,7 @@ export function PatientPayCheckoutPage() {
             <p className="text-center text-sm text-muted-foreground">Processing payment…</p>
           )}
 
-          {phase === 'done' && (
+          {phase === 'success' && (
             <p className="text-center text-sm text-green-700">Payment successful! Redirecting…</p>
           )}
 
