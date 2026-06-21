@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { isLogFieldValid, LogTextarea } from '@/components/forms/LogTextarea';
+import { storageService } from '@/services/storage/StorageService';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import type { OfflinePaymentMethod } from '@/types/payment';
 
@@ -16,6 +17,7 @@ interface LiverCareOfflinePaymentModalProps {
     amount: number;
     collectedBy: string;
     transactionRef?: string;
+    receiptFileId?: string;
     remarks?: string;
   }) => Promise<void>;
 }
@@ -33,11 +35,60 @@ export function LiverCareOfflinePaymentModal({
   onClose,
   onSubmit,
 }: LiverCareOfflinePaymentModalProps) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [method, setMethod] = useState<OfflinePaymentMethod>('cash');
   const [amount, setAmount] = useState(String(order.finalAmount));
   const [collectedBy, setCollectedBy] = useState('Operations Desk');
   const [transactionRef, setTransactionRef] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setReceiptFile(null);
+    setError(null);
+  }, [order.id]);
+
+  const handleSubmit = async () => {
+    const parsed = Number(amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setError('Enter a valid amount');
+      return;
+    }
+    if (!collectedBy.trim()) {
+      setError('Collected by is required');
+      return;
+    }
+    if (remarks && !isLogFieldValid(remarks, 'LOG_SHORT')) {
+      setError('Remarks are too long');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    try {
+      let receiptFileId: string | undefined;
+      if (receiptFile) {
+        const uploaded = await storageService.uploadFile(receiptFile, 'payment_receipt', order.id);
+        receiptFileId = uploaded.fileId;
+      }
+      await onSubmit({
+        method,
+        amount: parsed,
+        collectedBy: collectedBy.trim(),
+        transactionRef: transactionRef.trim() || undefined,
+        receiptFileId,
+        remarks: remarks.trim() || undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save payment');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const busy = isSaving || uploading;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -84,44 +135,44 @@ export function LiverCareOfflinePaymentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="txn-ref">Transaction reference</Label>
+            <Label htmlFor="txn-ref">Transaction reference (optional)</Label>
             <Input
               id="txn-ref"
-              placeholder="UPI ref, receipt #…"
               value={transactionRef}
               onChange={(e) => setTransactionRef(e.target.value)}
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>Receipt / screenshot (optional)</Label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+              {receiptFile ? receiptFile.name : 'Upload receipt'}
+            </Button>
+          </div>
+
           <LogTextarea
-            id="remarks"
-            label="Remarks"
+            id="offline-remarks"
             value={remarks}
             onChange={setRemarks}
             limit="LOG_SHORT"
+            rows={2}
           />
 
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button
-              disabled={
-                isSaving
-                || !amount
-                || Number(amount) <= 0
-                || !collectedBy.trim()
-                || !isLogFieldValid(remarks, 'LOG_SHORT')
-              }
-              onClick={() =>
-                void onSubmit({
-                  method,
-                  amount: Number(amount),
-                  collectedBy: collectedBy.trim(),
-                  transactionRef: transactionRef.trim() || undefined,
-                  remarks: remarks.trim() || undefined,
-                })
-              }
-            >
-              Mark paid
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSubmit} disabled={busy}>
+              {busy ? 'Saving…' : 'Mark paid'}
             </Button>
           </div>
         </CardContent>

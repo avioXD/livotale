@@ -165,6 +165,7 @@ export function TechnicianOrderDetailPage() {
               domain="order"
               label={ORDER_STATUS_LABELS[order.orderStatus]}
             />
+            <StatusBadge status={order.paymentStatus} domain="payment" />
             <Badge variant="secondary">{STEP_LABELS[currentStep]}</Badge>
             <span className="text-muted-foreground">{order.patientPhone}</span>
           </div>

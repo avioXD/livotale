@@ -14,6 +14,11 @@ function buildCrumbs(pathname: string, orderId?: string): Crumb[] {
     crumbs.push({ label: 'Orders', to: '/patient/orders' });
   }
 
+  if (pathname.startsWith('/patient/enquiries/')) {
+    crumbs.push({ label: 'Orders', to: '/patient/orders#enquiries' });
+    crumbs.push({ label: 'Enquiry' });
+  }
+
   if (orderId && pathname.includes(`/patient/orders/${orderId}`)) {
     crumbs.push({ label: 'Order', to: `/patient/orders/${orderId}` });
   }

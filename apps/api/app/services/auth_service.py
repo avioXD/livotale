@@ -1019,7 +1019,7 @@ class AuthService:
 
         attempts = int(user_row.get("failed_login_attempts") or 0) + 1
         locked_until = None
-        if attempts >= self.settings.max_failed_login_attempts:
+        if attempts >= self.settings.max_failed_login_attempts and self.settings.account_lockout_minutes > 0:
             locked_until = datetime.now(UTC) + timedelta(minutes=self.settings.account_lockout_minutes)
 
         await self.db.execute(

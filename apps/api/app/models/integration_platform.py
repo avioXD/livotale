@@ -53,6 +53,18 @@ class PlatformSettings(Base):
     ai_api_key_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     ai_model: Mapped[str | None] = mapped_column(Text)
     ai_base_url: Mapped[str | None] = mapped_column(Text)
+    payment_upi_id: Mapped[str | None] = mapped_column(Text)
+    payment_qr_file_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("storage.files.id")
+    )
+    payment_payee_name: Mapped[str | None] = mapped_column(Text)
+    s3_bucket: Mapped[str | None] = mapped_column(Text)
+    s3_region: Mapped[str | None] = mapped_column(Text)
+    s3_key_prefix: Mapped[str | None] = mapped_column(Text)
+    s3_endpoint: Mapped[str | None] = mapped_column(Text)
+    s3_public_endpoint: Mapped[str | None] = mapped_column(Text)
+    s3_access_key_id: Mapped[str | None] = mapped_column(Text)
+    s3_secret_access_key_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("identity.users.id"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

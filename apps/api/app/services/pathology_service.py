@@ -323,10 +323,8 @@ class PathologyService:
         user_id: UUID,
     ) -> dict[str, Any]:
         order = await load_order_row(self.db, order_id)
-        if not order.get("partner_lab_id") or not order.get("pathology_lab_order_ref"):
-            raise AppError("Assign lab partner and create lab order before confirming schedule")
-        if not order.get("pathology_external_appointment_id"):
-            raise AppError("Record external lab appointment ID before confirming schedule")
+        if not order.get("partner_lab_id"):
+            raise AppError("Assign a lab partner before confirming schedule")
 
         await self.db.execute(
             text(
@@ -356,11 +354,14 @@ class PathologyService:
         extra["notes"] = f"Scheduled lab visit · {body.time_slot}"
         dispatch.extra = extra
 
+        ref_suffix = (
+            f" · Ref {order.get('pathology_lab_order_ref')}" if order.get("pathology_lab_order_ref") else ""
+        )
         await append_timeline(
             self.db,
             order_id,
             "pathology_scheduled",
-            f"{order.get('partner_lab_name')} · {body.time_slot} · Ref {order.get('pathology_lab_order_ref')}",
+            f"{order.get('partner_lab_name')} · {body.time_slot}{ref_suffix}",
             performed_by=user_id,
             metadata={"scheduledAt": body.scheduled_at.isoformat(), "timeSlot": body.time_slot},
         )
@@ -375,6 +376,10 @@ class PathologyService:
         order = await load_order_row(self.db, order_id)
         if not order.get("pathology_scheduled_at"):
             raise AppError("Confirm pathology schedule first")
+        if not order.get("pathology_lab_order_ref"):
+            raise AppError("Generate internal lab order ref before recording visit outcome")
+        if not order.get("pathology_external_appointment_id"):
+            raise AppError("Save lab portal order ID before recording visit outcome")
 
         dispatch = await self._get_dispatch(order_id)
         if dispatch and dispatch_at_least(dispatch.status, SampleDispatchStatus.SAMPLE_COLLECTED):

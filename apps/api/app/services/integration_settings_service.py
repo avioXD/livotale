@@ -4,16 +4,31 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.integration_encryption import decrypt_secret, encrypt_secret, mask_secret
+from app.integrations.s3 import S3Service
+from app.integrations.s3_config import resolve_s3_config
 from app.models.integration_platform import PlatformSettings
 
 
 class IntegrationSettingsService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _resolve_file_url(self, file_id) -> str | None:
+        if not file_id:
+            return None
+        result = await self.db.execute(
+            text("SELECT storage_url FROM storage.files WHERE id = :file_id"),
+            {"file_id": file_id},
+        )
+        row = result.mappings().first()
+        if not row:
+            return None
+        s3 = await S3Service.from_db(self.db)
+        return s3.rewrite_url_for_browser(row["storage_url"])
 
     async def _get_row(self) -> PlatformSettings:
         result = await self.db.execute(select(PlatformSettings).where(PlatformSettings.id == 1))
@@ -29,6 +44,11 @@ class IntegrationSettingsService:
         twilio_token = decrypt_secret(row.twilio_auth_token_enc)
         sendgrid_key = decrypt_secret(row.sendgrid_api_key_enc)
         ai_key = decrypt_secret(row.ai_api_key_enc)
+        s3_secret = decrypt_secret(row.s3_secret_access_key_enc)
+        payment_qr_url = await self._resolve_file_url(row.payment_qr_file_id)
+        s3_configured = bool(
+            row.s3_bucket and row.s3_region and row.s3_access_key_id and s3_secret
+        )
         return {
             "twilioAccountSid": row.twilio_account_sid,
             "twilioParentAccountSid": row.twilio_parent_account_sid,
@@ -43,6 +63,19 @@ class IntegrationSettingsService:
             "aiApiKey": mask_secret(ai_key),
             "aiModel": row.ai_model,
             "aiBaseUrl": row.ai_base_url,
+            "paymentUpiId": row.payment_upi_id,
+            "paymentQrFileId": str(row.payment_qr_file_id) if row.payment_qr_file_id else None,
+            "paymentQrUrl": payment_qr_url,
+            "paymentPayeeName": row.payment_payee_name,
+            "paymentConfigured": bool(row.payment_upi_id),
+            "s3Bucket": row.s3_bucket,
+            "s3Region": row.s3_region,
+            "s3KeyPrefix": row.s3_key_prefix,
+            "s3Endpoint": row.s3_endpoint,
+            "s3PublicEndpoint": row.s3_public_endpoint,
+            "s3AccessKeyId": row.s3_access_key_id,
+            "s3SecretAccessKey": mask_secret(s3_secret),
+            "s3Configured": s3_configured,
             "twilioConfigured": bool(
                 row.twilio_account_sid
                 and twilio_token
@@ -99,6 +132,34 @@ class IntegrationSettingsService:
             "base_url": row.ai_base_url or "",
         }
 
+    async def get_s3_credentials(self) -> dict[str, str] | None:
+        row = await self._get_row()
+        secret = decrypt_secret(row.s3_secret_access_key_enc)
+        if not row.s3_bucket or not row.s3_region or not row.s3_access_key_id or not secret:
+            return None
+        creds: dict[str, str] = {
+            "bucket": row.s3_bucket,
+            "region": row.s3_region,
+            "access_key_id": row.s3_access_key_id,
+            "secret_access_key": secret,
+        }
+        if row.s3_key_prefix:
+            creds["key_prefix"] = row.s3_key_prefix
+        if row.s3_endpoint:
+            creds["endpoint"] = row.s3_endpoint
+        if row.s3_public_endpoint:
+            creds["public_endpoint"] = row.s3_public_endpoint
+        return creds
+
+    async def get_payment_config(self) -> dict[str, Any]:
+        row = await self._get_row()
+        qr_url = await self._resolve_file_url(row.payment_qr_file_id)
+        return {
+            "upiId": row.payment_upi_id,
+            "qrImageUrl": qr_url,
+            "payeeName": row.payment_payee_name or "Livotale",
+        }
+
     async def update_settings(self, payload: dict[str, Any], *, updated_by: UUID) -> dict[str, Any]:
         row = await self._get_row()
 
@@ -122,6 +183,25 @@ class IntegrationSettingsService:
             row.ai_model = payload["aiModel"] or None
         if payload.get("aiBaseUrl") is not None:
             row.ai_base_url = payload["aiBaseUrl"] or None
+        if payload.get("paymentUpiId") is not None:
+            row.payment_upi_id = payload["paymentUpiId"] or None
+        if payload.get("paymentPayeeName") is not None:
+            row.payment_payee_name = payload["paymentPayeeName"] or None
+        if payload.get("paymentQrFileId") is not None:
+            raw = payload["paymentQrFileId"]
+            row.payment_qr_file_id = UUID(str(raw)) if raw else None
+        if payload.get("s3Bucket") is not None:
+            row.s3_bucket = payload["s3Bucket"] or None
+        if payload.get("s3Region") is not None:
+            row.s3_region = payload["s3Region"] or None
+        if payload.get("s3KeyPrefix") is not None:
+            row.s3_key_prefix = payload["s3KeyPrefix"] or None
+        if payload.get("s3Endpoint") is not None:
+            row.s3_endpoint = payload["s3Endpoint"] or None
+        if payload.get("s3PublicEndpoint") is not None:
+            row.s3_public_endpoint = payload["s3PublicEndpoint"] or None
+        if payload.get("s3AccessKeyId") is not None:
+            row.s3_access_key_id = payload["s3AccessKeyId"] or None
 
         token = payload.get("twilioAuthToken")
         if token and not token.startswith("••••"):
@@ -134,6 +214,10 @@ class IntegrationSettingsService:
         ai_key = payload.get("aiApiKey")
         if ai_key and not str(ai_key).startswith("••••"):
             row.ai_api_key_enc = encrypt_secret(ai_key)
+
+        s3_secret = payload.get("s3SecretAccessKey")
+        if s3_secret and not str(s3_secret).startswith("••••"):
+            row.s3_secret_access_key_enc = encrypt_secret(s3_secret)
 
         row.updated_by = updated_by
         row.updated_at = datetime.now(UTC)

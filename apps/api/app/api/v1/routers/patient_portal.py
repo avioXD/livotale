@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import request_meta
@@ -19,10 +19,12 @@ from app.schemas.patient_portal import (
     PatientPortalSession,
     PatientProfile,
     PatientProfileUpdate,
+    PatientEnquiry,
     PatientPayRequest,
     PatientScanDateRequest,
     PatientConsultDateRequest,
 )
+from app.schemas.integrations_platform import PatientPaymentConfigResponse
 from app.schemas.bank_details import UpsertBankDetailsInput
 from app.schemas.orders import OrderTimelineEvent
 from app.schemas.storage import ConfirmUploadResponse, PatientPresignUploadRequest, PresignUploadResponse
@@ -90,6 +92,37 @@ async def list_orders(
     return DataEnvelope(data=data)
 
 
+@router.get("/enquiries", response_model=DataEnvelope[list[PatientEnquiry]])
+async def list_enquiries(
+    phone: str = Query(...),
+    service: PatientPortalService = Depends(_portal_service),
+) -> DataEnvelope[list[PatientEnquiry]]:
+    data = await service.list_enquiries(phone)
+    return DataEnvelope(data=[PatientEnquiry.model_validate(row) for row in data])
+
+
+@router.get("/enquiries/{enquiry_id}", response_model=DataEnvelope[PatientEnquiry])
+async def get_enquiry(
+    enquiry_id: UUID,
+    phone: str = Query(...),
+    service: PatientPortalService = Depends(_portal_service),
+) -> DataEnvelope[PatientEnquiry]:
+    data = await service.get_enquiry(phone, enquiry_id)
+    if not data:
+        from app.core.exceptions import AppError
+
+        raise AppError("Enquiry not found", status_code=404)
+    return DataEnvelope(data=PatientEnquiry.model_validate(data))
+
+
+@router.get("/payment-config", response_model=DataEnvelope[PatientPaymentConfigResponse])
+async def get_payment_config(
+    service: PatientPortalService = Depends(_portal_service),
+) -> DataEnvelope[PatientPaymentConfigResponse]:
+    data = await service.get_payment_config()
+    return DataEnvelope(data=PatientPaymentConfigResponse.model_validate(data))
+
+
 @router.get("/orders/{order_id}", response_model=DataEnvelope[PatientOrder])
 async def get_order(
     order_id: UUID,
@@ -110,7 +143,14 @@ async def pay_order(
     body: PatientPayRequest,
     service: PatientPortalService = Depends(_portal_service),
 ) -> DataEnvelope[PatientOrder]:
-    data = await service.pay_order(order_id, body.phone, body.method, outcome=body.outcome)
+    data = await service.pay_order(
+        order_id,
+        body.phone,
+        body.method,
+        receipt_file_id=body.receipt_file_id,
+        transaction_ref=body.transaction_ref,
+        outcome=body.outcome,
+    )
     return DataEnvelope(data=data)
 
 
@@ -297,9 +337,29 @@ async def presign_patient_storage_upload(
         file_name=body.file_name,
         mime_type=body.mime_type,
         entity_type=body.entity_type,
+        entity_id=body.entity_id,
         subfolder=body.subfolder,
     )
     return DataEnvelope(data=data)
+
+
+@router.post("/storage/upload", response_model=DataEnvelope[ConfirmUploadResponse])
+async def upload_patient_storage_file(
+    phone: str = Query(...),
+    entity_type: str = Form(..., alias="entityType"),
+    entity_id: UUID | None = Form(default=None, alias="entityId"),
+    subfolder: str | None = Form(default=None),
+    file: UploadFile = File(...),
+    service: PatientPortalService = Depends(_portal_service),
+) -> DataEnvelope[ConfirmUploadResponse]:
+    data = await service.upload_storage_multipart(
+        phone,
+        file,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        subfolder=subfolder,
+    )
+    return DataEnvelope(data=ConfirmUploadResponse.model_validate(data))
 
 
 @router.post("/storage/{file_id}/confirm", response_model=DataEnvelope[ConfirmUploadResponse])

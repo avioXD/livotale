@@ -82,11 +82,13 @@ const AdminAuditLogPage = lazy(() => import('@/app/pages/admin/audit/AdminAuditL
 const AdminLoginLogsPage = lazy(() => import('@/app/pages/admin/audit/AdminLoginLogsPage').then((m) => ({ default: m.AdminLoginLogsPage })));
 const AdminBankDetailsDirectoryPage = lazy(() => import('@/app/pages/admin/bank/AdminBankDetailsDirectoryPage').then((m) => ({ default: m.AdminBankDetailsDirectoryPage })));
 const AdminIntegrationsPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminIntegrationsPage').then((m) => ({ default: m.AdminIntegrationsPage })));
+const AdminPaymentConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminPaymentConfigPage').then((m) => ({ default: m.AdminPaymentConfigPage })));
 const AdminTwilioConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminTwilioConfigPage').then((m) => ({ default: m.AdminTwilioConfigPage })));
 const AdminEmailConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminEmailConfigPage').then((m) => ({ default: m.AdminEmailConfigPage })));
 const AdminAiConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminAiConfigPage').then((m) => ({ default: m.AdminAiConfigPage })));
 const AdminMessageTemplatesPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminMessageTemplatesPage').then((m) => ({ default: m.AdminMessageTemplatesPage })));
 const AdminPdfTemplatesPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminPdfTemplatesPage').then((m) => ({ default: m.AdminPdfTemplatesPage })));
+const AdminS3ConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminS3ConfigPage').then((m) => ({ default: m.AdminS3ConfigPage })));
 const AdminServiceZonesPage = lazy(() => import('@/app/pages/admin/serviceZones/AdminServiceZonesPage').then((m) => ({ default: m.AdminServiceZonesPage })));
 const AdminServiceZoneDetailPage = lazy(() => import('@/app/pages/admin/serviceZones/AdminServiceZoneDetailPage').then((m) => ({ default: m.AdminServiceZoneDetailPage })));
 const PatientLoginPage = lazy(() => import('@/app/pages/patient-portal/PatientLoginPage').then((m) => ({ default: m.PatientLoginPage })));
@@ -99,6 +101,7 @@ const PatientProfilePage = lazy(() => import('@/app/pages/patient-portal/Patient
 const PatientNotificationsPage = lazy(() => import('@/app/pages/patient-portal/PatientNotificationsPage').then((m) => ({ default: m.PatientNotificationsPage })));
 const StaffNotificationsPage = lazy(() => import('@/app/pages/notifications/StaffNotificationsPage').then((m) => ({ default: m.StaffNotificationsPage })));
 const PatientOrdersPage = lazy(() => import('@/app/pages/patient-portal/PatientOrdersPage').then((m) => ({ default: m.PatientOrdersPage })));
+const PatientEnquiryDetailPage = lazy(() => import('@/app/pages/patient-portal/PatientEnquiryDetailPage').then((m) => ({ default: m.PatientEnquiryDetailPage })));
 const PatientOnboardingPage = lazy(() => import('@/app/pages/patient-portal/PatientOnboardingPage').then((m) => ({ default: m.PatientOnboardingPage })));
 const PatientDownloadsPage = lazy(() => import('@/app/pages/patient-portal/PatientDownloadsPage').then((m) => ({ default: m.PatientDownloadsPage })));
 
@@ -121,6 +124,7 @@ export function AppRoutes() {
         <Route path="/patient/onboarding" element={<PatientOnboardingPage />} />
         <Route path="/patient" element={<PatientDashboardPage />} />
         <Route path="/patient/orders" element={<PatientOrdersPage />} />
+        <Route path="/patient/enquiries/:id" element={<PatientEnquiryDetailPage />} />
         <Route path="/patient/profile" element={<PatientProfilePage />} />
         <Route path="/patient/notifications" element={<PatientNotificationsPage />} />
         <Route path="/patient/downloads" element={<PatientDownloadsPage />} />
@@ -254,10 +258,12 @@ export function AppRoutes() {
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[AppRole.SUPER_ADMIN]} />}>
+              <Route path="/org/:city/admin/integrations/payment" element={<AdminPaymentConfigPage />} />
               <Route path="/org/:city/admin/integrations/sms" element={<AdminTwilioConfigPage />} />
               <Route path="/org/:city/admin/integrations/email" element={<AdminEmailConfigPage />} />
               <Route path="/org/:city/admin/integrations/ai" element={<AdminAiConfigPage />} />
               <Route path="/org/:city/admin/integrations/pdf" element={<AdminPdfTemplatesPage />} />
+              <Route path="/org/:city/admin/integrations/storage" element={<AdminS3ConfigPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.technician]} />}>

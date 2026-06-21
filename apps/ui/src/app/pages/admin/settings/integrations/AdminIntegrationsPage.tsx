@@ -21,11 +21,17 @@ export function AdminIntegrationsPage() {
     <AdminIntegrationsPageShell
       role={role}
       title="Integrations & templates"
-      description="Manage Twilio, email, AI, editable templates, and PDF rendering in dedicated sections."
+      description="Manage Twilio, email, AI, object storage, editable templates, and PDF rendering in dedicated sections."
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {role === AppRole.SUPER_ADMIN ? (
           <>
+            <IntegrationHubCard
+              title="Payment collection"
+              description="Platform UPI ID and QR code shown on the patient pay page."
+              href={getAdminIntegrationsPath(city, '/payment')}
+              badge="UPI"
+            />
             <IntegrationHubCard
               title="SMS & OTP"
               description="Twilio Account SID, Auth Token, From number, config test, and template-based test SMS."
@@ -46,6 +52,13 @@ export function AdminIntegrationsPage() {
               href={getAdminIntegrationsPath(city, '/ai')}
               badge="AI"
               configured={status?.aiConfigured}
+            />
+            <IntegrationHubCard
+              title="Object storage (S3)"
+              description="Bucket, region, credentials, and connection test for file uploads."
+              href={getAdminIntegrationsPath(city, '/storage')}
+              badge="S3"
+              configured={status?.s3Configured}
             />
           </>
         ) : null}

@@ -58,10 +58,7 @@ export function normalizeSlotCode(slotOrLabel?: string | null): string {
 }
 
 export function isPaymentReadyForScan(order: LiverCareOrder): boolean {
-  return (
-    order.paymentStatus === 'success' ||
-    !['draft', 'created', 'payment_pending'].includes(order.orderStatus)
-  );
+  return order.paymentStatus === 'success';
 }
 
 export function getScanSchedulePrerequisites(

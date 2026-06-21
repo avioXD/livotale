@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { enquiryService } from '@/services/liverCare';
+import { enquiryService, patientPortalService } from '@/services/liverCare';
 import { usePublicPackagesStore } from '@/store/packages';
+import { usePatientPortalStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { enquiryPrefillFromPatient, type EnquiryPatientPrefill } from '@/utils/patientEnquiryPrefill';
 
 export interface PublicEnquiryFormValues {
   packageCode: string;
@@ -26,6 +28,25 @@ interface PublicEnquiryFormProps {
   className?: string;
 }
 
+function applyPatientPrefill(
+  prefill: EnquiryPatientPrefill,
+  setters: {
+    setPatientName: Dispatch<SetStateAction<string>>;
+    setPhone: Dispatch<SetStateAction<string>>;
+    setEmail: Dispatch<SetStateAction<string>>;
+    setCity: Dispatch<SetStateAction<string>>;
+    setAge: Dispatch<SetStateAction<string>>;
+    setGender: Dispatch<SetStateAction<string>>;
+  },
+): void {
+  setters.setPatientName((v) => v || prefill.patientName);
+  setters.setPhone((v) => v || prefill.phone);
+  if (prefill.email) setters.setEmail((v) => v || prefill.email!);
+  if (prefill.city) setters.setCity((v) => v || prefill.city!);
+  if (prefill.age) setters.setAge((v) => v || prefill.age!);
+  if (prefill.gender) setters.setGender((v) => v || prefill.gender!);
+}
+
 export function PublicEnquiryForm({
   variant = 'page',
   initialPackageCode = '',
@@ -35,6 +56,9 @@ export function PublicEnquiryForm({
   const navigate = useNavigate();
   const packages = usePublicPackagesStore((s) => s.packages);
   const fetchPublicList = usePublicPackagesStore((s) => s.fetchPublicList);
+  const session = usePatientPortalStore((s) => s.session);
+  const hydrated = usePatientPortalStore((s) => s.hydrated);
+  const hydratePatient = usePatientPortalStore((s) => s.hydrate);
   const isHero = variant === 'hero';
 
   const [packageCode, setPackageCode] = useState(initialPackageCode);
@@ -49,6 +73,10 @@ export function PublicEnquiryForm({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    hydratePatient();
+  }, [hydratePatient]);
+
+  useEffect(() => {
     if (packages.length === 0) {
       void fetchPublicList();
     }
@@ -59,6 +87,36 @@ export function PublicEnquiryForm({
       setPackageCode(initialPackageCode);
     }
   }, [initialPackageCode]);
+
+  useEffect(() => {
+    if (!hydrated || !session) return;
+
+    let cancelled = false;
+    const setters = {
+      setPatientName,
+      setPhone,
+      setEmail,
+      setCity,
+      setAge,
+      setGender,
+    };
+
+    applyPatientPrefill(enquiryPrefillFromPatient(session, null), setters);
+
+    void patientPortalService
+      .getProfile(session.phone)
+      .then((profile) => {
+        if (cancelled) return;
+        applyPatientPrefill(enquiryPrefillFromPatient(session, profile), setters);
+      })
+      .catch(() => {
+        /* session fields are enough when profile is unavailable */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, session]);
 
   const selectedPkg = packages.find((p) => p.code === packageCode);
 

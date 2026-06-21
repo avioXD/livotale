@@ -57,8 +57,8 @@ def test_pathology_endpoints_listed_in_openapi(client: TestClient):
     response = client.get("/openapi.json")
     assert response.status_code == 200
     paths = response.json()["paths"]
-    assert "/admin/orders/{order_id}/pathology-external-appointment" in paths
-    assert "/admin/orders/{order_id}/lab-partner-visit" in paths
+    assert "/api/v1/admin/orders/{order_id}/pathology-external-appointment" in paths
+    assert "/api/v1/admin/orders/{order_id}/lab-partner-visit" in paths
 
 
 def test_external_appointment_requires_internal_ref(client: TestClient, admin_token: str, pathology_ready_order: str):
@@ -87,11 +87,59 @@ def test_lab_partner_collected_requires_visit(client: TestClient, admin_token: s
         headers=headers,
         json={"partnerLabId": lab_id},
     )
+    from datetime import UTC, datetime, timedelta
+
+    scheduled_at = (datetime.now(UTC) + timedelta(days=2)).isoformat().replace("+00:00", "Z")
+    client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/schedule-pathology",
+        headers=headers,
+        json={"scheduledAt": scheduled_at, "timeSlot": "10:00–12:00"},
+    )
     client.post(f"/api/v1/admin/orders/{pathology_ready_order}/lab-partner-order", headers=headers)
     client.patch(
         f"/api/v1/admin/orders/{pathology_ready_order}/pathology-external-appointment",
         headers=headers,
         json={"externalAppointmentId": "EXT-001"},
+    )
+    collected = client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/lab-partner-collected",
+        headers=headers,
+    )
+    assert collected.status_code == 400, collected.text
+
+
+def test_schedule_pathology_before_portal_order_mapping(
+    client: TestClient, admin_token: str, pathology_ready_order: str
+):
+    headers = auth_headers(admin_token)
+    labs = client.get("/api/v1/admin/staff/lab-partners", headers=headers)
+    lab_id = labs.json()["data"][0]["id"]
+    client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/assign-lab",
+        headers=headers,
+        json={"partnerLabId": lab_id},
+    )
+    from datetime import UTC, datetime, timedelta
+
+    scheduled_at = (datetime.now(UTC) + timedelta(days=2)).isoformat().replace("+00:00", "Z")
+    response = client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/schedule-pathology",
+        headers=headers,
+        json={"scheduledAt": scheduled_at, "timeSlot": "10:00–12:00"},
+    )
+    assert response.status_code == 200, response.text
+
+
+def test_lab_partner_visit_requires_portal_order_id(
+    client: TestClient, admin_token: str, pathology_ready_order: str
+):
+    headers = auth_headers(admin_token)
+    labs = client.get("/api/v1/admin/staff/lab-partners", headers=headers)
+    lab_id = labs.json()["data"][0]["id"]
+    client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/assign-lab",
+        headers=headers,
+        json={"partnerLabId": lab_id},
     )
     from datetime import UTC, datetime, timedelta
 
@@ -101,11 +149,12 @@ def test_lab_partner_collected_requires_visit(client: TestClient, admin_token: s
         headers=headers,
         json={"scheduledAt": scheduled_at, "timeSlot": "10:00–12:00"},
     )
-    collected = client.post(
-        f"/api/v1/admin/orders/{pathology_ready_order}/lab-partner-collected",
+    visit = client.post(
+        f"/api/v1/admin/orders/{pathology_ready_order}/lab-partner-visit",
         headers=headers,
+        json={"outcome": "visited"},
     )
-    assert collected.status_code == 400, collected.text
+    assert visit.status_code == 400, visit.text
 
 
 def test_pathology_happy_path_endpoints(client: TestClient, admin_token: str, pathology_ready_order: str):

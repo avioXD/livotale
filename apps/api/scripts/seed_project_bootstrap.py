@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bootstrap_constants import (
     BOOTSTRAP_IDS,

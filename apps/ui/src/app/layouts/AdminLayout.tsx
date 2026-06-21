@@ -94,17 +94,29 @@ function isChildActive(pathname: string, search: string, child: NavChildItem): b
   return false;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  variant?: 'desktop' | 'drawer';
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ variant = 'desktop', onNavigate }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const userRole = useUserRole();
   const user = useAuthStore((state) => state.user);
-  const collapsed = useAuthStore((state) => state.sidebarCollapsed);
+  const sidebarCollapsed = useAuthStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useAuthStore((state) => state.toggleSidebar);
   const logout = useAuthStore((state) => state.logout);
 
+  const isDrawer = variant === 'drawer';
+  const collapsed = isDrawer ? false : sidebarCollapsed;
+
   const navGroups = getNavGroupsForRole(userRole);
   const logoHomePath = userRole ? getDefaultHomePath(userRole) : '/';
+
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
 
   const renderChildLink = (child: NavChildItem) => {
     const ChildIcon = child.icon;
@@ -113,6 +125,7 @@ export function Sidebar() {
       <Link
         key={child.id}
         to={child.path}
+        onClick={isDrawer ? handleNavClick : undefined}
         className={cn(
           'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
           isActive
@@ -144,6 +157,7 @@ export function Sidebar() {
         <div key={item.id} className="space-y-0.5">
           <Link
             to={item.path}
+            onClick={isDrawer ? handleNavClick : undefined}
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
               isActive
@@ -164,6 +178,7 @@ export function Sidebar() {
     const linkContent = (
       <Link
         to={item.path}
+        onClick={isDrawer ? handleNavClick : undefined}
         className={cn(
           'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
           isActive
@@ -229,11 +244,17 @@ export function Sidebar() {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'flex h-full flex-col border-r bg-card transition-all duration-300',
-          collapsed ? 'w-[72px]' : 'w-64',
+          'flex h-full flex-col bg-card',
+          isDrawer ? 'w-full' : 'border-r transition-all duration-300',
+          !isDrawer && (collapsed ? 'w-[72px]' : 'w-64'),
         )}
       >
-        <Link to={logoHomePath} aria-label="Go to Livotale home" className="flex h-16 items-center border-b px-4 transition hover:bg-accent/50">
+        <Link
+          to={logoHomePath}
+          aria-label="Go to Livotale home"
+          onClick={isDrawer ? handleNavClick : undefined}
+          className="flex h-16 items-center border-b px-4 transition hover:bg-accent/50"
+        >
           <img
             src="/assets/livotale-logo.png"
             alt={`${APP_NAME} logo`}
@@ -278,27 +299,31 @@ export function Sidebar() {
             </div>
           )}
 
-          <div className={cn('flex gap-2', collapsed ? 'flex-col' : 'flex-row')}>
-            <Button
-              variant="outline"
-              size={collapsed ? 'icon' : 'default'}
-              className={cn(!collapsed && 'flex-1')}
-              onClick={toggleSidebar}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
-              {!collapsed && 'Collapse'}
-            </Button>
+          <div className={cn('flex gap-2', collapsed && !isDrawer ? 'flex-col' : 'flex-row')}>
+            {!isDrawer && (
+              <Button
+                variant="outline"
+                size={collapsed ? 'icon' : 'default'}
+                className={cn(!collapsed && 'flex-1')}
+                onClick={toggleSidebar}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
+                {!collapsed && 'Collapse'}
+              </Button>
+            )}
             <Button
               variant="ghost"
-              size={collapsed ? 'icon' : 'default'}
+              size={collapsed && !isDrawer ? 'icon' : 'default'}
+              className={cn((!collapsed || isDrawer) && 'flex-1')}
               onClick={() => {
+                if (isDrawer) onNavigate?.();
                 void logout().then(() => navigate('/', { replace: true }));
               }}
               aria-label="Logout"
             >
               <FiLogOut />
-              {!collapsed && 'Logout'}
+              {(!collapsed || isDrawer) && 'Logout'}
             </Button>
           </div>
         </div>
@@ -307,8 +332,11 @@ export function Sidebar() {
   );
 }
 
-export function TopBar() {
-  const toggleSidebar = useAuthStore((state) => state.toggleSidebar);
+interface TopBarProps {
+  onMobileMenuOpen: () => void;
+}
+
+export function TopBar({ onMobileMenuOpen }: TopBarProps) {
   const user = useAuthStore((state) => state.user);
   const userRole = useUserRole();
   const logoHomePath = userRole ? getDefaultHomePath(userRole) : '/';
@@ -320,8 +348,8 @@ export function TopBar() {
           variant="ghost"
           size="icon"
           className="lg:hidden"
-          onClick={toggleSidebar}
-          aria-label="Toggle menu"
+          onClick={onMobileMenuOpen}
+          aria-label="Open menu"
         >
           <FiMenu className="h-5 w-5" />
         </Button>

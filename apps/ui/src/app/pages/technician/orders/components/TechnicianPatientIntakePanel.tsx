@@ -88,13 +88,17 @@ export function TechnicianPatientIntakePanel({
   const displayIntake = intakeForDisplay(order, intake);
 
   if (!paymentReady) {
+    const paymentMessage =
+      order.paymentStatus === 'processing'
+        ? 'Payment submitted — awaiting operations verification before patient intake.'
+        : 'Payment must be collected before patient intake. Contact operations if payment is pending.';
     return (
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">1. Patient details intake</CardTitle>
         </CardHeader>
         <CardContent className="py-4 text-sm text-muted-foreground">
-          Payment must be collected before patient intake. Contact operations if payment is pending.
+          {paymentMessage}
         </CardContent>
       </Card>
     );

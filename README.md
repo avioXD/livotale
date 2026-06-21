@@ -20,11 +20,17 @@ docker/                  Dockerfiles and postgres init
 docker compose down -v
 
 docker compose up -d postgres redis localstack
-docker compose run --rm api node scripts/run-migrations.js
-docker compose up api ui
+docker compose run --rm db-init
+docker compose run --rm seed-init
+docker compose up api ui nginx
 
-# UI:  http://localhost:5174
-# API: http://localhost:4001/docs
+# Or from host (requires Node + uv):
+# ./scripts/dev-bootstrap.sh
+
+# UI:  http://localhost:3008  (nginx — UI + API consolidated)
+#      http://localhost:5174  (Vite direct)
+# API: http://localhost:4001/docs  (direct)
+#      http://localhost:3008/docs   (via nginx)
 ```
 
 Optional background worker:
@@ -60,11 +66,18 @@ cd apps/ui && pnpm test
 cd apps/ui && pnpm test:e2e
 ```
 
-## Migrations
+## Migrations and bootstrap
 
 ```bash
+# SQL migrations (host)
 cd apps/api
 DATABASE_URL=postgresql://livotale_user:password@localhost:5433/livotale node scripts/run-migrations.js
+
+# Demo users (admin@livotale.com / Admin@123, etc.)
+cd apps/api && uv run python scripts/seed_project_bootstrap.py
+
+# Or both:
+./scripts/dev-bootstrap.sh
 ```
 
 ## Environment

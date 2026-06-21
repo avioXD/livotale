@@ -77,7 +77,8 @@ export function PatientOrderDetailPage() {
   }
 
   const progressSteps = getPatientOrderProgressSteps(order);
-  const paymentPending = order.paymentStatus !== 'success';
+  const paymentPending = order.paymentStatus !== 'success' && order.paymentStatus !== 'processing';
+  const paymentUnderReview = order.paymentStatus === 'processing';
 
   return (
     <div className="space-y-6 pb-20 lg:pb-0">
@@ -115,6 +116,14 @@ export function PatientOrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {paymentUnderReview && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="py-4 text-sm text-amber-900">
+            Your payment proof is under review. We will notify you once verified.
+          </CardContent>
+        </Card>
+      )}
 
       {paymentPending && (
         <div className="hidden lg:block">

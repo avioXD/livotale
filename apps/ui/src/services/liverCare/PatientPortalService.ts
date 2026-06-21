@@ -13,6 +13,8 @@ import type {
   PatientPortalSession,
   PatientProfile,
   OrderInvoice,
+  PatientPaymentConfig,
+  PatientEnquiry,
 } from '@/types/patientPortal';
 import type { LiverCareOrder, PatientPathologyDateRequest, PatientScanDateRequest, PatientConsultDateRequest } from '@/types/serviceOrder';
 import { liverCareOrderService } from './OrderService';
@@ -46,6 +48,14 @@ class PatientPortalService extends BaseApiService {
 
   async listMyOrders(phone: string): Promise<LiverCareOrder[]> {
     return this.get<LiverCareOrder[]>('/patient-portal/orders', { params: { phone } });
+  }
+
+  async listMyEnquiries(phone: string): Promise<PatientEnquiry[]> {
+    return this.get<PatientEnquiry[]>('/patient-portal/enquiries', { params: { phone } });
+  }
+
+  async getMyEnquiry(phone: string, enquiryId: string): Promise<PatientEnquiry> {
+    return this.get<PatientEnquiry>(`/patient-portal/enquiries/${enquiryId}`, { params: { phone } });
   }
 
   async requestScanDate(
@@ -86,8 +96,46 @@ class PatientPortalService extends BaseApiService {
     return this.get<LiverCareOrder>(`/patient-portal/orders/${orderId}`, { params: { phone } });
   }
 
-  async payOrder(orderId: string, phone: string, method: 'upi' | 'card'): Promise<LiverCareOrder> {
-    return liverCareOrderService.completePortalPayment(orderId, phone, method);
+  async payOrder(
+    orderId: string,
+    phone: string,
+    input: {
+      method?: 'upi' | 'card';
+      receiptFileId?: string;
+      transactionRef?: string;
+      outcome?: 'success' | 'failure';
+    },
+  ): Promise<LiverCareOrder> {
+    return this.post<LiverCareOrder>(`/patient-portal/orders/${orderId}/pay`, {
+      phone,
+      method: input.method ?? 'upi',
+      receiptFileId: input.receiptFileId,
+      transactionRef: input.transactionRef,
+      outcome: input.outcome,
+    });
+  }
+
+  async getPaymentConfig(): Promise<PatientPaymentConfig> {
+    return this.get<PatientPaymentConfig>('/patient-portal/payment-config');
+  }
+
+  async uploadPaymentReceipt(
+    phone: string,
+    orderId: string,
+    file: File,
+  ): Promise<{ fileId: string; storageUrl: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('entityType', 'payment_receipt');
+    form.append('entityId', orderId);
+    return this.post<{ fileId: string; storageUrl: string; confirmed: boolean }>(
+      '/patient-portal/storage/upload',
+      form,
+      {
+        params: { phone },
+        headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
   }
 
   async getInvoice(orderId: string, phone: string): Promise<OrderInvoice | null> {

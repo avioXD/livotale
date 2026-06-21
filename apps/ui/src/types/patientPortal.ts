@@ -40,6 +40,12 @@ export interface OrderInvoice {
   fileId: string;
 }
 
+export interface PatientPaymentConfig {
+  upiId?: string | null;
+  qrImageUrl?: string | null;
+  payeeName?: string | null;
+}
+
 export interface PatientProfile {
   patientId: string;
   phone: string;
@@ -47,7 +53,30 @@ export interface PatientProfile {
   email?: string | null;
   city?: string | null;
   dateOfBirth?: string | null;
+  gender?: string | null;
   updatedAt: string;
+}
+
+export type PatientEnquiryStatus =
+  | 'new'
+  | 'contacted'
+  | 'interested'
+  | 'not_interested'
+  | 'follow_up_required'
+  | 'converted'
+  | 'closed';
+
+export interface PatientEnquiry {
+  id: string;
+  enquiryNumber: string;
+  status: PatientEnquiryStatus;
+  patientStatusLabel: string;
+  enquiryAt: string;
+  preferredPackageName?: string | null;
+  preferredPackageCode?: string | null;
+  message?: string | null;
+  orderId?: string | null;
+  orderNumber?: string | null;
 }
 
 export type PatientNotificationChannel = 'whatsapp' | 'sms' | 'email' | 'in_app';

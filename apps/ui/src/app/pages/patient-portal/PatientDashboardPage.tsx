@@ -5,16 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PatientDashboardPanel } from '@/app/pages/patients/components/PatientDashboardPanel';
 import { PatientOrderCard } from '@/app/pages/patient-portal/components/PatientOrderCard';
+import { PatientEnquiryCard } from '@/app/pages/patient-portal/components/PatientEnquiryCard';
 import { patientPortalService } from '@/services/liverCare';
 import { getMostUrgentPatientAction } from '@/services/liverCare/patientOrderProgress';
 import { usePatientPortalStore } from '@/store';
 import type { LiverCareOrder } from '@/types/serviceOrder';
-import type { PatientDownloadItem, PatientNotification } from '@/types/patientPortal';
+import type { PatientDownloadItem, PatientEnquiry, PatientNotification } from '@/types/patientPortal';
 import type { PatientDashboardData } from '@/types/patients';
+import { isOpenPatientEnquiry } from '@/utils/patientEnquiryUtils';
 
 export function PatientDashboardPage() {
   const session = usePatientPortalStore((s) => s.session)!;
   const [orders, setOrders] = useState<LiverCareOrder[]>([]);
+  const [enquiries, setEnquiries] = useState<PatientEnquiry[]>([]);
   const [notifications, setNotifications] = useState<PatientNotification[]>([]);
   const [downloads, setDownloads] = useState<PatientDownloadItem[]>([]);
   const [healthDashboard, setHealthDashboard] = useState<PatientDashboardData | null>(null);
@@ -26,15 +29,17 @@ export function PatientDashboardPage() {
     setError(null);
     void Promise.all([
       patientPortalService.listMyOrders(session.phone),
+      patientPortalService.listMyEnquiries(session.phone),
       patientPortalService.listNotifications(session.phone),
       patientPortalService.listDownloads(session.phone),
       patientPortalService.getDashboardAnalytics(session.phone).catch(() => null),
     ])
-      .then(([orderRows, notifRows, dlRows, analytics]) => {
+      .then(([orderRows, enquiryRows, notifRows, dlRows, analytics]) => {
         setOrders(orderRows);
+        setEnquiries(enquiryRows);
         setNotifications(notifRows);
         setDownloads(dlRows);
-        setHealthDashboard(analytics);
+        setHealthDashboard(analytics as PatientDashboardData | null);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -52,6 +57,7 @@ export function PatientDashboardPage() {
   const prescriptions = downloads.filter((d) => d.type === 'prescription');
   const nextAction = getMostUrgentPatientAction(orders);
   const recentOrders = orders.slice(0, 2);
+  const openEnquiries = enquiries.filter(isOpenPatientEnquiry).slice(0, 2);
 
   if (loading) {
     return <p className="text-muted-foreground">Loading your orders…</p>;
@@ -139,6 +145,22 @@ export function PatientDashboardPage() {
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {openEnquiries.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">Open enquiries</h2>
+            {enquiries.length > 2 && (
+              <Button variant="link" className="h-auto p-0" asChild>
+                <Link to="/patient/orders#enquiries">View all ({enquiries.length})</Link>
+              </Button>
+            )}
+          </div>
+          {openEnquiries.map((enquiry) => (
+            <PatientEnquiryCard key={enquiry.id} enquiry={enquiry} compact />
+          ))}
         </div>
       )}
 

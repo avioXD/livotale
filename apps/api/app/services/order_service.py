@@ -42,6 +42,9 @@ TIMELINE_CATALOG: dict[str, dict[str, str]] = {
     "submit": {"label": "Order submitted", "category": "order"},
     "request_payment": {"label": "Payment requested", "category": "payment"},
     "payment_link_sent": {"label": "Payment link sent", "category": "payment"},
+    "payment_submitted": {"label": "Payment proof submitted", "category": "payment"},
+    "payment_verified": {"label": "Payment verified", "category": "payment"},
+    "payment_rejected": {"label": "Payment proof rejected", "category": "payment"},
     "payment_completed": {"label": "Payment received", "category": "payment"},
     "payment_failed": {"label": "Payment failed", "category": "payment"},
     "assign_technician": {"label": "Technician assigned", "category": "scan"},
@@ -69,6 +72,8 @@ EVENT_NOTIFICATION_MAP: dict[str, str] = {
     "submit": "order_created",
     "order_created": "order_created",
     "payment_completed": "payment_completed",
+    "payment_submitted": "payment_submitted",
+    "payment_rejected": "payment_rejected",
     "payment_failed": "payment_failed",
     "assign_technician": "technician_assigned",
     "technician_reassigned": "technician_assigned",
@@ -86,6 +91,32 @@ EVENT_NOTIFICATION_MAP: dict[str, str] = {
     "complete_consultation": "consultation_completed",
     "publish_prescription": "prescription_published",
 }
+
+
+def payload_collected_by_name(payment: OrderPayment, name: str | None) -> str:
+    if name:
+        return name
+    return "Patient" if payment.collected_by is None else "Operations"
+
+
+async def _resolve_file_url(db: AsyncSession, file_id: UUID | None) -> str | None:
+    if file_id is None:
+        return None
+    result = await db.execute(
+        text("SELECT storage_url FROM storage.files WHERE id = :file_id"),
+        {"file_id": file_id},
+    )
+    row = result.mappings().first()
+    return row["storage_url"] if row else None
+
+
+async def _assert_receipt_file(db: AsyncSession, file_id: UUID) -> None:
+    result = await db.execute(
+        text("SELECT id FROM storage.files WHERE id = :file_id"),
+        {"file_id": file_id},
+    )
+    if result.mappings().first() is None:
+        raise AppError("Payment receipt file not found", status_code=400, error="validation_error")
 
 
 class OrderService:
@@ -643,7 +674,9 @@ class OrderService:
         *,
         method: str,
         amount: float,
-        outcome: str = "success",
+        receipt_file_id: UUID | None = None,
+        transaction_ref: str | None = None,
+        outcome: str | None = None,
     ) -> dict:
         order = await self.repo.get_by_id(order_id, for_update=True)
         if order is None:
@@ -655,22 +688,80 @@ class OrderService:
             order.payment_mode = "patient_portal"
             order.version = int(order.version or 1) + 1
             saved = await self.repo.save(order)
-            return await self._to_dict(saved)
+            await self._append_timeline(
+                saved.id,
+                "payment_failed",
+                performed_by=None,
+                detail="Patient portal payment failed",
+                metadata={"method": method},
+            )
+            result = await self._to_dict(saved)
+            await self._notify_for_event("payment_failed", result)
+            return result
         if order.payment_status == "success":
             return await self._to_dict(order)
+        if order.payment_status == "processing":
+            raise AppError(
+                "Payment proof is already under review",
+                status_code=400,
+                error="invalid_state",
+            )
+        if receipt_file_id is None:
+            raise AppError(
+                "Upload a payment screenshot before marking as paid",
+                status_code=400,
+                error="validation_error",
+            )
+        await _assert_receipt_file(self.repo.session, receipt_file_id)
 
         paid_at = datetime.now(UTC)
         payment = OrderPayment(
             order_id=order.id,
             amount=Decimal(str(amount)),
             method=method if method in {"cash", "upi", "bank_transfer", "card"} else "upi",
-            status="success",
+            status="processing",
             paid_at=paid_at,
             collected_by=None,
-            transaction_ref=None,
-            remarks="Patient portal payment",
+            transaction_ref=transaction_ref,
+            receipt_file_id=receipt_file_id,
+            remarks="Patient portal payment proof",
         )
         await self.repo.add_payment(payment)
+
+        order.payment_mode = "patient_portal"
+        order.payment_status = "processing"
+        if order.order_status == "created":
+            order.order_status = "payment_pending"
+        order.version = int(order.version or 1) + 1
+        saved = await self.repo.save(order)
+        detail = f"Patient portal · ₹{amount:,.0f} via {method}"
+        if transaction_ref:
+            detail = f"{detail} · Ref {transaction_ref}"
+        await self._append_timeline(
+            saved.id,
+            "payment_submitted",
+            performed_by=None,
+            detail=detail,
+            metadata={"method": method, "amount": str(amount), "performedBy": "patient"},
+        )
+        result = await self._to_dict(saved)
+        await self._notify_for_event("payment_submitted", result)
+        return result
+
+    async def verify_payment(self, order_id: UUID, *, actor_id: UUID | None) -> dict:
+        order = await self.repo.get_by_id(order_id, for_update=True)
+        if order is None:
+            raise AppError("Order not found", status_code=404, error="not_found")
+        if order.payment_status != "processing":
+            raise AppError("No payment awaiting verification", status_code=400, error="invalid_state")
+
+        payments = await self.repo.list_payments(order_id)
+        pending = next((p for p in reversed(payments) if p.status == "processing"), None)
+        if pending is None:
+            raise AppError("No payment record awaiting verification", status_code=400, error="invalid_state")
+
+        pending.status = "success"
+        pending.collected_by = actor_id
 
         package = await self.repo.get_package(order.package_id)
         flags = get_package_flags(package) if package else get_package_flags({"pathology_included": False, "consultation_included": False})
@@ -681,18 +772,70 @@ class OrderService:
         elif order.order_status in {"created", "payment_pending"}:
             order.order_status = "payment_completed"
 
-        order.payment_mode = "patient_portal"
         order.payment_status = "success"
+        order.updated_by = actor_id
         order.version = int(order.version or 1) + 1
         saved = await self.repo.save(order)
+
+        amount = float(pending.amount)
+        detail = f"Verified · ₹{amount:,.0f} via {pending.method}"
+        if pending.transaction_ref:
+            detail = f"{detail} · Ref {pending.transaction_ref}"
+        await self._append_timeline(
+            saved.id,
+            "payment_verified",
+            performed_by=actor_id,
+            detail=detail,
+            metadata={"method": pending.method, "amount": str(amount)},
+        )
         await self._append_timeline(
             saved.id,
             "payment_completed",
-            detail=f"Patient portal · ₹{amount:,.0f} via {method}",
-            metadata={"method": method, "amount": str(amount), "performedBy": "patient"},
+            performed_by=actor_id,
+            detail=detail,
+            metadata={"method": pending.method, "amount": str(amount)},
         )
         result = await self._to_dict(saved)
         await self._notify_for_event("payment_completed", result)
+        return result
+
+    async def reject_payment(
+        self,
+        order_id: UUID,
+        *,
+        actor_id: UUID | None,
+        remarks: str | None = None,
+    ) -> dict:
+        order = await self.repo.get_by_id(order_id, for_update=True)
+        if order is None:
+            raise AppError("Order not found", status_code=404, error="not_found")
+        if order.payment_status != "processing":
+            raise AppError("No payment awaiting verification", status_code=400, error="invalid_state")
+
+        payments = await self.repo.list_payments(order_id)
+        pending = next((p for p in reversed(payments) if p.status == "processing"), None)
+        if pending is None:
+            raise AppError("No payment record awaiting verification", status_code=400, error="invalid_state")
+
+        pending.status = "failed"
+        if remarks:
+            pending.remarks = remarks
+
+        order.payment_status = "pending"
+        order.updated_by = actor_id
+        order.version = int(order.version or 1) + 1
+        saved = await self.repo.save(order)
+
+        detail = remarks or "Payment proof rejected — patient may resubmit"
+        await self._append_timeline(
+            saved.id,
+            "payment_rejected",
+            performed_by=actor_id,
+            detail=detail,
+            metadata={"remarks": remarks or ""},
+        )
+        result = await self._to_dict(saved)
+        await self._notify_for_event("payment_rejected", result)
         return result
 
     async def schedule_consultation(
@@ -750,6 +893,8 @@ class OrderService:
             raise AppError("Order not found", status_code=404, error="not_found")
 
         paid_at = datetime.now(UTC)
+        if payload.receipt_file_id is not None:
+            await _assert_receipt_file(self.repo.session, payload.receipt_file_id)
         payment = OrderPayment(
             order_id=order.id,
             amount=Decimal(str(payload.amount)),
@@ -758,6 +903,7 @@ class OrderService:
             paid_at=paid_at,
             collected_by=actor_id,
             transaction_ref=payload.transaction_ref,
+            receipt_file_id=payload.receipt_file_id,
             remarks=payload.remarks,
         )
         await self.repo.add_payment(payment)
@@ -793,20 +939,27 @@ class OrderService:
         if await self.repo.get_by_id(order_id) is None:
             raise AppError("Order not found", status_code=404, error="not_found")
         payments = await self.repo.list_payments(order_id)
-        return [
-            {
-                "id": payment.id,
-                "orderId": payment.order_id,
-                "amount": float(payment.amount),
-                "method": payment.method,
-                "transactionRef": payment.transaction_ref,
-                "paidAt": payment.paid_at,
-                "collectedBy": payload_collected_by_name(payment, await self.repo.get_user_name(payment.collected_by)),
-                "receiptFileId": payment.receipt_file_id,
-                "remarks": payment.remarks,
-            }
-            for payment in payments
-        ]
+        rows: list[dict] = []
+        for payment in payments:
+            receipt_url = await _resolve_file_url(self.repo.session, payment.receipt_file_id)
+            rows.append(
+                {
+                    "id": payment.id,
+                    "orderId": payment.order_id,
+                    "amount": float(payment.amount),
+                    "method": payment.method,
+                    "transactionRef": payment.transaction_ref,
+                    "paidAt": payment.paid_at,
+                    "collectedBy": payload_collected_by_name(
+                        payment, await self.repo.get_user_name(payment.collected_by)
+                    ),
+                    "receiptFileId": payment.receipt_file_id,
+                    "receiptUrl": receipt_url,
+                    "status": payment.status,
+                    "remarks": payment.remarks,
+                }
+            )
+        return rows
 
     async def _append_timeline(
         self,
@@ -916,7 +1069,3 @@ class OrderService:
             "updatedAt": order.updated_at,
             "version": order.version,
         }
-
-
-def payload_collected_by_name(payment: OrderPayment, user_name: str | None) -> str:
-    return user_name or (str(payment.collected_by) if payment.collected_by else "Operations")

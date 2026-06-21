@@ -4,8 +4,9 @@ import type { SampleDispatch } from '@/types/sampleDispatch';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 
 export const LAB_WORKFLOW_STEP_LABELS = [
-  'Assign lab partner & portal order ID',
+  'Assign lab partner',
   'Pathology visit schedule confirmed',
+  'Internal ref & portal order ID mapped',
   'Collector visited (from lab portal)',
   'Sample collected (from lab portal)',
   'Lab processing at partner',
@@ -66,12 +67,9 @@ export function getLabWorkflowSteps(input: {
   const { order, dispatch, report, aiJob } = input;
 
   const completed = [
-    Boolean(
-      order.partnerLabId &&
-        order.pathologyLabOrderRef &&
-        order.pathologyExternalAppointmentId,
-    ),
+    Boolean(order.partnerLabId),
     Boolean(order.pathologyScheduledAt),
+    Boolean(order.pathologyLabOrderRef && order.pathologyExternalAppointmentId),
     order.pathologyVisitOutcome === 'visited',
     dispatchAtLeast(dispatch?.status, 'sample_collected'),
     dispatchAtLeast(dispatch?.status, 'received_at_lab'),

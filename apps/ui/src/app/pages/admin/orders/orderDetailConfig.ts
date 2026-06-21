@@ -36,6 +36,7 @@ export const ORDER_PAYMENT_PRESETS = [
   { value: '', label: 'All payments' },
   { value: 'unpaid', label: 'Unpaid (not success)' },
   { value: 'pending', label: 'Pending' },
+  { value: 'processing', label: 'Awaiting verification' },
   { value: 'link_sent', label: 'Link sent' },
   { value: 'success', label: 'Paid' },
   { value: 'failed', label: 'Failed' },

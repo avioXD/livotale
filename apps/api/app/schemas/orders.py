@@ -203,6 +203,11 @@ class OfflinePaymentInput(BaseSchema):
     amount: float
     collected_by: str = Field(alias="collectedBy")
     transaction_ref: str | None = Field(default=None, alias="transactionRef")
+    receipt_file_id: UUID | None = Field(default=None, alias="receiptFileId")
+    remarks: str | None = None
+
+
+class RejectPaymentInput(BaseSchema):
     remarks: str | None = None
 
 
@@ -215,4 +220,6 @@ class OfflinePaymentRecord(BaseSchema):
     paid_at: datetime = Field(alias="paidAt")
     collected_by: str = Field(alias="collectedBy")
     receipt_file_id: UUID | None = Field(default=None, alias="receiptFileId")
+    receipt_url: str | None = Field(default=None, alias="receiptUrl")
+    status: str | None = None
     remarks: str | None = None

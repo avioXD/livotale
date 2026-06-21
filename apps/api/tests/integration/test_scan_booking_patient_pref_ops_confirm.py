@@ -17,7 +17,7 @@ from tests.integration.order_flow_helpers import (
 
 @pytest.fixture
 def admin_token(client: TestClient) -> str:
-    return login(client, "admin@livotale.com", "admin123")
+    return login(client, "admin@livotale.com", "Admin@123")
 
 
 def test_patient_pref_then_ops_confirm_scan(client: TestClient, admin_token: str) -> None:

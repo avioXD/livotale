@@ -17,6 +17,8 @@ class WorkflowNotificationService:
         "enquiry_converted": ["in_app"],
         "order_created": ["in_app"],
         "payment_link_sent": ["in_app", "sms", "email"],
+        "payment_submitted": ["in_app"],
+        "payment_rejected": ["in_app", "sms"],
         "payment_completed": ["in_app", "sms"],
         "payment_failed": ["in_app"],
         "technician_assigned": ["in_app", "sms"],
@@ -55,6 +57,7 @@ class WorkflowNotificationService:
     ROLE_TARGETS: dict[str, list[str]] = {
         "enquiry_received": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],
         "payment_completed": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],
+        "payment_submitted": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],
         "scan_date_requested": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],
         "consultation_date_requested": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],
         "visit_started": ["OPERATIONS", "CITY_MANAGER", "SUPER_ADMIN"],

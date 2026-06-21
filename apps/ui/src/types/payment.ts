@@ -9,6 +9,8 @@ export interface OfflinePaymentRecord {
   paidAt: string;
   collectedBy: string;
   receiptFileId?: string | null;
+  receiptUrl?: string | null;
+  status?: string | null;
   remarks?: string | null;
 }
 

@@ -55,8 +55,12 @@ export default defineConfig({
       'human-body-organs-mapping-library': innoplexusRoot,
     },
   },
-  server: {
+    server: {
     port: 5174,
-    open: true,
+    host: true,
+    hmr: process.env.VITE_HMR_CLIENT_PORT
+      ? { clientPort: Number(process.env.VITE_HMR_CLIENT_PORT) }
+      : undefined,
+    open: !process.env.VITE_HMR_CLIENT_PORT,
   },
 });

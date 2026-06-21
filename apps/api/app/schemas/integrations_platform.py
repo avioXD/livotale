@@ -23,7 +23,28 @@ class PlatformSettingsResponse(BaseModel):
     twilio_configured: bool = Field(default=False, alias="twilioConfigured")
     sendgrid_configured: bool = Field(default=False, alias="sendgridConfigured")
     ai_configured: bool = Field(default=False, alias="aiConfigured")
+    payment_upi_id: str | None = Field(default=None, alias="paymentUpiId")
+    payment_qr_file_id: str | None = Field(default=None, alias="paymentQrFileId")
+    payment_qr_url: str | None = Field(default=None, alias="paymentQrUrl")
+    payment_payee_name: str | None = Field(default=None, alias="paymentPayeeName")
+    payment_configured: bool = Field(default=False, alias="paymentConfigured")
+    s3_bucket: str | None = Field(default=None, alias="s3Bucket")
+    s3_region: str | None = Field(default=None, alias="s3Region")
+    s3_key_prefix: str | None = Field(default=None, alias="s3KeyPrefix")
+    s3_endpoint: str | None = Field(default=None, alias="s3Endpoint")
+    s3_public_endpoint: str | None = Field(default=None, alias="s3PublicEndpoint")
+    s3_access_key_id: str | None = Field(default=None, alias="s3AccessKeyId")
+    s3_secret_access_key: str | None = Field(default=None, alias="s3SecretAccessKey")
+    s3_configured: bool = Field(default=False, alias="s3Configured")
     updated_at: str | None = Field(default=None, alias="updatedAt")
+
+    model_config = {"populate_by_name": True}
+
+
+class PatientPaymentConfigResponse(BaseModel):
+    upi_id: str | None = Field(default=None, alias="upiId")
+    qr_image_url: str | None = Field(default=None, alias="qrImageUrl")
+    payee_name: str | None = Field(default=None, alias="payeeName")
 
     model_config = {"populate_by_name": True}
 
@@ -42,6 +63,16 @@ class UpdatePlatformSettingsInput(BaseModel):
     ai_api_key: str | None = Field(default=None, alias="aiApiKey")
     ai_model: str | None = Field(default=None, alias="aiModel")
     ai_base_url: str | None = Field(default=None, alias="aiBaseUrl")
+    payment_upi_id: str | None = Field(default=None, alias="paymentUpiId")
+    payment_qr_file_id: str | None = Field(default=None, alias="paymentQrFileId")
+    payment_payee_name: str | None = Field(default=None, alias="paymentPayeeName")
+    s3_bucket: str | None = Field(default=None, alias="s3Bucket")
+    s3_region: str | None = Field(default=None, alias="s3Region")
+    s3_key_prefix: str | None = Field(default=None, alias="s3KeyPrefix")
+    s3_endpoint: str | None = Field(default=None, alias="s3Endpoint")
+    s3_public_endpoint: str | None = Field(default=None, alias="s3PublicEndpoint")
+    s3_access_key_id: str | None = Field(default=None, alias="s3AccessKeyId")
+    s3_secret_access_key: str | None = Field(default=None, alias="s3SecretAccessKey")
 
     model_config = {"populate_by_name": True}
 
@@ -81,6 +112,16 @@ class TwilioConfigTestResponse(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class S3ConfigTestResponse(BaseModel):
+    ok: bool
+    bucket: str | None = None
+    region: str | None = None
+    endpoint: str | None = None
+    error: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
 class TestEmailInput(BaseModel):
     email: str
     template_code: str = Field(default="payment_link_sent", alias="templateCode")
@@ -95,6 +136,7 @@ class IntegrationStatusResponse(BaseModel):
     twilio_configured: bool = Field(alias="twilioConfigured")
     sendgrid_configured: bool = Field(alias="sendgridConfigured")
     ai_configured: bool = Field(alias="aiConfigured")
+    s3_configured: bool = Field(default=False, alias="s3Configured")
     whatsapp_enabled: bool = Field(default=False, alias="whatsappEnabled")
     razorpay_enabled: bool = Field(default=False, alias="razorpayEnabled")
 

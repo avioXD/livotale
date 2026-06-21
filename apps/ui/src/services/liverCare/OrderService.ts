@@ -151,6 +151,7 @@ class OrderService extends BaseApiService {
       amount: number;
       collectedBy: string;
       transactionRef?: string;
+      receiptFileId?: string;
       remarks?: string;
     },
   ): Promise<LiverCareOrder> {
@@ -169,9 +170,27 @@ class OrderService extends BaseApiService {
     orderId: string,
     phone: string,
     method: 'upi' | 'card',
-    outcome: 'success' | 'failure' = 'success',
+    options?: {
+      receiptFileId?: string;
+      transactionRef?: string;
+      outcome?: 'success' | 'failure';
+    },
   ): Promise<LiverCareOrder> {
-    return this.post<LiverCareOrder>(`/patient-portal/orders/${orderId}/pay`, { phone, method, outcome });
+    return this.post<LiverCareOrder>(`/patient-portal/orders/${orderId}/pay`, {
+      phone,
+      method,
+      receiptFileId: options?.receiptFileId,
+      transactionRef: options?.transactionRef,
+      outcome: options?.outcome,
+    });
+  }
+
+  async verifyPayment(orderId: string): Promise<LiverCareOrder> {
+    return this.post<LiverCareOrder>(`/admin/orders/${orderId}/verify-payment`);
+  }
+
+  async rejectPayment(orderId: string, remarks?: string): Promise<LiverCareOrder> {
+    return this.post<LiverCareOrder>(`/admin/orders/${orderId}/reject-payment`, { remarks });
   }
 
   async getInvoice(orderId: string, phone?: string): Promise<OrderInvoice | null> {

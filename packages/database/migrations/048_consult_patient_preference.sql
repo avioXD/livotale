@@ -8,7 +8,7 @@ INSERT INTO integrations.message_templates (code, name, category, channel, subje
   (
     'consultation_date_requested',
     'Patient consult slot requested',
-    'consultation',
+    'appointment',
     'in_app',
     'Patient requested consult slot',
     '{{patientName}} requested a teleconsult · {{timeSlot}} for order {{orderNumber}}.',
@@ -17,7 +17,7 @@ INSERT INTO integrations.message_templates (code, name, category, channel, subje
   (
     'consultation_schedule_confirmed',
     'Consult schedule confirmed',
-    'consultation',
+    'appointment',
     'in_app',
     'Consultation confirmed',
     'Your teleconsult for order {{orderNumber}} is confirmed · {{timeSlot}} with {{doctorName}}.',

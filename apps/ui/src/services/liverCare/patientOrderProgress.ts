@@ -102,6 +102,10 @@ export type PatientNextAction =
 export function getPatientNextAction(order: LiverCareOrder): PatientNextAction {
   const base = `/patient/orders/${order.id}`;
 
+  if (order.paymentStatus === 'processing') {
+    return { type: 'view_order', order, label: 'Payment under review', href: base };
+  }
+
   if (order.paymentStatus !== 'success') {
     return { type: 'pay', order, label: 'Complete payment', href: `${base}/pay` };
   }

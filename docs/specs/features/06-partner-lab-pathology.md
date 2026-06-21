@@ -16,13 +16,13 @@ No in-house processing. Lab partner visits patient; lab emails PDF to Livotale o
 | Step | Actor | Action | System status |
 |------|-------|--------|---------------|
 | 0 | Patient (optional) | Submit preferred pathology visit | preference stored on order |
-| 1 | Operations | Assign `partner_lab_id` + create internal lab order ref | `pathology_pending` |
-| 2 | Operations | Book on lab partner website + save portal order ID | `pathology_external_appointment_id` |
-| 3 | Operations | Confirm pathology visit schedule | scheduled |
+| 1 | Operations | Assign `partner_lab_id` | `pathology_pending` |
+| 2 | Operations | Confirm pathology visit schedule (date + slot) | scheduled |
+| 3 | Operations | Create internal lab order ref + save portal order ID | `pathology_external_appointment_id` |
 | 4 | Operations | Mark collector visited (watching lab portal) | `pathology_visit_outcome = visited` |
 | 5 | Operations | Mark sample collected (watching lab portal) | dispatch `sample_collected` |
 | 6 | Operations | Mark received at lab / awaiting report | dispatch sub-status |
-| 7 | Operations | Upload PDF from lab email | `lab_report_uploaded` |
+| 7 | Operations | Upload lab report PDF | `lab_report_uploaded` |
 | 8 | System (auto) | AI extraction on upload | `ai_extraction_pending` |
 | 9 | Operations | Review & verify extracted fields | `ai_extraction_completed` |
 | 10 | Operations | Generate letterhead PDF → publish | `final_report_generated` |

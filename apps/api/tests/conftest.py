@@ -19,8 +19,10 @@ os.environ.setdefault(
     "DATABASE_URL",
     "postgresql+asyncpg://livotale_user:password@localhost:5432/livotale",
 )
-os.environ.setdefault("SEED_PACKAGES_ON_STARTUP", "false")
-os.environ.setdefault("API_AUDIT_LOGGING", "false")
+os.environ["SEED_PACKAGES_ON_STARTUP"] = "false"
+os.environ["API_AUDIT_LOGGING"] = "false"
+os.environ["MAX_FAILED_LOGIN_ATTEMPTS"] = "10000"
+os.environ["ACCOUNT_LOCKOUT_MINUTES"] = "0"
 os.environ["INTEGRATIONS_MODE"] = "dummy"
 
 import pytest
@@ -94,29 +96,6 @@ def _mock_redis(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setattr("app.core.redis._redis", fake, raising=False)
     fake._counters.clear()
     fake._expiry.clear()
-    yield
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _ensure_consult_preference_columns() -> Iterator[None]:
-    from sqlalchemy import text
-    from sqlalchemy.ext.asyncio import create_async_engine
-
-    async def _apply() -> None:
-        engine = create_async_engine(os.environ["DATABASE_URL"])
-        async with engine.begin() as conn:
-            await conn.execute(
-                text(
-                    """
-                    ALTER TABLE commerce.service_orders
-                      ADD COLUMN IF NOT EXISTS consultation_patient_preferred_at timestamptz,
-                      ADD COLUMN IF NOT EXISTS consultation_time_slot text
-                    """
-                )
-            )
-        await engine.dispose()
-
-    asyncio.run(_apply())
     yield
 
 

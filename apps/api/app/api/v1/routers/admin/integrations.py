@@ -12,6 +12,8 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.exceptions import AppError
 from app.domain.rbac import RoleCode
+from app.integrations.s3 import S3Service
+from app.integrations.s3_config import resolve_s3_config
 from app.integrations.twilio_service import TwilioSmsService
 from app.integrations.sendgrid_service import SendGridEmailService
 from app.models.integration_platform import LetterheadTemplate
@@ -22,6 +24,7 @@ from app.schemas.integrations_platform import (
     MessageTemplateResponse,
     PlatformSettingsResponse,
     SmsTestLogEntry,
+    S3ConfigTestResponse,
     TestEmailInput,
     TestSmsInput,
     UpdateLetterheadTemplateInput,
@@ -90,6 +93,7 @@ async def integration_status(
             twilioConfigured=public["twilioConfigured"],
             sendgridConfigured=public["sendgridConfigured"],
             aiConfigured=public["aiConfigured"],
+            s3Configured=public["s3Configured"],
             whatsappEnabled=False,
             razorpayEnabled=False,
         )
@@ -129,6 +133,17 @@ async def test_twilio_config(
         return DataEnvelope(
             data=TwilioConfigTestResponse(ok=False, mode=get_settings().effective_integrations_mode, error=exc.message)
         )
+
+
+@router.post("/settings/test-storage", response_model=DataEnvelope[S3ConfigTestResponse])
+async def test_storage_config(
+    _: CurrentUser = Depends(_require_super_admin),
+    db: AsyncSession = Depends(get_db),
+) -> DataEnvelope[S3ConfigTestResponse]:
+    config = await resolve_s3_config(db)
+    s3 = S3Service(config)
+    result = s3.test_connection()
+    return DataEnvelope(data=S3ConfigTestResponse.model_validate(result))
 
 
 @router.post("/settings/test-sms")

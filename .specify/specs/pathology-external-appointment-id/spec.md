@@ -24,7 +24,7 @@ Validation: requires `partnerLabId` + internal ref; max 64 chars; timeline `exte
 
 ## UI
 
-Editable input in `OrderPathologyScheduleSection` below internal ref. Required prerequisite before schedule confirmation.
+Editable input in `OrderPathologyScheduleSection` after schedule is confirmed. Required before visit confirmation (not before schedule).
 
 ## Tests
 

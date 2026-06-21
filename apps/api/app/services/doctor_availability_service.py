@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -39,6 +39,16 @@ ACTIVE_APPOINTMENT_STATUSES = (
 def parse_time_to_minutes(time_str: str) -> int:
     parts = str(time_str)[:5].split(":")
     return int(parts[0]) * 60 + int(parts[1])
+
+
+def parse_time_value(value: str | time) -> time:
+    if isinstance(value, time):
+        return value
+    parts = str(value).strip()[:8].split(":")
+    hour = int(parts[0])
+    minute = int(parts[1]) if len(parts) > 1 else 0
+    second = int(parts[2]) if len(parts) > 2 else 0
+    return time(hour, minute, second)
 
 
 def minutes_to_time(total_minutes: int) -> str:
@@ -159,8 +169,8 @@ class DoctorAvailabilityService:
                 {
                     "doctor_id": doctor_id,
                     "day_of_week": int(day_of_week),
-                    "start_time": str(start_time)[:5],
-                    "end_time": str(end_time)[:5],
+                    "start_time": parse_time_value(str(start_time)),
+                    "end_time": parse_time_value(str(end_time)),
                     "slot_duration_minutes": int(rule.get("slotDurationMinutes", rule.get("slot_duration_minutes", 30))),
                     "buffer_minutes": int(rule.get("bufferMinutes", rule.get("buffer_minutes", 0))),
                     "max_appointments_per_day": rule.get("maxAppointmentsPerDay", rule.get("max_appointments_per_day")),
@@ -203,6 +213,9 @@ class DoctorAvailabilityService:
         if not title or not start_date or not end_date:
             raise AppError("title, startDate, endDate are required", status_code=400)
 
+        start = date.fromisoformat(str(start_date))
+        end = date.fromisoformat(str(end_date))
+
         result = await self.db.execute(
             text(
                 """
@@ -218,14 +231,14 @@ class DoctorAvailabilityService:
                 "doctor_id": doctor_id,
                 "title": title,
                 "holiday_type": body.get("holidayType", body.get("holiday_type", "leave")),
-                "start_date": start_date,
-                "end_date": end_date,
+                "start_date": start,
+                "end_date": end,
                 "reason": body.get("reason"),
                 "created_by": actor_user_id,
             },
         )
         row = dict(result.mappings().one())
-        await self._block_holiday_range(doctor_id, str(start_date), str(end_date), body.get("reason") or "leave")
+        await self._block_holiday_range(doctor_id, start, end, body.get("reason") or "leave")
         return self._map_holiday_row(row)
 
     async def get_availability_calendar(
@@ -240,6 +253,9 @@ class DoctorAvailabilityService:
             to_str = to_date
         else:
             to_str = (date.fromisoformat(from_str) + timedelta(days=13)).isoformat()
+
+        from_day = date.fromisoformat(from_str)
+        to_day = date.fromisoformat(to_str)
 
         await self.generate_slots_for_doctor_range(doctor_id, from_str, to_str)
 
@@ -266,13 +282,13 @@ class DoctorAvailabilityService:
                        )::int AS available_slots
                 FROM operations.appointment_slots s
                 WHERE s.doctor_id = :doctor_id
-                  AND s.slot_date >= CAST(:from_date AS date)
-                  AND s.slot_date <= CAST(:to_date AS date)
+                  AND s.slot_date >= :from_date
+                  AND s.slot_date <= :to_date
                 GROUP BY s.slot_date
                 ORDER BY s.slot_date ASC
                 """
             ),
-            {"doctor_id": doctor_id, "from_date": from_str, "to_date": to_str},
+            {"doctor_id": doctor_id, "from_date": from_day, "to_date": to_day},
         )
         appointments_result = await self.db.execute(
             text(
@@ -284,16 +300,16 @@ class DoctorAvailabilityService:
                 JOIN identity.users u ON u.id = p.user_id
                 JOIN operations.appointment_types at ON at.id = a.appointment_type_id
                 WHERE a.doctor_id = :doctor_id
-                  AND a.scheduled_start::date >= CAST(:from_date AS date)
-                  AND a.scheduled_start::date <= CAST(:to_date AS date)
+                  AND a.scheduled_start::date >= :from_date
+                  AND a.scheduled_start::date <= :to_date
                   AND a.status::text = ANY(:statuses)
                 ORDER BY a.scheduled_start ASC
                 """
             ),
             {
                 "doctor_id": doctor_id,
-                "from_date": from_str,
-                "to_date": to_str,
+                "from_date": from_day,
+                "to_date": to_day,
                 "statuses": list(ACTIVE_APPOINTMENT_STATUSES),
             },
         )
@@ -668,8 +684,8 @@ class DoctorAvailabilityService:
                         {
                             "doctor_id": doctor_id,
                             "slot_date": slot_day,
-                            "start_time": start_time,
-                            "end_time": end_time,
+                            "start_time": parse_time_value(start_time),
+                            "end_time": parse_time_value(end_time),
                             "slot_type": slot_type,
                         },
                     )
@@ -696,8 +712,8 @@ class DoctorAvailabilityService:
     async def _block_holiday_range(
         self,
         doctor_id: UUID,
-        start_date: str,
-        end_date: str,
+        start_date: date,
+        end_date: date,
         reason: str,
     ) -> None:
         await self.db.execute(
@@ -706,8 +722,8 @@ class DoctorAvailabilityService:
                 UPDATE operations.appointment_slots
                 SET is_blocked = true, block_reason = :reason, status = 'blocked', updated_at = now()
                 WHERE doctor_id = :doctor_id
-                  AND slot_date >= CAST(:start_date AS date)
-                  AND slot_date <= CAST(:end_date AS date)
+                  AND slot_date >= :start_date
+                  AND slot_date <= :end_date
                 """
             ),
             {"doctor_id": doctor_id, "start_date": start_date, "end_date": end_date, "reason": reason},

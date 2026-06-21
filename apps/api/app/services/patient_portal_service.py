@@ -9,6 +9,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi import UploadFile
+
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.integrations.twilio_service import TwilioVerifyService
@@ -23,7 +25,8 @@ from app.services.bank_details_service import BankDetailsService
 from app.services.patient_registry_service import PatientRegistryService
 from app.services.storage_service import StorageService
 from app.services.workflow_notifications import WorkflowNotificationService
-from app.services.patient_portal_access import resolve_patient_user_id
+from app.services.patient_portal_access import ensure_patient_portal_phone, resolve_patient_user_id
+from app.schemas.patient_portal import patient_enquiry_status_label
 from app.utils.phone import normalize_phone, phones_match
 
 _settings = get_settings()
@@ -132,6 +135,40 @@ def _order_row_to_dict(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _enquiry_row_to_dict(row: dict[str, Any]) -> dict[str, Any]:
+    status = row["status"]
+    return {
+        "id": row["id"],
+        "enquiryNumber": row["enquiry_number"],
+        "status": status,
+        "patientStatusLabel": patient_enquiry_status_label(status),
+        "enquiryAt": row["enquiry_at"],
+        "preferredPackageName": row.get("preferred_package_name"),
+        "preferredPackageCode": row.get("preferred_package_code"),
+        "message": row.get("message"),
+        "orderId": row.get("order_id"),
+        "orderNumber": row.get("order_number"),
+    }
+
+
+_ENQUIRY_SELECT = """
+SELECT
+  e.id,
+  e.enquiry_number,
+  e.status,
+  e.enquiry_at,
+  e.message,
+  e.order_id,
+  o.order_number,
+  pkg.name AS preferred_package_name,
+  pkg.code AS preferred_package_code
+FROM operations.enquiries e
+LEFT JOIN commerce.service_orders o ON o.id = e.order_id
+LEFT JOIN commerce.liver_care_packages pkg ON pkg.id = e.preferred_package_id
+WHERE e.deleted_at IS NULL
+"""
+
+
 class PatientPortalService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -232,6 +269,65 @@ class PatientPortalService:
         row = result.mappings().first()
         return _order_row_to_dict(dict(row)) if row else None
 
+    async def _resolve_portal_patient_id(self, phone: str) -> UUID:
+        normalized = await ensure_patient_portal_phone(self.db, phone)
+        result = await self.db.execute(
+            text(
+                """
+                SELECT p.id
+                FROM clinical.patients p
+                JOIN identity.users u ON u.id = p.user_id
+                WHERE p.status = 'active'
+                  AND right(regexp_replace(u.mobile, '\\D', '', 'g'), 10) = :phone
+                ORDER BY p.created_at DESC
+                LIMIT 1
+                """
+            ),
+            {"phone": normalized},
+        )
+        row = result.first()
+        if not row:
+            raise AppError("No portal access for this phone number", status_code=403, error="forbidden")
+        return row[0]
+
+    async def list_enquiries(self, phone: str) -> list[dict[str, Any]]:
+        normalized = await ensure_patient_portal_phone(self.db, phone)
+        patient_id = await self._resolve_portal_patient_id(normalized)
+        result = await self.db.execute(
+            text(
+                f"""
+                {_ENQUIRY_SELECT}
+                  AND (
+                    right(regexp_replace(e.phone, '\\D', '', 'g'), 10) = :phone
+                    OR e.patient_id = :patient_id
+                  )
+                ORDER BY e.enquiry_at DESC
+                """
+            ),
+            {"phone": normalized, "patient_id": patient_id},
+        )
+        return [_enquiry_row_to_dict(dict(row)) for row in result.mappings().all()]
+
+    async def get_enquiry(self, phone: str, enquiry_id: UUID) -> dict[str, Any] | None:
+        normalized = await ensure_patient_portal_phone(self.db, phone)
+        patient_id = await self._resolve_portal_patient_id(normalized)
+        result = await self.db.execute(
+            text(
+                f"""
+                {_ENQUIRY_SELECT}
+                  AND e.id = :enquiry_id
+                  AND (
+                    right(regexp_replace(e.phone, '\\D', '', 'g'), 10) = :phone
+                    OR e.patient_id = :patient_id
+                  )
+                LIMIT 1
+                """
+            ),
+            {"phone": normalized, "patient_id": patient_id, "enquiry_id": enquiry_id},
+        )
+        row = result.mappings().first()
+        return _enquiry_row_to_dict(dict(row)) if row else None
+
     async def get_profile(self, phone: str) -> dict[str, Any]:
         normalized = normalize_phone(phone)
         result = await self.db.execute(
@@ -243,6 +339,7 @@ class PatientPortalService:
                   u.full_name,
                   u.email,
                   u.dob,
+                  u.gender::text AS gender,
                   u.metadata->>'city' AS city,
                   p.updated_at
                 FROM clinical.patients p
@@ -267,6 +364,7 @@ class PatientPortalService:
             "email": row["email"],
             "city": row["city"],
             "dateOfBirth": dob.isoformat() if dob else None,
+            "gender": row["gender"],
             "updatedAt": row["updated_at"],
         }
 
@@ -370,17 +468,60 @@ class PatientPortalService:
         file_name: str,
         mime_type: str,
         entity_type: str,
+        entity_id: UUID | None = None,
         subfolder: str | None = None,
     ) -> dict[str, Any]:
         user_id = await self._user_id_for_phone(phone)
+        normalized_type = entity_type.strip().lower()
+        target_entity_id = entity_id or user_id
+        if normalized_type == "payment_receipt":
+            if entity_id is None:
+                raise AppError("entityId (order id) is required for payment receipts", status_code=400)
+            order = await self.get_order(phone, entity_id)
+            if not order:
+                raise AppError("Order not found", status_code=404)
+            target_entity_id = entity_id
         return await StorageService(self.db).presign_upload(
             user_id,
             file_name,
             mime_type,
             entity_type,
-            user_id,
+            target_entity_id,
             subfolder=subfolder,
         )
+
+    async def upload_storage_multipart(
+        self,
+        phone: str,
+        file: UploadFile,
+        *,
+        entity_type: str,
+        entity_id: UUID | None = None,
+        subfolder: str | None = None,
+    ) -> dict[str, Any]:
+        """Server-side upload — avoids browser presigned PUT to internal LocalStack host."""
+        user_id = await self._user_id_for_phone(phone)
+        normalized_type = entity_type.strip().lower()
+        target_entity_id = entity_id or user_id
+        if normalized_type == "payment_receipt":
+            if entity_id is None:
+                raise AppError("entityId (order id) is required for payment receipts", status_code=400)
+            order = await self.get_order(phone, entity_id)
+            if not order:
+                raise AppError("Order not found", status_code=404)
+            target_entity_id = entity_id
+        uploaded = await StorageService(self.db).upload_multipart(
+            file,
+            user_id,
+            entity_type,
+            target_entity_id,
+            subfolder=subfolder,
+        )
+        return {
+            "fileId": uploaded["fileId"],
+            "storageUrl": uploaded["storageUrl"],
+            "confirmed": True,
+        }
 
     async def confirm_storage_upload(self, phone: str, file_id: UUID) -> dict[str, Any]:
         user_id = await self._user_id_for_phone(phone)
@@ -500,7 +641,9 @@ class PatientPortalService:
         phone: str | None,
         method: str,
         *,
-        outcome: str = "success",
+        receipt_file_id: UUID | None = None,
+        transaction_ref: str | None = None,
+        outcome: str | None = None,
     ) -> dict[str, Any]:
         order = await self.get_order(phone, order_id)
         if not order:
@@ -512,9 +655,16 @@ class PatientPortalService:
             order_id,
             method=method,
             amount=float(order["finalAmount"]),
+            receipt_file_id=receipt_file_id,
+            transaction_ref=transaction_ref,
             outcome=outcome,
         )
         return result
+
+    async def get_payment_config(self) -> dict[str, Any]:
+        from app.services.integration_settings_service import IntegrationSettingsService
+
+        return await IntegrationSettingsService(self.db).get_payment_config()
 
     async def get_timeline(self, phone: str | None, order_id: UUID) -> list[dict[str, Any]]:
         order = await self.get_order(phone, order_id)
@@ -536,7 +686,7 @@ class PatientPortalService:
         order = await self._require_order_for_date_request(phone, order_id)
         if order["scanScheduledAt"]:
             raise AppError("Scan is already confirmed by operations")
-        if order["paymentStatus"] not in ("success", "processing"):
+        if order["paymentStatus"] != "success":
             raise AppError("Complete payment before selecting a scan date")
         if order["orderStatus"] in ("scan_in_progress", "scan_completed", "completed"):
             raise AppError("Scan date can no longer be changed")
@@ -657,7 +807,7 @@ class PatientPortalService:
         order = await self._require_order_for_date_request(phone, order_id)
         if order["pathologyScheduledAt"]:
             raise AppError("Pathology visit is already confirmed by operations")
-        if order["paymentStatus"] not in ("success", "processing"):
+        if order["paymentStatus"] != "success":
             raise AppError("Complete payment before selecting a pathology visit date")
 
         await self.db.execute(

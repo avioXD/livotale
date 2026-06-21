@@ -6,7 +6,7 @@
 ## Integration test (PKG-2)
 
 ```
-assign-lab → lab-partner-order → PATCH external-id → schedule-pathology
+assign-lab → schedule-pathology → lab-partner-order → PATCH external-id
 → lab-partner-visit(visited) → lab-partner-collected → received → awaiting-report
 → lab-report → ai-extract → verify → final-report/generate → publish → complete
 ```

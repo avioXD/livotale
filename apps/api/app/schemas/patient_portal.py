@@ -82,6 +82,7 @@ class PatientProfile(BaseSchema):
     email: str | None = None
     city: str | None = None
     date_of_birth: str | None = Field(default=None, alias="dateOfBirth")
+    gender: str | None = None
     updated_at: datetime = Field(alias="updatedAt")
 
 
@@ -126,7 +127,9 @@ class PatientConsultDateRequest(BaseSchema):
 class PatientPayRequest(BaseSchema):
     phone: str | None = None
     method: str = Field(default="upi")
-    outcome: str = Field(default="success")
+    receipt_file_id: UUID | None = Field(default=None, alias="receiptFileId")
+    transaction_ref: str | None = Field(default=None, alias="transactionRef")
+    outcome: str | None = Field(default=None)
 
 
 class OrderInvoice(BaseSchema):
@@ -157,3 +160,31 @@ class PatientNotification(BaseSchema):
     order_id: UUID | None = Field(default=None, alias="orderId")
     read: bool
     sent_at: datetime = Field(alias="sentAt")
+
+
+PATIENT_ENQUIRY_STATUS_LABELS: dict[str, str] = {
+    "new": "Submitted",
+    "contacted": "Team reviewing",
+    "interested": "In progress",
+    "follow_up_required": "Follow-up scheduled",
+    "converted": "Order created",
+    "not_interested": "Closed",
+    "closed": "Closed",
+}
+
+
+def patient_enquiry_status_label(status: str) -> str:
+    return PATIENT_ENQUIRY_STATUS_LABELS.get(status, status.replace("_", " ").title())
+
+
+class PatientEnquiry(BaseSchema):
+    id: UUID
+    enquiry_number: str = Field(alias="enquiryNumber")
+    status: str
+    patient_status_label: str = Field(alias="patientStatusLabel")
+    enquiry_at: datetime = Field(alias="enquiryAt")
+    preferred_package_name: str | None = Field(default=None, alias="preferredPackageName")
+    preferred_package_code: str | None = Field(default=None, alias="preferredPackageCode")
+    message: str | None = None
+    order_id: UUID | None = Field(default=None, alias="orderId")
+    order_number: str | None = Field(default=None, alias="orderNumber")

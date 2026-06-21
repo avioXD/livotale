@@ -39,10 +39,7 @@ export function buildPathologyScheduledAt(date: string, slotOrLabel: string): st
 }
 
 export function isPaymentReadyForPathology(order: LiverCareOrder): boolean {
-  return (
-    order.paymentStatus === 'success' ||
-    !['draft', 'created', 'payment_pending'].includes(order.orderStatus)
-  );
+  return order.paymentStatus === 'success';
 }
 
 export function getPathologySchedulePrerequisites(order: LiverCareOrder): PathologySchedulePrerequisite[] {
@@ -55,21 +52,21 @@ export function getPathologySchedulePrerequisites(order: LiverCareOrder): Pathol
     },
     {
       id: 'lab',
-      label: 'Lab partner assigned & portal order ID saved (from their website)',
-      met: Boolean(
-        order.partnerLabId &&
-          order.pathologyLabOrderRef &&
-          order.pathologyExternalAppointmentId,
-      ),
+      label: 'Lab partner assigned',
+      met: Boolean(order.partnerLabId),
       owner: 'operations',
     },
     {
       id: 'date',
       label: 'Pathology date and 45-min slot selected',
       met: Boolean(order.pathologyPatientPreferredAt || order.pathologyScheduledAt),
-      owner: 'patient',
+      owner: 'operations',
     },
   ];
+}
+
+export function isPortalOrderMapped(order: LiverCareOrder): boolean {
+  return Boolean(order.pathologyLabOrderRef && order.pathologyExternalAppointmentId);
 }
 
 export function canOpsConfirmPathologySchedule(order: LiverCareOrder): boolean {

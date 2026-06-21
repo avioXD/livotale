@@ -3,6 +3,7 @@ import { StatusBadge } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { LogTextarea } from '@/components/forms/LogTextarea';
 import { liverCareOrderService } from '@/services/liverCare';
 import { toastSuccess, toastError } from '@/store/toast/toastStore';
 import type { LiverCareOrder } from '@/types/serviceOrder';
@@ -27,6 +28,8 @@ const CHANNEL_LABELS: Record<PaymentChannel, string> = {
 export function OrderPaymentSection({ order, onUpdated, readOnly = false }: OrderPaymentSectionProps) {
   const [showOffline, setShowOffline] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [rejectRemarks, setRejectRemarks] = useState('');
   const [sendingLink, setSendingLink] = useState(false);
   const [offlineRecords, setOfflineRecords] = useState<OfflinePaymentRecord[]>([]);
   const [invoice, setInvoice] = useState<OrderInvoice | null>(null);
@@ -41,6 +44,8 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
     }
   }, [order.id, order.paymentStatus]);
 
+  const pendingProof = [...offlineRecords].reverse().find((r) => r.status === 'processing') ?? null;
+
   const toggleChannel = (channel: PaymentChannel) => {
     setChannels((prev) =>
       prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel],
@@ -52,9 +57,37 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
     try {
       await liverCareOrderService.markOfflinePayment(order.id, body);
       setShowOffline(false);
+      toastSuccess('Offline payment recorded.');
       onUpdated();
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      await liverCareOrderService.verifyPayment(order.id);
+      toastSuccess('Payment verified.');
+      onUpdated();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Could not verify payment');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setVerifying(true);
+    try {
+      await liverCareOrderService.rejectPayment(order.id, rejectRemarks.trim() || undefined);
+      toastSuccess('Payment proof rejected.');
+      setRejectRemarks('');
+      onUpdated();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Could not reject payment');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -81,6 +114,9 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
     }
   };
 
+  const canCollect = !readOnly && order.paymentStatus !== 'success' && order.paymentStatus !== 'processing';
+  const awaitingVerify = !readOnly && order.paymentStatus === 'processing';
+
   return (
     <>
       <Card>
@@ -101,7 +137,44 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
             <span className="font-semibold">₹{order.finalAmount.toLocaleString('en-IN')}</span>
           </div>
 
-          {!readOnly && order.paymentStatus !== 'success' && (
+          {awaitingVerify && (
+            <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Patient payment proof awaiting verification</p>
+              {pendingProof?.transactionRef && (
+                <p className="text-xs text-amber-800">Transaction ref: {pendingProof.transactionRef}</p>
+              )}
+              {pendingProof?.receiptUrl && (
+                <a href={pendingProof.receiptUrl} target="_blank" rel="noreferrer" className="inline-block">
+                  <img
+                    src={pendingProof.receiptUrl}
+                    alt="Payment proof"
+                    className="max-h-56 rounded-md border bg-white object-contain"
+                  />
+                </a>
+              )}
+              <div className="space-y-2">
+                <LogTextarea
+                  id="reject-remarks"
+                  value={rejectRemarks}
+                  onChange={setRejectRemarks}
+                  limit="LOG_SHORT"
+                  rows={2}
+                  label="Rejection note (optional)"
+                  placeholder="Reason if rejecting the proof"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={handleVerify} disabled={verifying}>
+                  {verifying ? 'Working…' : 'Verify payment'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleReject} disabled={verifying}>
+                  Reject
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {canCollect && (
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Send link via</Label>
@@ -138,12 +211,20 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
 
           {offlineRecords.length > 0 && (
             <div className="rounded-md border p-3 text-sm">
-              <p className="font-medium">Offline collections</p>
-              <ul className="mt-2 space-y-1 text-muted-foreground">
+              <p className="font-medium">Payment records</p>
+              <ul className="mt-2 space-y-3 text-muted-foreground">
                 {offlineRecords.map((r) => (
-                  <li key={r.id}>
-                    ₹{r.amount.toLocaleString('en-IN')} · {r.method} · {r.collectedBy}
-                    {r.transactionRef ? ` · ${r.transactionRef}` : ''}
+                  <li key={r.id} className="space-y-1">
+                    <p>
+                      ₹{r.amount.toLocaleString('en-IN')} · {r.method} · {r.collectedBy}
+                      {r.status ? ` · ${r.status}` : ''}
+                      {r.transactionRef ? ` · ${r.transactionRef}` : ''}
+                    </p>
+                    {r.receiptUrl && (
+                      <a href={r.receiptUrl} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                        View receipt
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

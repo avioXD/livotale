@@ -9,6 +9,7 @@ import { LabWorkflowChecklist } from '@/app/pages/admin/orders/components/LabWor
 import { OrderPathologyScheduleSection } from '@/app/pages/admin/orders/components/OrderPathologyScheduleSection';
 import { OrderSampleProofGallery } from '@/app/pages/admin/orders/components/OrderSampleProofGallery';
 import { getLabWorkflowSteps } from '@/app/pages/admin/orders/components/labWorkflowSteps';
+import { isPortalOrderMapped } from '@/services/liverCare/pathologySchedule';
 import { useLabReportsStore } from '@/store';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 
@@ -28,11 +29,8 @@ export function OrderPathologySection({
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedLabId, setSelectedLabId] = useState(order.partnerLabId ?? '');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [emailFrom, setEmailFrom] = useState('');
-  const [emailSubject, setEmailSubject] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  const activeOrderId = useLabReportsStore((s) => s.activeOrderId);
   const storeOrder = useLabReportsStore((s) => (s.activeOrderId === order.id ? s.activeOrder : null));
   const report = useLabReportsStore((s) => (s.activeOrderId === order.id ? s.report : null));
   const dispatch = useLabReportsStore((s) => (s.activeOrderId === order.id ? s.dispatch : null));
@@ -62,16 +60,7 @@ export function OrderPathologySection({
     setSelectedLabId(order.partnerLabId ?? '');
   }, [order.id, order.partnerLabId, loadOrder]);
 
-  useEffect(() => {
-    if (report?.emailFrom) setEmailFrom(report.emailFrom);
-    if (report?.emailSubject) setEmailSubject(report.emailSubject);
-  }, [report?.emailFrom, report?.emailSubject]);
-
-  useEffect(() => {
-    if (assignedLab?.email && !emailFrom && activeOrderId === order.id) {
-      setEmailFrom(assignedLab.email);
-    }
-  }, [assignedLab?.email, emailFrom, activeOrderId, order.id]);
+  const portalOrderMapped = isPortalOrderMapped(effectiveOrder);
 
   if (!pathologyRequired) {
     return (
@@ -96,11 +85,7 @@ export function OrderPathologySection({
   const handleUploadPdf = () => {
     if (!pdfFile) return;
     void run(async () => {
-      const result = await uploadReportFromEmail(order.id, {
-        file: pdfFile,
-        emailFrom: emailFrom || assignedLab?.email,
-        emailSubject: emailSubject || undefined,
-      });
+      const result = await uploadReportFromEmail(order.id, { file: pdfFile });
       setUploadSuccess(
         `Uploaded ${result.report.fileName}. AI extracted ${result.extractionJob.fields.length} parameters.`,
       );
@@ -179,7 +164,17 @@ export function OrderPathologySection({
 
         {!readOnly &&
           order.pathologyScheduledAt &&
+          !portalOrderMapped && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Confirm the pathology schedule above, then generate the internal ref and save the lab portal
+              order ID before tracking collector visit.
+            </p>
+          )}
+
+        {!readOnly &&
+          order.pathologyScheduledAt &&
           dispatch?.status === 'pending_dispatch' &&
+          portalOrderMapped &&
           effectiveOrder.pathologyVisitOutcome !== 'visited' && (
             <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
               <p className="font-medium">Update from lab partner portal — collector visit</p>
@@ -247,7 +242,7 @@ export function OrderPathologySection({
 
         {!readOnly && dispatch?.status === 'pending_dispatch' && !order.pathologyScheduledAt && (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Assign lab partner, create the lab order, and confirm the pathology schedule above.
+            Assign a lab partner and confirm the pathology visit schedule above.
           </p>
         )}
 
@@ -281,29 +276,17 @@ export function OrderPathologySection({
 
         {!readOnly && canUploadPdf && (
           <div className="space-y-3 rounded-md border border-dashed border-livotale-pink/40 bg-livotale-pink/5 p-4">
-            <p className="text-sm font-medium">Upload PDF from lab email</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label htmlFor="email-from">Email from</Label>
-                <Input
-                  id="email-from"
-                  value={emailFrom}
-                  onChange={(e) => setEmailFrom(e.target.value)}
-                  placeholder={assignedLab?.email ?? 'reports@lab.test'}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="email-subject">Email subject (optional)</Label>
-                <Input
-                  id="email-subject"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  placeholder={`Pathology — ${effectiveOrder.patientName}`}
-                />
-              </div>
-            </div>
+            <p className="text-sm font-medium">Upload lab report PDF</p>
+            {effectiveOrder.pathologyLabOrderRef && (
+              <p className="text-sm text-muted-foreground">
+                Internal ref:{' '}
+                <span className="font-mono font-medium text-foreground">
+                  {effectiveOrder.pathologyLabOrderRef}
+                </span>
+              </p>
+            )}
             <div className="space-y-1">
-              <Label htmlFor="lab-pdf">PDF attachment</Label>
+              <Label htmlFor="lab-pdf">PDF file</Label>
               <Input
                 id="lab-pdf"
                 ref={fileRef}

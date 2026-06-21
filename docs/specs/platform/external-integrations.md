@@ -12,7 +12,8 @@ Platform-wide configuration for SMS (Twilio), email (SendGrid), AI extraction, m
 
 | Item | Location |
 |------|----------|
-| Credentials | `integrations.platform_settings` (AES-GCM via `INTEGRATIONS_ENCRYPTION_KEY`) |
+| Credentials | `integrations.platform_settings` (AES-GCM via `INTEGRATIONS_ENCRYPTION_KEY`) — Twilio, SendGrid, AI, S3 |
+| Object storage | S3 bucket/region/credentials in `platform_settings`; env fallback when DB fields empty |
 | Message templates | `integrations.message_templates` (code + channel unique) |
 | PDF letterhead | `clinical.letterhead_templates` |
 | Dispatch audit | `integrations.notifications_log` |
@@ -31,7 +32,8 @@ Demo mode validates against `identity.otp_challenges` with send cooldown and rat
 
 ## API
 
-- `GET/PUT /admin/integrations/settings` — Super Admin
+- `GET/PUT /admin/integrations/settings` — Super Admin (includes S3 fields)
+- `POST /admin/integrations/settings/test-storage` — Super Admin S3 connection probe
 - `POST /admin/integrations/settings/test-sms|test-email`
 - `GET/PUT /admin/integrations/message-templates`
 - `GET/PUT /admin/integrations/pdf-templates`

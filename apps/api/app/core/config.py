@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     s3_bucket: str = "livotale-files"
     s3_region: str = "ap-south-1"
     s3_endpoint: str | None = None
+    s3_public_endpoint: str | None = None
     s3_key_prefix: str = "livotale"
     aws_access_key_id: str = "test"
     aws_secret_access_key: str = "test"

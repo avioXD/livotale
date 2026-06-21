@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import date, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+
+
+def _future_on_weekday(weekday: int, *, days_ahead: int = 14) -> date:
+    """Return a future date matching Python weekday (Mon=0). API dayOfWeek uses Sun=0."""
+    target = date.today() + timedelta(days=days_ahead)
+    while target.weekday() != weekday:
+        target += timedelta(days=1)
+    return target
 
 
 @pytest.fixture(scope="module")
@@ -86,10 +95,14 @@ def test_admin_can_save_doctor_weekly_schedule(staff_client: TestClient, admin_t
     assert saved["rules"][0]["dayOfWeek"] == 1
     assert saved["rules"][0]["startTime"] == "10:00"
 
+    window_start = _future_on_weekday(0)
+    window_end = window_start + timedelta(days=13)
+    slot_day = _future_on_weekday(0, days_ahead=15)
+
     calendar = staff_client.get(
         f"/api/v1/admin/doctors/{doctor_id}/availability",
         headers=headers,
-        params={"fromDate": "2026-06-01", "toDate": "2026-06-14"},
+        params={"fromDate": window_start.isoformat(), "toDate": window_end.isoformat()},
     )
     assert calendar.status_code == 200, calendar.text
     assert len(calendar.json()["data"]["weeklyRules"]) == 2
@@ -101,7 +114,7 @@ def test_admin_can_save_doctor_weekly_schedule(staff_client: TestClient, admin_t
     slots = staff_client.get(
         f"/api/v1/admin/doctors/{doctor_id}/slots",
         headers=headers,
-        params={"date": "2026-06-02", "visitMode": "tele"},
+        params={"date": slot_day.isoformat(), "visitMode": "tele"},
     )
     assert slots.status_code == 200, slots.text
     slot_rows = slots.json()["data"]
@@ -132,20 +145,23 @@ def test_operations_can_manage_doctor_schedule_and_leave(staff_client: TestClien
     )
     assert save.status_code == 200, save.text
 
+    leave_start = date.today() + timedelta(days=60)
+    leave_end = leave_start + timedelta(days=2)
+
     holiday = staff_client.post(
         f"/api/v1/admin/doctors/{doctor_id}/holidays",
         headers=headers,
         json={
             "title": "Conference leave",
-            "startDate": "2026-12-01",
-            "endDate": "2026-12-03",
+            "startDate": leave_start.isoformat(),
+            "endDate": leave_end.isoformat(),
             "reason": "Medical conference",
         },
     )
     assert holiday.status_code == 200, holiday.text
     body = holiday.json()["data"]
     assert body["title"] == "Conference leave"
-    assert body["start_date"] == "2026-12-01"
+    assert body["start_date"] == leave_start.isoformat()
 
     listed = staff_client.get(f"/api/v1/admin/doctors/{doctor_id}/holidays", headers=headers)
     assert listed.status_code == 200, listed.text

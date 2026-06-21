@@ -19,6 +19,7 @@ class PatientPresignUploadRequest(BaseModel):
     file_name: str = Field(alias="fileName")
     mime_type: str = Field(alias="mimeType")
     entity_type: str = Field(alias="entityType")
+    entity_id: UUID | None = Field(default=None, alias="entityId")
     subfolder: str | None = Field(default=None, alias="subfolder")
 
 

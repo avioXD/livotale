@@ -47,6 +47,6 @@ test.describe('S4 pathology partner lab workflow (UI smoke)', () => {
     await expect(page.getByText(/Update from lab partner portal/i)).toBeVisible({ timeout: 5000 }).catch(() => {
       // Order may already be past visit stage — checklist still visible
     });
-    await expect(page.getByText('Assign lab partner & portal order ID')).toBeVisible();
+    await expect(page.getByText('Assign lab partner')).toBeVisible();
   });
 });

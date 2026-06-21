@@ -335,6 +335,14 @@ def assign_lab_and_upload_report(client: TestClient, admin_token: str, order_id:
     )
     assert assign.status_code == 200, assign.text
 
+    scheduled_at = (datetime.now(UTC) + timedelta(days=2)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    schedule = client.post(
+        f"/api/v1/admin/orders/{order_id}/schedule-pathology",
+        headers=headers,
+        json={"scheduledAt": scheduled_at, "timeSlot": "14:00–16:00"},
+    )
+    assert schedule.status_code == 200, schedule.text
+
     create_ref = client.post(f"/api/v1/admin/orders/{order_id}/lab-partner-order", headers=headers)
     assert create_ref.status_code == 200, create_ref.text
 
@@ -344,14 +352,6 @@ def assign_lab_and_upload_report(client: TestClient, admin_token: str, order_id:
         json={"externalAppointmentId": "EXT-LAB-12345"},
     )
     assert external.status_code == 200, external.text
-
-    scheduled_at = (datetime.now(UTC) + timedelta(days=2)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    schedule = client.post(
-        f"/api/v1/admin/orders/{order_id}/schedule-pathology",
-        headers=headers,
-        json={"scheduledAt": scheduled_at, "timeSlot": "14:00–16:00"},
-    )
-    assert schedule.status_code == 200, schedule.text
 
     visit = client.post(
         f"/api/v1/admin/orders/{order_id}/lab-partner-visit",

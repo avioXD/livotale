@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.integrations.s3 import S3Service
+from app.integrations.s3_config import resolve_s3_config
 
 # DB file_type enum values (storage.files.file_type)
 ENTITY_FILE_TYPE_MAP: dict[str, str] = {
@@ -28,6 +29,8 @@ ENTITY_FILE_TYPE_MAP: dict[str, str] = {
     "payout_verification": "other",
     "chat_attachment": "chat_attachment",
     "signature": "signature",
+    "payment_receipt": "other",
+    "payment_qr": "other",
     "other": "other",
 }
 
@@ -47,6 +50,8 @@ S3_ENTITY_PREFIX: dict[str, str] = {
     "signature": "identity/signatures/doctors",
     "chat_attachment": "communications/chat",
     "old_report": "clinical/historical-reports/patients",
+    "payment_receipt": "commerce/payment-receipts/orders",
+    "payment_qr": "commerce/payment-qr/platform",
     "other": "misc/uploads",
 }
 
@@ -94,7 +99,12 @@ def build_s3_object_key(
 class StorageService:
     def __init__(self, db: AsyncSession, s3: S3Service | None = None):
         self.db = db
-        self.s3 = s3 or S3Service()
+        self._s3_override = s3
+
+    async def _s3(self) -> S3Service:
+        if self._s3_override is not None:
+            return self._s3_override
+        return await S3Service.from_db(self.db)
 
     async def presign_upload(
         self,
@@ -111,9 +121,13 @@ class StorageService:
 
         file_id = uuid4()
         safe_name = _sanitize_filename(file_name)
-        key = build_s3_object_key(entity_type, entity_id, file_id, safe_name, subfolder=subfolder)
-        storage_url = self.s3.get_public_url(key)
-        upload_url = await self.s3.generate_presigned_upload(key, mime_type)
+        s3 = await self._s3()
+        runtime = await resolve_s3_config(self.db)
+        key = build_s3_object_key(
+            entity_type, entity_id, file_id, safe_name, subfolder=subfolder, root_prefix=runtime.key_prefix
+        )
+        storage_url = s3.get_public_url(key)
+        upload_url = await s3.generate_presigned_upload(key, mime_type)
         file_type = _resolve_file_type(entity_type)
 
         await self.db.execute(
@@ -179,7 +193,8 @@ class StorageService:
         key = metadata.get("s3Key")
         file_size_bytes = None
         if key:
-            head = self.s3.head_object_sync(key)
+            s3 = await self._s3()
+            head = s3.head_object_sync(key)
             if not head:
                 raise AppError("Uploaded object not found in storage", status_code=400)
             file_size_bytes = head.get("ContentLength")
@@ -226,11 +241,15 @@ class StorageService:
         mime_type = file.content_type or "application/octet-stream"
         file_id = uuid4()
         safe_name = _sanitize_filename(file.filename)
-        key = build_s3_object_key(entity_type, entity_id, file_id, safe_name, subfolder=subfolder)
-        storage_url = self.s3.get_public_url(key)
+        s3 = await self._s3()
+        runtime = await resolve_s3_config(self.db)
+        key = build_s3_object_key(
+            entity_type, entity_id, file_id, safe_name, subfolder=subfolder, root_prefix=runtime.key_prefix
+        )
+        storage_url = s3.get_public_url(key)
         file_type = _resolve_file_type(entity_type)
 
-        await self.s3.upload_file(content, key, mime_type)
+        await s3.upload_file(content, key, mime_type)
         await self.db.execute(
             text(
                 """
@@ -287,7 +306,10 @@ class StorageService:
     ) -> dict:
         """Link a presigned upload (already confirmed) to a domain record."""
         safe_name = _sanitize_filename(file_name)
-        key = s3_key or build_s3_object_key(entity_type, entity_id, file_id, safe_name, subfolder=subfolder)
+        runtime = await resolve_s3_config(self.db)
+        key = s3_key or build_s3_object_key(
+            entity_type, entity_id, file_id, safe_name, subfolder=subfolder, root_prefix=runtime.key_prefix
+        )
         file_type = _resolve_file_type(entity_type)
 
         await self.db.execute(

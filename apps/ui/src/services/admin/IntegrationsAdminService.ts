@@ -17,6 +17,19 @@ export interface PlatformSettings {
   twilioConfigured: boolean;
   sendgridConfigured: boolean;
   aiConfigured: boolean;
+  paymentUpiId?: string | null;
+  paymentQrFileId?: string | null;
+  paymentQrUrl?: string | null;
+  paymentPayeeName?: string | null;
+  paymentConfigured?: boolean;
+  s3Bucket?: string | null;
+  s3Region?: string | null;
+  s3KeyPrefix?: string | null;
+  s3Endpoint?: string | null;
+  s3PublicEndpoint?: string | null;
+  s3AccessKeyId?: string | null;
+  s3SecretAccessKey?: string | null;
+  s3Configured?: boolean;
   updatedAt?: string | null;
 }
 
@@ -48,6 +61,7 @@ export interface IntegrationStatus {
   twilioConfigured: boolean;
   sendgridConfigured: boolean;
   aiConfigured: boolean;
+  s3Configured: boolean;
   whatsappEnabled: boolean;
   razorpayEnabled: boolean;
 }
@@ -59,6 +73,14 @@ export interface TwilioConfigTestResult {
   fromNumber?: string | null;
   senderMode?: string | null;
   accountName?: string | null;
+  error?: string | null;
+}
+
+export interface S3ConfigTestResult {
+  ok: boolean;
+  bucket?: string | null;
+  region?: string | null;
+  endpoint?: string | null;
   error?: string | null;
 }
 
@@ -90,6 +112,10 @@ class IntegrationsAdminService extends BaseApiService {
 
   testTwilioConfig(): Promise<TwilioConfigTestResult> {
     return this.post<TwilioConfigTestResult>('/admin/integrations/settings/test-config');
+  }
+
+  testS3Config(): Promise<S3ConfigTestResult> {
+    return this.post<S3ConfigTestResult>('/admin/integrations/settings/test-storage');
   }
 
   testSms(phone: string, templateCode: string): Promise<{ phone: string; body: string; sid?: string; status?: string; senderMode?: string }> {

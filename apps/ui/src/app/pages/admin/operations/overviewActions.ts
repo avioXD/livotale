@@ -47,6 +47,12 @@ export const OVERVIEW_QUICK_ACTIONS: OverviewQuickAction[] = [
     path: orgPath('/admin/appointments/book'),
   },
   {
+    label: 'Payments to verify',
+    type: 'tab',
+    tab: 'orders',
+    params: { paymentStatus: 'processing' },
+  },
+  {
     label: 'Pending payments',
     type: 'tab',
     tab: 'orders',

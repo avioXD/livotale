@@ -80,7 +80,7 @@ def test_admin_routes_require_auth(client: TestClient):
 
 
 def test_doctor_routes_require_auth(client: TestClient):
-    assert client.get(f"{API}/doctor/consultations").status_code == 401
+    assert client.get(f"{API}/doctor/consultations/orders").status_code == 401
 
 
 def test_register_admin_role_rejected(client: TestClient):

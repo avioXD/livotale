@@ -23,6 +23,7 @@ from app.schemas.orders import (
     OfflinePaymentRecord,
     OrderTimelineEvent,
     OrderTransitionInput,
+    RejectPaymentInput,
     ConsultTimeSlotOption,
     ScanTimeSlotOption,
     ScheduleConsultationInput,
@@ -242,6 +243,27 @@ async def list_offline_payments(
     service: OrderService = Depends(_service),
 ) -> DataEnvelope[list[OfflinePaymentRecord]]:
     return DataEnvelope(data=await service.list_offline_payments(order_id))
+
+
+@router.post("/{order_id}/verify-payment", response_model=DataEnvelope[LiverCareOrder])
+async def verify_payment(
+    order_id: UUID,
+    user: CurrentUser = Depends(_require_ops),
+    service: OrderService = Depends(_service),
+) -> DataEnvelope[LiverCareOrder]:
+    return DataEnvelope(data=await service.verify_payment(order_id, actor_id=user.user_id))
+
+
+@router.post("/{order_id}/reject-payment", response_model=DataEnvelope[LiverCareOrder])
+async def reject_payment(
+    order_id: UUID,
+    body: RejectPaymentInput,
+    user: CurrentUser = Depends(_require_ops),
+    service: OrderService = Depends(_service),
+) -> DataEnvelope[LiverCareOrder]:
+    return DataEnvelope(
+        data=await service.reject_payment(order_id, actor_id=user.user_id, remarks=body.remarks)
+    )
 
 
 @router.put("/{order_id}/patient-intake", response_model=DataEnvelope[ScanPatientIntake])
