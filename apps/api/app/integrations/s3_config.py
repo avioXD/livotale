@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.exceptions import AppError
 from app.core.integration_encryption import decrypt_secret
 from app.models.integration_platform import PlatformSettings
 from sqlalchemy import select
@@ -34,17 +35,11 @@ class S3RuntimeConfig:
         )
 
 
-def _pick_str(db_value: str | None, env_value: str) -> str:
-    if db_value is not None and db_value.strip():
-        return db_value.strip()
-    return env_value
-
-
-def _pick_optional(db_value: str | None, env_value: str | None) -> str | None:
-    if db_value is not None:
-        stripped = db_value.strip()
-        return stripped or None
-    return env_value
+def _clean(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 async def resolve_s3_config(db: AsyncSession | None = None) -> S3RuntimeConfig:
@@ -57,13 +52,28 @@ async def resolve_s3_config(db: AsyncSession | None = None) -> S3RuntimeConfig:
     if row is None:
         return S3RuntimeConfig.from_env(env)
 
+    source = row.s3_config_source if row.s3_config_source in {"database", "env"} else "env"
+    if source == "env":
+        return S3RuntimeConfig.from_env(env)
+
     secret = decrypt_secret(row.s3_secret_access_key_enc) if row.s3_secret_access_key_enc else None
+    bucket = _clean(row.s3_bucket)
+    region = _clean(row.s3_region)
+    access_key_id = _clean(row.s3_access_key_id)
+    secret_access_key = _clean(secret)
+    if not bucket or not region or not access_key_id or not secret_access_key:
+        raise AppError(
+            "S3 storage is not configured. Ask an administrator to configure storage credentials.",
+            status_code=503,
+            error="not_configured",
+        )
+
     return S3RuntimeConfig(
-        bucket=_pick_str(row.s3_bucket, env.s3_bucket),
-        region=_pick_str(row.s3_region, env.s3_region),
-        key_prefix=_pick_str(row.s3_key_prefix, env.s3_key_prefix),
-        endpoint=_pick_optional(row.s3_endpoint, env.s3_endpoint),
-        public_endpoint=_pick_optional(row.s3_public_endpoint, env.s3_public_endpoint),
-        access_key_id=_pick_str(row.s3_access_key_id, env.aws_access_key_id),
-        secret_access_key=secret or env.aws_secret_access_key,
+        bucket=bucket,
+        region=region,
+        key_prefix=_clean(row.s3_key_prefix) or "",
+        endpoint=_clean(row.s3_endpoint),
+        public_endpoint=_clean(row.s3_public_endpoint),
+        access_key_id=access_key_id,
+        secret_access_key=secret_access_key,
     )

@@ -48,7 +48,7 @@ export function LandingHeroSection() {
 
           <p className="mt-4 max-w-xl text-base leading-relaxed text-neutral-400 md:text-lg">
             A <strong className="text-livotale-teal">FibroScan</strong> measures liver stiffness in 10 minutes —
-            painless, non-invasive, and the gold standard for detecting fibrosis early. Livotale brings this
+            painless, non-invasive, and the gold standard for detecting fibrosis early. LivoTale brings this
             hospital-grade scan to your doorstep.
           </p>
 

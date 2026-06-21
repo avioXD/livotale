@@ -13,7 +13,7 @@ export function LandingLoginSection() {
           accent="teal"
           align="center"
           eyebrow="Your account"
-          title="Access your Livotale portal"
+          title="Access your LivoTale portal"
           description="View scan reports, track your liver health journey, or manage operations from your dashboard."
         />
 

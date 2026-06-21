@@ -47,7 +47,7 @@ export function PatientOnboardingPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Welcome to Livotale</h1>
+        <h1 className="text-2xl font-bold">Welcome to LivoTale</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Tell us a few basics so we can personalize your care. Phone {session.phone} is already verified.
         </p>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Idempotent project bootstrap: Kolkata ops users, service zone, and lab partner."""
+"""Idempotent project bootstrap: staff users, Kolkata service zone, and packages."""
 
 from __future__ import annotations
 
@@ -17,9 +17,7 @@ from bootstrap_constants import (
     BOOTSTRAP_USERS,
     DOCTOR_REGISTRATION,
     KOLKATA_CITY,
-    LAB_PARTNER_REGISTRATION,
     SERVICE_ZONE_NAME,
-    TECHNICIAN_EMPLOYEE_CODE,
     kolkata_pincodes,
 )
 from sqlalchemy import text
@@ -27,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.services.package_seed import seed_packages_if_empty
+from app.services.package_seed import sync_seed_packages
 
 
 async def ensure_kolkata_city(session: AsyncSession) -> UUID:
@@ -111,10 +109,42 @@ async def _assign_role(session: AsyncSession, user_id: UUID, role_code: str) -> 
     return True
 
 
-async def seed_bootstrap_users(session: AsyncSession) -> tuple[int, dict[str, UUID]]:
+async def _ensure_staff_profile(
+    session: AsyncSession,
+    user_id: UUID,
+    *,
+    employee_code: str,
+    city_id: UUID,
+    designation: str,
+) -> None:
+    await session.execute(
+        text(
+            """
+            INSERT INTO identity.staff_profiles (user_id, employee_code, city_id, designation, status)
+            VALUES (:user_id, :employee_code, :city_id, :designation, 'active')
+            ON CONFLICT (user_id) DO UPDATE
+            SET employee_code = EXCLUDED.employee_code,
+                city_id = EXCLUDED.city_id,
+                designation = EXCLUDED.designation,
+                status = 'active'
+            """
+        ),
+        {
+            "user_id": user_id,
+            "employee_code": employee_code,
+            "city_id": city_id,
+            "designation": designation,
+        },
+    )
+
+
+async def seed_bootstrap_users(
+    session: AsyncSession, city_id: UUID
+) -> tuple[int, dict[str, list[UUID]], dict[UUID, str]]:
     created = 0
-    user_ids: dict[str, UUID] = {}
-    for username, password, full_name, role_code, email in BOOTSTRAP_USERS:
+    user_ids: dict[str, list[UUID]] = {}
+    employee_codes: dict[UUID, str] = {}
+    for username, password, full_name, role_code, email, employee_code in BOOTSTRAP_USERS:
         user_id = await _user_id_by_username(session, username)
         if user_id:
             await session.execute(
@@ -145,21 +175,30 @@ async def seed_bootstrap_users(session: AsyncSession) -> tuple[int, dict[str, UU
                 },
             )
             created += 1
-        user_ids[role_code] = user_id
+        user_ids.setdefault(role_code, []).append(user_id)
+        employee_codes[user_id] = employee_code
         await _assign_role(session, user_id, role_code)
+        await _ensure_staff_profile(
+            session,
+            user_id,
+            employee_code=employee_code,
+            city_id=city_id,
+            designation={
+                "admin": "Super Admin",
+                "support": "Operations",
+                "doctor": "Doctor",
+                "technician": "Technician",
+            }.get(role_code, role_code),
+        )
 
-    # Demo multi-role account: operations user can also sign in as doctor.
-    ops_id = user_ids.get("support")
-    if ops_id:
-        await _assign_role(session, ops_id, "doctor")
-
-    return created, user_ids
+    return created, user_ids, employee_codes
 
 
 async def _seed_doctor_profile(
     session: AsyncSession,
     user_id: UUID,
     *,
+    employee_code: str,
     doctor_id: UUID | None = None,
     registration_number: str | None = None,
 ) -> None:
@@ -192,21 +231,24 @@ async def _seed_doctor_profile(
             text(
                 """
                 INSERT INTO operations.staff_hr_profiles (
-                  role, member_id, user_id, verification_status, employment_status
+                  role, member_id, user_id, employee_code, verification_status, employment_status
                 )
                 VALUES (
-                  'doctor'::operations.staff_hr_role_enum, :member_id, :user_id, 'verified', 'active'
+                  'doctor'::operations.staff_hr_role_enum, :member_id, :user_id, :employee_code, 'verified', 'active'
                 )
                 ON CONFLICT (role, member_id) DO UPDATE
-                SET verification_status = 'verified', employment_status = 'active'
+                SET user_id = EXCLUDED.user_id,
+                    employee_code = EXCLUDED.employee_code,
+                    verification_status = 'verified',
+                    employment_status = 'active'
                 """
             ),
-            {"member_id": doctor_id, "user_id": user_id},
+            {"member_id": doctor_id, "user_id": user_id, "employee_code": employee_code},
         )
 
 
 async def _seed_technician_profile(
-    session: AsyncSession, user_id: UUID, city_id: UUID
+    session: AsyncSession, user_id: UUID, city_id: UUID, *, employee_code: str
 ) -> UUID | None:
     await session.execute(
         text(
@@ -218,7 +260,8 @@ async def _seed_technician_profile(
               :id, :user_id, :employee_code, :city_id, 'verified', 'available', :service_zone
             )
             ON CONFLICT (user_id) DO UPDATE
-            SET verification_status = 'verified',
+            SET employee_code = EXCLUDED.employee_code,
+                verification_status = 'verified',
                 status = 'available',
                 service_zone = EXCLUDED.service_zone,
                 city_id = EXCLUDED.city_id
@@ -227,7 +270,7 @@ async def _seed_technician_profile(
         {
             "id": BOOTSTRAP_IDS["technician"],
             "user_id": user_id,
-            "employee_code": TECHNICIAN_EMPLOYEE_CODE,
+            "employee_code": employee_code,
             "city_id": city_id,
             "service_zone": SERVICE_ZONE_NAME,
         },
@@ -251,121 +294,52 @@ async def _seed_technician_profile(
     return tech_id
 
 
-async def _seed_ops_hr_profile(session: AsyncSession, user_id: UUID) -> None:
+async def _seed_ops_hr_profile(session: AsyncSession, user_id: UUID, *, employee_code: str) -> None:
     await session.execute(
         text(
             """
             INSERT INTO operations.staff_hr_profiles (
-              role, member_id, user_id, verification_status, employment_status
+              role, member_id, user_id, employee_code, verification_status, employment_status
             )
             VALUES (
-              'operations'::operations.staff_hr_role_enum, :member_id, :user_id, 'verified', 'active'
-            )
-            ON CONFLICT (role, member_id) DO UPDATE
-            SET verification_status = 'verified', employment_status = 'active'
-            """
-        ),
-        {"member_id": user_id, "user_id": user_id},
-    )
-
-
-async def _seed_lab_partner_org(
-    session: AsyncSession, user_id: UUID, city_id: UUID
-) -> tuple[bool, UUID]:
-    existing = await session.execute(
-        text(
-            """
-            SELECT id FROM operations.lab_partners
-            WHERE id = :id OR registration_number = :registration_number
-            LIMIT 1
-            """
-        ),
-        {"id": BOOTSTRAP_IDS["lab_partner"], "registration_number": LAB_PARTNER_REGISTRATION},
-    )
-    existing_id = existing.scalar_one_or_none()
-    created = existing_id is None
-    lab_id = existing_id or BOOTSTRAP_IDS["lab_partner"]
-    await session.execute(
-        text(
-            """
-            INSERT INTO operations.lab_partners (
-              id, name, contact_user_id, city_id, registration_number,
-              contact_number, email, status
-            )
-            VALUES (
-              :id, :name, :contact_user_id, :city_id, :registration_number,
-              '+913300000001', :email, 'active'
-            )
-            ON CONFLICT (id) DO UPDATE
-            SET name = EXCLUDED.name,
-                contact_user_id = EXCLUDED.contact_user_id,
-                city_id = EXCLUDED.city_id,
-                registration_number = EXCLUDED.registration_number,
-                email = EXCLUDED.email,
-                status = 'active'
-            """
-        ),
-        {
-            "id": lab_id,
-            "name": "Livotale Kolkata Lab Partner",
-            "contact_user_id": user_id,
-            "city_id": city_id,
-            "registration_number": LAB_PARTNER_REGISTRATION,
-            "email": "labpartner@livotale.com",
-        },
-    )
-    await session.execute(
-        text(
-            """
-            INSERT INTO operations.staff_hr_profiles (
-              role, member_id, user_id, verification_status, employment_status,
-              registration_number, clinic_or_org_name
-            )
-            VALUES (
-              'lab_partner'::operations.staff_hr_role_enum, :member_id, :user_id,
-              'verified', 'active', :registration_number, :org_name
+              'operations'::operations.staff_hr_role_enum, :member_id, :user_id, :employee_code, 'verified', 'active'
             )
             ON CONFLICT (role, member_id) DO UPDATE
             SET user_id = EXCLUDED.user_id,
+                employee_code = EXCLUDED.employee_code,
                 verification_status = 'verified',
-                employment_status = 'active',
-                registration_number = EXCLUDED.registration_number,
-                clinic_or_org_name = EXCLUDED.clinic_or_org_name
+                employment_status = 'active'
             """
         ),
-        {
-            "member_id": lab_id,
-            "user_id": user_id,
-            "registration_number": LAB_PARTNER_REGISTRATION,
-            "org_name": "Livotale Kolkata Lab Partner",
-        },
+        {"member_id": user_id, "user_id": user_id, "employee_code": employee_code},
     )
-    return created, lab_id
 
 
 async def seed_role_profiles(
-    session: AsyncSession, user_ids: dict[str, UUID], city_id: UUID
+    session: AsyncSession,
+    user_ids: dict[str, list[UUID]],
+    city_id: UUID,
+    employee_codes: dict[UUID, str],
 ) -> dict[str, Any]:
-    stats: dict[str, Any] = {"lab_partner_created": False}
-    if "doctor" in user_ids:
+    stats: dict[str, Any] = {}
+    if user_ids.get("doctor"):
         await _seed_doctor_profile(
             session,
-            user_ids["doctor"],
+            user_ids["doctor"][0],
+            employee_code=employee_codes[user_ids["doctor"][0]],
             doctor_id=BOOTSTRAP_IDS["doctor"],
             registration_number=DOCTOR_REGISTRATION,
         )
-    if "support" in user_ids:
-        await _seed_doctor_profile(session, user_ids["support"])
-    if "technician" in user_ids:
+    if user_ids.get("technician"):
         stats["technician_id"] = await _seed_technician_profile(
-            session, user_ids["technician"], city_id
+            session,
+            user_ids["technician"][0],
+            city_id,
+            employee_code=employee_codes[user_ids["technician"][0]],
         )
     for role_code in ("admin", "support"):
-        if role_code in user_ids:
-            await _seed_ops_hr_profile(session, user_ids[role_code])
-    if "lab_partner" in user_ids:
-        created, _ = await _seed_lab_partner_org(session, user_ids["lab_partner"], city_id)
-        stats["lab_partner_created"] = created
+        for user_id in user_ids.get(role_code, []):
+            await _seed_ops_hr_profile(session, user_id, employee_code=employee_codes[user_id])
     return stats
 
 
@@ -443,10 +417,10 @@ async def main() -> None:
     pincodes = kolkata_pincodes()
     async with SessionLocal() as session:
         async with session.begin():
-            pkg_count = await seed_packages_if_empty(session)
+            pkg_count = await sync_seed_packages(session)
             city_id = await ensure_kolkata_city(session)
-            users_created, user_ids = await seed_bootstrap_users(session)
-            profile_stats = await seed_role_profiles(session, user_ids, city_id)
+            users_created, user_ids, employee_codes = await seed_bootstrap_users(session, city_id)
+            profile_stats = await seed_role_profiles(session, user_ids, city_id, employee_codes)
             zone_created, zone_pincodes_added = await ensure_kolkata_service_zone(session, pincodes)
             technician_id = profile_stats.get("technician_id")
             pincode_synced = 0
@@ -459,7 +433,6 @@ async def main() -> None:
         f"users={users_created} created, "
         f"zone={'created' if zone_created else 'ensured'}, "
         f"zone_pincodes_added={zone_pincodes_added}, "
-        f"lab_partner={'created' if profile_stats.get('lab_partner_created') else 'ensured'}, "
         f"technician_pincodes_synced={pincode_synced}"
     )
 

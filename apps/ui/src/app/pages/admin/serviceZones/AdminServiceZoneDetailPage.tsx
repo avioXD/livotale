@@ -10,7 +10,7 @@ import { useServiceZonesStore } from '@/store';
 import { serviceZoneService } from '@/services/orgScope';
 import type { CreateServiceZoneInput, ServiceZone } from '@/types/serviceZone';
 
-const LIST_PATH = orgPath('/admin/service-zones');
+const LIST_PATH = orgPath('/admin/organization-configuration/service-zones');
 
 export function AdminServiceZoneDetailPage() {
   const { id } = useParams<{ id: string }>();

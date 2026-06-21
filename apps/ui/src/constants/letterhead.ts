@@ -1,5 +1,5 @@
 export const DEFAULT_LETTERHEAD = {
-  companyName: 'Livotale Liver Care',
+  companyName: 'LivoTale Liver Care',
   tagline: 'Advanced Liver Fibrosis Scan & Diagnostics',
   address: 'Mumbai · Bangalore · Pune',
   phone: '+91 98765 43210',

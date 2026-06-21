@@ -32,6 +32,7 @@ export function TechnicianVisitCompletionPanel({
 }: TechnicianVisitCompletionPanelProps) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [demoOtpHint, setDemoOtpHint] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { remaining, canResend, startCooldown } = useOtpResendCooldown();
@@ -40,6 +41,7 @@ export function TechnicianVisitCompletionPanel({
     setOtpSent(Boolean(visit?.visitCompletionOtpSentAt));
     if (currentStep === 'scan_completed') {
       setOtp('');
+      setDemoOtpHint(null);
     }
   }, [visit?.visitCompletionOtpSentAt, currentStep, order.id]);
 
@@ -57,7 +59,7 @@ export function TechnicianVisitCompletionPanel({
     setError(null);
     try {
       const visit = await technicianOrderService.sendVisitCompletionOtp(order.id);
-      applyOtpSendMeta(visit, startCooldown);
+      setDemoOtpHint(applyOtpSendMeta(visit, startCooldown) ?? null);
       setOtpSent(true);
       onOtpSent();
     } catch (err) {
@@ -105,8 +107,9 @@ export function TechnicianVisitCompletionPanel({
             <div className="flex flex-wrap items-end gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">
-                  Patient OTP{import.meta.env.DEV ? ' (demo: 123456)' : ''}
+                  Patient OTP
                 </Label>
+                {demoOtpHint ? <p className="text-xs text-muted-foreground">Demo code: {demoOtpHint}</p> : null}
                 <Input
                   inputMode="numeric"
                   maxLength={6}

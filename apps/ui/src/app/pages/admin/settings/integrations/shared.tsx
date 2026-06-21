@@ -5,9 +5,56 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppRole } from '@/types';
+import type { IntegrationConfigSource } from '@/services/admin/IntegrationsAdminService';
+
+export function sourceBadgeLabel(source?: IntegrationConfigSource) {
+  return source === 'env' ? 'Env' : 'UI';
+}
+
+export function ManagedByEnvNotice({ provider }: { provider: string }) {
+  return (
+    <div className="rounded-md border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
+      {provider} credentials are managed by environment variables. Credential fields are read-only until the source is changed to UI/database.
+    </div>
+  );
+}
+
+export function ConfigSourceSelect({
+  id,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value?: IntegrationConfigSource;
+  onChange: (value: IntegrationConfigSource) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      id={id}
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      value={value ?? 'database'}
+      onChange={(e) => onChange(e.target.value as IntegrationConfigSource)}
+      disabled={disabled}
+    >
+      <option value="database">UI/database</option>
+      <option value="env">Environment</option>
+    </select>
+  );
+}
+
+export function MissingFieldsNotice({ fields }: { fields?: string[] }) {
+  if (!fields?.length) return null;
+  return (
+    <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive">
+      Missing: {fields.join(', ')}
+    </div>
+  );
+}
 
 export function getAdminIntegrationsPath(city?: string, suffix = '') {
-  return `/org/${city || 'kolkata'}/admin/integrations${suffix}`;
+  return `/org/${city || 'kolkata'}/admin/organization-configuration/integrations${suffix}`;
 }
 
 export function useAdminIntegrationsRole() {
@@ -32,11 +79,13 @@ export function AdminIntegrationsPageShell({
   description,
   children,
   badge,
+  source,
 }: {
   role: AppRole | null;
   title: string;
   description?: string;
   badge?: string;
+  source?: IntegrationConfigSource;
   children: React.ReactNode;
 }) {
   const { pathname } = useLocation();
@@ -49,7 +98,14 @@ export function AdminIntegrationsPageShell({
       <PageHeader
         title={title}
         description={description}
-        actions={badge ? <Badge variant="secondary">{badge}</Badge> : undefined}
+        actions={
+          badge || source ? (
+            <div className="flex flex-wrap gap-2">
+              {badge ? <Badge variant="secondary">{badge}</Badge> : null}
+              {source ? <Badge variant="outline">{sourceBadgeLabel(source)}</Badge> : null}
+            </div>
+          ) : undefined
+        }
       />
       {children}
     </div>
@@ -62,15 +118,19 @@ export function IntegrationHubCard({
   href,
   badge,
   configured,
+  source,
+  disabled,
 }: {
   title: string;
   description: string;
   href: string;
   badge?: string;
   configured?: boolean;
+  source?: IntegrationConfigSource;
+  disabled?: boolean;
 }) {
   return (
-    <Card className="transition-colors hover:border-primary/40">
+    <Card className={disabled ? 'opacity-70' : 'transition-colors hover:border-primary/40'}>
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-base">{title}</CardTitle>
@@ -80,13 +140,15 @@ export function IntegrationHubCard({
                 {configured ? 'Configured' : 'Not configured'}
               </Badge>
             ) : null}
+            {source ? <Badge variant="outline">{sourceBadgeLabel(source)}</Badge> : null}
             {badge ? <Badge variant="outline">{badge}</Badge> : null}
+            {disabled ? <Badge variant="secondary">Coming soon</Badge> : null}
           </div>
         </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" disabled={disabled}>
           <Link to={href}>Open</Link>
         </Button>
       </CardContent>

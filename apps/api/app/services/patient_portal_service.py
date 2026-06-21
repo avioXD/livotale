@@ -30,9 +30,6 @@ from app.services.patient_portal_access import ensure_patient_portal_phone, reso
 from app.schemas.patient_portal import patient_enquiry_status_label
 from app.utils.phone import normalize_phone, phones_match
 
-_settings = get_settings()
-DEMO_OTP = DEMO_OTP_CODE if _settings.effective_otp_mode == "demo" else None
-
 CONSULT_PREFERENCE_ELIGIBLE_STATUSES = frozenset(
     {
         "final_report_generated",
@@ -186,11 +183,25 @@ class PatientPortalService:
         verify = TwilioVerifyService(IntegrationSettingsService(self.db))
 
         if settings.effective_otp_mode == "demo":
-            if not DEMO_OTP:
-                raise AppError("OTP provider not configured", status_code=501, error="not_configured")
-            await otp_service.create_challenge(normalized, PURPOSE_PATIENT_PORTAL, DEMO_OTP)
+            demo_otp = OtpChallengeService.demo_code()
+            if not demo_otp:
+                raise AppError(
+                    "SMS OTP is not configured. Please contact Livotale support.",
+                    status_code=503,
+                    error="not_configured",
+                )
+            await otp_service.create_challenge(normalized, PURPOSE_PATIENT_PORTAL, demo_otp)
         else:
-            await verify.send_verification(normalized)
+            try:
+                await verify.send_verification(normalized)
+            except AppError as exc:
+                if exc.error == "not_configured":
+                    raise AppError(
+                        "SMS OTP is not configured. Please contact Livotale support.",
+                        status_code=503,
+                        error="not_configured",
+                    ) from exc
+                raise
             await otp_service.create_challenge(normalized, PURPOSE_PATIENT_PORTAL, "twilio_verify")
 
         workflow = WorkflowNotificationService(self.db)
@@ -205,7 +216,17 @@ class PatientPortalService:
             await otp_service.verify_challenge(normalized, PURPOSE_PATIENT_PORTAL, otp)
         else:
             verify = TwilioVerifyService(IntegrationSettingsService(self.db))
-            if not await verify.check_verification(normalized, otp):
+            try:
+                approved = await verify.check_verification(normalized, otp)
+            except AppError as exc:
+                if exc.error == "not_configured":
+                    raise AppError(
+                        "SMS OTP is not configured. Please contact Livotale support.",
+                        status_code=503,
+                        error="not_configured",
+                    ) from exc
+                raise
+            if not approved:
                 raise AppError("Invalid or expired OTP", status_code=401)
 
         registry = PatientRegistryService(self.db)

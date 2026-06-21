@@ -89,7 +89,7 @@ export function OperationsScopeFields({
   if (activeZones.length === 0) {
     return (
       <div className="sm:col-span-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
-        No active service zones configured. Add zones under Admin → Service zones first.
+        No active service zones configured. Add zones under Organization configuration → Service zones first.
       </div>
     );
   }

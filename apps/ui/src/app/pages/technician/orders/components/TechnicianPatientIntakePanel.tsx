@@ -56,6 +56,7 @@ export function TechnicianPatientIntakePanel({
   const [form, setForm] = useState<ScanPatientIntakeInput>(defaultForm(order, null));
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [demoOtpHint, setDemoOtpHint] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { remaining, canResend, startCooldown } = useOtpResendCooldown();
@@ -74,6 +75,7 @@ export function TechnicianPatientIntakePanel({
   useEffect(() => {
     setOtpSent(false);
     setOtp('');
+    setDemoOtpHint(null);
   }, [form.phone]);
 
   const run = async (action: () => Promise<unknown>) => {
@@ -237,7 +239,7 @@ export function TechnicianPatientIntakePanel({
                 onClick={() =>
                   run(async () => {
                     const visit = await technicianOrderService.sendPatientIntakeOtp(order.id, form.phone);
-                    applyOtpSendMeta(visit, startCooldown);
+                    setDemoOtpHint(applyOtpSendMeta(visit, startCooldown) ?? null);
                     setOtpSent(true);
                   })
                 }
@@ -248,8 +250,9 @@ export function TechnicianPatientIntakePanel({
               <div className="flex flex-wrap items-end gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">
-                    Enter OTP{import.meta.env.DEV ? ' (demo: 123456)' : ''}
+                    Enter OTP
                   </Label>
+                  {demoOtpHint ? <p className="text-xs text-muted-foreground">Demo code: {demoOtpHint}</p> : null}
                   <Input
                     inputMode="numeric"
                     maxLength={6}
@@ -278,7 +281,7 @@ export function TechnicianPatientIntakePanel({
                 onClick={() =>
                   run(async () => {
                     const visit = await technicianOrderService.sendPatientIntakeOtp(order.id, form.phone);
-                    applyOtpSendMeta(visit, startCooldown);
+                    setDemoOtpHint(applyOtpSendMeta(visit, startCooldown) ?? null);
                   })
                 }
               >

@@ -14,18 +14,21 @@ Built with React 19, Vite, TypeScript, Tailwind CSS, Zustand, and shadcn/Radix U
 ```bash
 pnpm install
 cp .env.example .env
-# Point VITE_API_BASE_URL at the running FastAPI server
+# For Docker gateway: VITE_API_BASE_URL=http://localhost:3008/api/v1
+# For direct host API: VITE_API_BASE_URL=http://localhost:4000/api/v1
 pnpm dev
 ```
 
-App runs at **http://localhost:5173**.
+Vite usually runs at **http://localhost:5174** in this workspace.
 
 ## Environment
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_BASE_URL` | REST API base URL (default `http://localhost:4000/api/v1`) |
-| `VITE_EXTERNAL_SERVICES_MODE` | `dummy` or `live` for client-side integration stubs |
+| `VITE_API_BASE_URL` | REST API base URL (`http://localhost:3008/api/v1` through nginx, or `http://localhost:4000/api/v1` direct API) |
+| `VITE_APP_ENV` | Set to `dev` locally to expose frontend dev tools; omit or use `production` otherwise |
+| `VITE_HMR_CLIENT_PORT` | Optional HMR client port when developing through Docker nginx (`3008`) |
+| `VITE_DEV_LOGIN_USERNAME` / `VITE_DEV_LOGIN_PASSWORD` | Optional dev-only login prefill |
 
 ## Scripts
 
@@ -40,15 +43,16 @@ pnpm lint     # ESLint
 
 Route guards: `src/app/config/liverCareRouteRoles.ts` · Sidebar: `src/app/config/navigation.ts`
 
-| Role | Username | Password | Home |
-|------|----------|----------|------|
-| **Administration** | `administration` | `Admin@123` | `/dashboard` |
-| **Operations** | `operations` | `Ops@123` | `/dashboard` |
-| **Technician** | `technician` | `Tech@123` | `/dashboard` |
-| **Doctor** | `doctor` | `Doctor@123` | `/dashboard` |
-| **Patient** | phone on order | OTP `123456` | `/patient/login` |
+| Role | Identifier | Password | Home |
+|------|------------|----------|------|
+| **Super Admin** | `abhishek@livotale.com` | `Admin@123` | `/dashboard` |
+| **Assigned Ops** | `dipten@livotale.com` | `Ops@123` | `/dashboard` |
+| **Operator** | `vivek` | `Ops@123` | `/dashboard` |
+| **Technician** | `technician@livotale.com` | `Tech@123` | `/dashboard` |
+| **Doctor** | `dr.vijay@livotale.com` | `Doctor@123` | `/dashboard` |
+| **Patient** | phone on an active order | OTP `123456` in demo mode | `/patient/login` |
 
-**Demo phones**: `9988776655` (Anita, PKG-3) · `9900000001` (Rohan, payment pending)
+No patient accounts or orders are pre-seeded in the fresh local database.
 
 ## Key routes
 

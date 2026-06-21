@@ -47,7 +47,7 @@ export function PublicLayout() {
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               to="/"
-              aria-label="Go to Livotale home"
+              aria-label="Go to LivoTale home"
               className="flex shrink-0 items-center"
               onClick={(e) => {
                 if (location.pathname !== '/') return;
@@ -61,7 +61,7 @@ export function PublicLayout() {
             >
               <img
                 src={LANDING_ASSETS.logo}
-                alt="Livotale"
+                alt="LivoTale"
                 className="h-9 w-auto object-contain"
               />
             </Link>
@@ -193,7 +193,7 @@ export function PublicLayout() {
             <div className="text-center sm:text-left">
               <img
                 src={LANDING_ASSETS.logo}
-                alt="Livotale"
+                alt="LivoTale"
                 className="mx-auto h-8 w-auto object-contain sm:mx-0"
               />
               <p className={`mt-2 text-sm ${isLanding ? 'text-neutral-400' : 'text-slate-500'}`}>
@@ -227,7 +227,7 @@ export function PublicLayout() {
             </div>
           </div>
           <p className={`mt-8 text-center text-xs ${isLanding ? 'text-neutral-600' : 'text-slate-400'}`}>
-            © {new Date().getFullYear()} Livotale. All rights reserved.
+            © {new Date().getFullYear()} LivoTale. All rights reserved.
           </p>
         </div>
       </footer>

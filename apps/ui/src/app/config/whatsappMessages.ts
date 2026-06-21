@@ -8,7 +8,7 @@ export function buildWhatsAppClickToChatUrl(message?: string): string {
 }
 
 export const WHATSAPP_MESSAGES = {
-  general: "Hi, I'd like to know more about Livotale liver scan at home.",
+  general: "Hi, I'd like to know more about LivoTale liver scan at home.",
   bookScan: "Hi, I'd like to book a liver scan at home.",
   packageCard: (name: string, code: string) => `Hi, I'm interested in the ${name} package (${code}).`,
   packageDetail: (name: string, code: string) => `Hi, I'd like to enquire about ${name} (${code}).`,

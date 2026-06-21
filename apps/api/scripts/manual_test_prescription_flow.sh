@@ -16,8 +16,8 @@ login() {
     -d "{\"identifier\":\"$1\",\"password\":\"$2\"}" | python3 -c 'import sys,json; print(json.load(sys.stdin)["data"]["accessToken"])'
 }
 
-ADMIN_TOKEN=$(login admin@livotale.com 'Admin@123')
-DOCTOR_TOKEN=$(login doctor@livotale.com 'Doctor@123')
+ADMIN_TOKEN=$(login abhishek@livotale.com 'Admin@123')
+DOCTOR_TOKEN=$(login dr.vijay@livotale.com 'Doctor@123')
 TECH_TOKEN=$(login technician@livotale.com 'Tech@123')
 
 auth() { echo "Authorization: Bearer $1"; }

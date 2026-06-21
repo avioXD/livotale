@@ -46,9 +46,7 @@ export function NotificationBell({ inboxPath = orgPath('/notifications'), patien
     }
   }, [role, patientPhone]);
 
-  useRealtimeNotifications(() => {
-    void refreshCount();
-  });
+  useRealtimeNotifications(refreshCount);
 
   return (
     <Button variant="ghost" size="icon" className="relative" asChild>

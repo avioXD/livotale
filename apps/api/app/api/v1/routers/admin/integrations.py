@@ -91,9 +91,17 @@ async def integration_status(
             integrationsMode=app_settings.effective_integrations_mode,
             otpMode=app_settings.effective_otp_mode,
             twilioConfigured=public["twilioConfigured"],
+            twilioConfigSource=public["twilioConfigSource"],
+            twilioMissingFields=public["twilioMissingFields"],
             sendgridConfigured=public["sendgridConfigured"],
+            sendgridConfigSource=public["sendgridConfigSource"],
+            sendgridMissingFields=public["sendgridMissingFields"],
             aiConfigured=public["aiConfigured"],
+            aiConfigSource=public["aiConfigSource"],
+            aiMissingFields=public["aiMissingFields"],
             s3Configured=public["s3Configured"],
+            s3ConfigSource=public["s3ConfigSource"],
+            s3MissingFields=public["s3MissingFields"],
             whatsappEnabled=False,
             razorpayEnabled=False,
         )
@@ -140,10 +148,15 @@ async def test_storage_config(
     _: CurrentUser = Depends(_require_super_admin),
     db: AsyncSession = Depends(get_db),
 ) -> DataEnvelope[S3ConfigTestResponse]:
-    config = await resolve_s3_config(db)
-    s3 = S3Service(config)
-    result = s3.test_connection()
-    return DataEnvelope(data=S3ConfigTestResponse.model_validate(result))
+    try:
+        config = await resolve_s3_config(db)
+        s3 = S3Service(config)
+        result = s3.test_connection()
+        return DataEnvelope(data=S3ConfigTestResponse.model_validate(result))
+    except AppError as exc:
+        return DataEnvelope(data=S3ConfigTestResponse(ok=False, error=exc.message))
+    except Exception as exc:
+        return DataEnvelope(data=S3ConfigTestResponse(ok=False, error=f"S3 storage test failed: {exc}"))
 
 
 @router.post("/settings/test-sms")
@@ -244,8 +257,13 @@ async def test_email(
 ) -> DataEnvelope[dict[str, Any]]:
     rendered = await dispatch.render_for_test(body.template_code, "email", body.context)
     email_svc = SendGridEmailService(settings_svc)
-    result = await email_svc.send_email(body.email, rendered["subject"], rendered["body"])
-    return DataEnvelope(data={"email": body.email, **rendered, **result})
+    try:
+        result = await email_svc.send_email(body.email, rendered["subject"], rendered["body"])
+        return DataEnvelope(data={"ok": True, "email": body.email, **rendered, **result})
+    except AppError as exc:
+        return DataEnvelope(data={"ok": False, "email": body.email, "error": exc.message})
+    except Exception as exc:
+        return DataEnvelope(data={"ok": False, "email": body.email, "error": f"SendGrid test failed: {exc}"})
 
 
 @router.get("/message-templates", response_model=DataEnvelope[list[MessageTemplateResponse]])

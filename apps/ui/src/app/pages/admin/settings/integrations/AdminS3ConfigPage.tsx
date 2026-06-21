@@ -11,7 +11,13 @@ import {
   type S3ConfigTestResult,
 } from '@/services/admin/IntegrationsAdminService';
 import { toastSuccess, toastError } from '@/store/toast/toastStore';
-import { AdminIntegrationsPageShell, SuperAdminOnlyNotice } from './shared';
+import {
+  AdminIntegrationsPageShell,
+  ConfigSourceSelect,
+  ManagedByEnvNotice,
+  MissingFieldsNotice,
+  SuperAdminOnlyNotice,
+} from './shared';
 
 export function AdminS3ConfigPage() {
   const role = useAuthStore((s) => s.user?.role ?? null);
@@ -33,15 +39,18 @@ export function AdminS3ConfigPage() {
     setSaving(true);
     try {
       const payload: Partial<PlatformSettings> = {
-        s3Bucket: settings.s3Bucket ?? null,
-        s3Region: settings.s3Region ?? null,
-        s3KeyPrefix: settings.s3KeyPrefix ?? null,
-        s3Endpoint: settings.s3Endpoint ?? null,
-        s3PublicEndpoint: settings.s3PublicEndpoint ?? null,
-        s3AccessKeyId: settings.s3AccessKeyId ?? null,
+        s3ConfigSource: settings.s3ConfigSource ?? 'env',
       };
-      if (secretInput.trim()) {
-        payload.s3SecretAccessKey = secretInput.trim();
+      if ((settings.s3ConfigSource ?? 'env') === 'database') {
+        payload.s3Bucket = settings.s3Bucket ?? null;
+        payload.s3Region = settings.s3Region ?? null;
+        payload.s3KeyPrefix = settings.s3KeyPrefix ?? null;
+        payload.s3Endpoint = settings.s3Endpoint ?? null;
+        payload.s3PublicEndpoint = settings.s3PublicEndpoint ?? null;
+        payload.s3AccessKeyId = settings.s3AccessKeyId ?? null;
+        if (secretInput.trim()) {
+          payload.s3SecretAccessKey = secretInput.trim();
+        }
       }
       const updated = await integrationsAdminService.updateSettings(payload);
       setSettings(updated);
@@ -72,17 +81,22 @@ export function AdminS3ConfigPage() {
     }
   };
 
+  const source = settings.s3ConfigSource ?? 'env';
+  const managedByEnv = source === 'env';
+
   return (
     <AdminIntegrationsPageShell
       role={role}
       title="Object storage (S3)"
       description="Configure bucket, region, credentials, and endpoints for file uploads across the platform."
       badge={settings.s3Configured ? 'Configured' : 'Not configured'}
+      source={source}
     >
       {role !== AppRole.SUPER_ADMIN ? (
         <SuperAdminOnlyNotice />
       ) : (
         <>
+          <MissingFieldsNotice fields={settings.s3MissingFields} />
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Connection intake</CardTitle>
@@ -91,11 +105,22 @@ export function AdminS3ConfigPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="s3-source">Configuration source</Label>
+                <ConfigSourceSelect
+                  id="s3-source"
+                  value={source}
+                  onChange={(value) => setSettings((s) => ({ ...s, s3ConfigSource: value }))}
+                  disabled={saving}
+                />
+              </div>
+              {managedByEnv ? <div className="md:col-span-2"><ManagedByEnvNotice provider="S3" /></div> : null}
               <div className="space-y-2">
                 <Label>Bucket</Label>
                 <Input
                   value={settings.s3Bucket ?? ''}
                   placeholder="livotale-files"
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3Bucket: e.target.value }))}
                 />
               </div>
@@ -104,6 +129,7 @@ export function AdminS3ConfigPage() {
                 <Input
                   value={settings.s3Region ?? ''}
                   placeholder="ap-south-1"
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3Region: e.target.value }))}
                 />
               </div>
@@ -112,6 +138,7 @@ export function AdminS3ConfigPage() {
                 <Input
                   value={settings.s3KeyPrefix ?? ''}
                   placeholder="livotale"
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3KeyPrefix: e.target.value }))}
                 />
               </div>
@@ -120,6 +147,7 @@ export function AdminS3ConfigPage() {
                 <Input
                   value={settings.s3Endpoint ?? ''}
                   placeholder="http://localstack:4566"
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3Endpoint: e.target.value }))}
                 />
               </div>
@@ -128,6 +156,7 @@ export function AdminS3ConfigPage() {
                 <Input
                   value={settings.s3PublicEndpoint ?? ''}
                   placeholder="http://localhost:4567"
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3PublicEndpoint: e.target.value }))}
                 />
               </div>
@@ -144,6 +173,7 @@ export function AdminS3ConfigPage() {
                 <Label>Access key ID</Label>
                 <Input
                   value={settings.s3AccessKeyId ?? ''}
+                  disabled={managedByEnv}
                   onChange={(e) => setSettings((s) => ({ ...s, s3AccessKeyId: e.target.value }))}
                 />
               </div>
@@ -152,7 +182,8 @@ export function AdminS3ConfigPage() {
                 <Input
                   type="password"
                   value={secretInput}
-                  placeholder={settings.s3SecretAccessKey ? 'Leave blank to keep existing' : 'Enter secret access key'}
+                  placeholder={settings.s3SecretAccessKey ? 'Configured, click to replace' : 'Enter secret access key'}
+                  disabled={managedByEnv}
                   onChange={(e) => setSecretInput(e.target.value)}
                 />
               </div>

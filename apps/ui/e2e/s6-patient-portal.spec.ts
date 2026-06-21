@@ -48,7 +48,7 @@ test.describe('S6 — Patient portal', () => {
 
     const resend = page.getByRole('button', { name: /resend otp|resend in \d+s/i });
     await expect(resend).toBeVisible();
-    // Demo otp_mode skips rate limits — resend is immediate; live mode shows countdown.
+    // Dev app mode skips rate limits — resend is immediate; live mode shows countdown.
     const label = await resend.textContent();
     if (label?.match(/resend in \d+s/i)) {
       await expect(resend).toBeDisabled();

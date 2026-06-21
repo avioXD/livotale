@@ -85,7 +85,7 @@ export function LandingPage() {
             variant="centered"
             accent="pink"
             align="center"
-            eyebrow="Why Livotale"
+            eyebrow="Why LivoTale"
             title="Everything you need for liver fibrosis screening"
           />
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

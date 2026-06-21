@@ -49,7 +49,7 @@ export function LiverHealthReportDashboard({ report, showReferences = false }: L
     <div className="space-y-8 rounded-xl border bg-gradient-to-b from-white to-slate-50/80 p-4 shadow-sm sm:p-6">
       {/* Header */}
       <div className="rounded-lg border border-livotale-pink/20 bg-white p-4 text-center shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-livotale-pink">Livotale Liver Care</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-livotale-pink">LivoTale Liver Care</p>
         <h1 className="mt-1 text-xl font-bold sm:text-2xl">{header.reportTitle}</h1>
         <div className="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
           <span><strong className="text-foreground">{header.patientName}</strong> · {header.patientAge}y · {header.patientSex}</span>

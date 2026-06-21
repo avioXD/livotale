@@ -22,9 +22,7 @@ export function StaffNotificationsPage() {
     void load();
   }, [load]);
 
-  useRealtimeNotifications(() => {
-    void load();
-  });
+  useRealtimeNotifications(load);
 
   const markRead = (id: string) => {
     void inboxNotificationService.markRead(id).then(() => load());

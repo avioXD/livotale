@@ -251,7 +251,7 @@ export function Sidebar({ variant = 'desktop', onNavigate }: SidebarProps) {
       >
         <Link
           to={logoHomePath}
-          aria-label="Go to Livotale home"
+          aria-label="Go to LivoTale home"
           onClick={isDrawer ? handleNavClick : undefined}
           className="flex h-16 items-center border-b px-4 transition hover:bg-accent/50"
         >
@@ -367,10 +367,10 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
           </div>
         </div>
       </div>
-      <Link to={logoHomePath} aria-label="Go to Livotale home" className="lg:hidden">
+      <Link to={logoHomePath} aria-label="Go to LivoTale home" className="lg:hidden">
         <img
           src="/assets/livotale-logo.png"
-          alt="Livotale"
+          alt="LivoTale"
           className="h-8 w-auto object-contain"
         />
       </Link>

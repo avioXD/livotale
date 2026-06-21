@@ -32,7 +32,7 @@ export function PatientPortalShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {isOnboarding ? (
           <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card px-4">
-            <img src="/assets/livotale-logo.png" alt="Livotale" className="h-7 w-auto object-contain" />
+            <img src="/assets/livotale-logo.png" alt="LivoTale" className="h-7 w-auto object-contain" />
             <span className="text-sm text-muted-foreground">Complete your profile</span>
           </header>
         ) : (

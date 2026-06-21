@@ -82,7 +82,7 @@ HTTP `409`, error `phone_in_use`, message: `This phone number is already in use`
 
 ## Related specs
 
-- [21-technician-field-portal.md](../../../docs/specs/features/21-technician-field-portal.md)
-- [10-patient-portal.md](../../../docs/specs/features/10-patient-portal.md)
-- [otp-security.md](../../../docs/specs/platform/otp-security.md)
+- [21-technician-field-portal.md](../../docs/specs/features/21-technician-field-portal.md)
+- [10-patient-portal.md](../../docs/specs/features/10-patient-portal.md)
+- [otp-security.md](../../docs/specs/platform/otp-security.md)
 - [workflow-notifications/spec.md](../workflow-notifications/spec.md)

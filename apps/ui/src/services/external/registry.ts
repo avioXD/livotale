@@ -14,16 +14,11 @@ import { dummyAIExtractionService } from './DummyAIExtractionService';
 import { dummyNotificationService } from './DummyNotificationService';
 import { dummyPDFGenerationService } from './DummyPDFGenerationService';
 import { dummyLiverHealthAIService } from './DummyLiverHealthAIService';
+import { isDevMode } from '@/app/config/appMode';
 
 export type ExternalServicesMode = 'dummy' | 'live';
 
-const isDevMode = import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development';
-
-const mode: ExternalServicesMode = isDevMode
-  ? import.meta.env.VITE_EXTERNAL_SERVICES_MODE === 'live'
-    ? 'live'
-    : 'dummy'
-  : 'live';
+const mode: ExternalServicesMode = isDevMode() ? 'dummy' : 'live';
 
 export function getExternalServicesMode(): ExternalServicesMode {
   return mode;

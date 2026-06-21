@@ -1,0 +1,206 @@
+# Local development stack — hot reload, LocalStack, exposed DB/Redis ports, demo seed.
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d postgres redis localstack
+#   docker compose -f docker-compose.dev.yml run --rm db-init
+#   docker compose -f docker-compose.dev.yml run --rm seed-init
+#   docker compose -f docker-compose.dev.yml up api ui nginx
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - livotale
+    environment:
+      POSTGRES_USER: livotale_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: livotale
+    ports:
+      - "5433:5432"
+    volumes:
+      - livotale_pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U livotale_user -d livotale"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - livotale
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:3
+    networks:
+      - livotale
+    ports:
+      - "4567:4566"
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: ap-south-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    volumes:
+      - livotale_localstack:/var/lib/localstack
+
+  db-init:
+    image: node:20-alpine
+    networks:
+      - livotale
+    working_dir: /workspace/apps/api
+    volumes:
+      - .:/workspace
+    environment:
+      DATABASE_URL: postgresql://livotale_user:password@postgres:5432/livotale
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "npm install pg dotenv && node scripts/run-migrations.js"
+    restart: "no"
+
+  seed-init:
+    build:
+      context: ./apps/api
+      dockerfile: ../../docker/api/Dockerfile
+    networks:
+      - livotale
+    working_dir: /app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://livotale_user:password@postgres:5432/livotale
+      SEED_PACKAGES_ON_STARTUP: "false"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    command: python scripts/seed_project_bootstrap.py
+    volumes:
+      - ./apps/api:/app
+      - ./packages:/packages
+    restart: "no"
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: ../../docker/api/Dockerfile
+    networks:
+      - livotale
+    command: uvicorn app.main:app --host 0.0.0.0 --port 4000 --reload
+    expose:
+      - "4000"
+    environment:
+      APP_ENV: dev
+      DATABASE_URL: postgresql+asyncpg://livotale_user:password@postgres:5432/livotale
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: livotale-development-jwt-secret-change-me
+      CORS_ORIGINS: http://localhost:3008,http://localhost:5174,http://localhost:5173,http://localhost:4001
+      S3_ENDPOINT: http://localstack:4566
+      S3_PUBLIC_ENDPOINT: http://localhost:4567
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      S3_BUCKET: livotale-files
+      S3_REGION: ap-south-1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./apps/api:/app
+
+  ui:
+    build:
+      context: ./apps/ui
+      dockerfile: ../../docker/ui/Dockerfile
+    networks:
+      - livotale
+    expose:
+      - "5174"
+    environment:
+      VITE_API_BASE_URL: http://localhost:3008/api/v1
+      VITE_HMR_CLIENT_PORT: "3008"
+      VITE_APP_ENV: dev
+    depends_on:
+      - api
+    volumes:
+      - ./apps/ui:/app
+      - /app/node_modules
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    networks:
+      - livotale
+    ports:
+      - "3008:80"
+    depends_on:
+      - api
+      - ui
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./apps/api
+      dockerfile: ../../docker/api/Dockerfile
+    networks:
+      - livotale
+    command: arq app.workers.settings.WorkerSettings
+    environment:
+      DATABASE_URL: postgresql+asyncpg://livotale_user:password@postgres:5432/livotale
+      REDIS_URL: redis://redis:6379
+      APP_ENV: dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+    profiles: ["full"]
+
+  db-backup:
+    build:
+      context: .
+      dockerfile: docker/db-backup/Dockerfile
+    networks:
+      - livotale
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: livotale_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: livotale
+      S3_BUCKET: livotale-files
+      S3_REGION: ap-south-1
+      S3_ENDPOINT: http://localstack:4566
+      S3_BACKUP_PREFIX: backub
+      DB_BACKUP_CRON: "0 2 * * *"
+      RUN_BACKUP_ON_STARTUP: "false"
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      TZ: UTC
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_started
+    profiles: ["backup"]
+    restart: unless-stopped
+
+networks:
+  livotale:
+    name: livotale
+    driver: bridge
+
+volumes:
+  livotale_pg_data:
+  livotale_localstack:

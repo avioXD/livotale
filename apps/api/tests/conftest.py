@@ -23,7 +23,7 @@ os.environ["SEED_PACKAGES_ON_STARTUP"] = "false"
 os.environ["API_AUDIT_LOGGING"] = "false"
 os.environ["MAX_FAILED_LOGIN_ATTEMPTS"] = "10000"
 os.environ["ACCOUNT_LOCKOUT_MINUTES"] = "0"
-os.environ["INTEGRATIONS_MODE"] = "dummy"
+os.environ["APP_ENV"] = "dev"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -101,7 +101,7 @@ def _mock_redis(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 @pytest.fixture(scope="session")
 def app() -> Any:
-    os.environ.setdefault("INTEGRATIONS_MODE", "dummy")
+    os.environ.setdefault("APP_ENV", "dev")
     from app.core.config import get_settings
 
     get_settings.cache_clear()

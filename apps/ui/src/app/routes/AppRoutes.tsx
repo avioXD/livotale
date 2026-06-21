@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { RouteFallback } from '@/components/common';
 import { ADMIN_ROLES } from '@/app/config/productRoles';
 import { LIVER_CARE_ROUTE_ROLES } from '@/app/config/liverCareRouteRoles';
@@ -81,6 +81,7 @@ const AdminLiverCareNotificationsPage = lazy(() => import('@/app/pages/admin/not
 const AdminAuditLogPage = lazy(() => import('@/app/pages/admin/audit/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 const AdminLoginLogsPage = lazy(() => import('@/app/pages/admin/audit/AdminLoginLogsPage').then((m) => ({ default: m.AdminLoginLogsPage })));
 const AdminBankDetailsDirectoryPage = lazy(() => import('@/app/pages/admin/bank/AdminBankDetailsDirectoryPage').then((m) => ({ default: m.AdminBankDetailsDirectoryPage })));
+const AdminOrganizationConfigurationPage = lazy(() => import('@/app/pages/admin/settings/AdminOrganizationConfigurationPage').then((m) => ({ default: m.AdminOrganizationConfigurationPage })));
 const AdminIntegrationsPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminIntegrationsPage').then((m) => ({ default: m.AdminIntegrationsPage })));
 const AdminPaymentConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminPaymentConfigPage').then((m) => ({ default: m.AdminPaymentConfigPage })));
 const AdminTwilioConfigPage = lazy(() => import('@/app/pages/admin/settings/integrations/AdminTwilioConfigPage').then((m) => ({ default: m.AdminTwilioConfigPage })));
@@ -105,6 +106,15 @@ const PatientEnquiryDetailPage = lazy(() => import('@/app/pages/patient-portal/P
 const PatientOnboardingPage = lazy(() => import('@/app/pages/patient-portal/PatientOnboardingPage').then((m) => ({ default: m.PatientOnboardingPage })));
 const PatientDownloadsPage = lazy(() => import('@/app/pages/patient-portal/PatientDownloadsPage').then((m) => ({ default: m.PatientDownloadsPage })));
 
+function LegacyOrganizationConfigurationRedirect({ section }: { section: 'integrations' | 'service-zones' }) {
+  const { city = 'kolkata' } = useParams();
+  const { pathname, search } = useLocation();
+  const oldBase = `/org/${city}/admin/${section}`;
+  const newBase = `/org/${city}/admin/organization-configuration/${section}`;
+  const suffix = pathname.startsWith(oldBase) ? pathname.slice(oldBase.length) : '';
+
+  return <Navigate to={`${newBase}${suffix}${search}`} replace />;
+}
 
 export function AppRoutes() {
   return (
@@ -251,19 +261,25 @@ export function AppRoutes() {
             <Route element={<ProtectedRoute allowedRoles={[...ADMIN_ROLES]} />}>
               <Route path="/org/:city/admin/audit" element={<AdminAuditLogPage />} />
               <Route path="/org/:city/admin/login-logs" element={<AdminLoginLogsPage />} />
-              <Route path="/org/:city/admin/integrations" element={<AdminIntegrationsPage />} />
-              <Route path="/org/:city/admin/integrations/templates" element={<AdminMessageTemplatesPage />} />
-              <Route path="/org/:city/admin/service-zones" element={<AdminServiceZonesPage />} />
-              <Route path="/org/:city/admin/service-zones/:id" element={<AdminServiceZoneDetailPage />} />
-            </Route>
-
-            <Route element={<ProtectedRoute allowedRoles={[AppRole.SUPER_ADMIN]} />}>
-              <Route path="/org/:city/admin/integrations/payment" element={<AdminPaymentConfigPage />} />
-              <Route path="/org/:city/admin/integrations/sms" element={<AdminTwilioConfigPage />} />
-              <Route path="/org/:city/admin/integrations/email" element={<AdminEmailConfigPage />} />
-              <Route path="/org/:city/admin/integrations/ai" element={<AdminAiConfigPage />} />
-              <Route path="/org/:city/admin/integrations/pdf" element={<AdminPdfTemplatesPage />} />
-              <Route path="/org/:city/admin/integrations/storage" element={<AdminS3ConfigPage />} />
+              <Route path="/org/:city/admin/organization-configuration" element={<AdminOrganizationConfigurationPage />}>
+                <Route index element={<Navigate to="integrations" replace />} />
+                <Route path="integrations" element={<AdminIntegrationsPage />} />
+                <Route path="integrations/templates" element={<AdminMessageTemplatesPage />} />
+                <Route path="service-zones" element={<AdminServiceZonesPage />} />
+                <Route path="service-zones/:id" element={<AdminServiceZoneDetailPage />} />
+                <Route element={<ProtectedRoute allowedRoles={[AppRole.SUPER_ADMIN]} />}>
+                  <Route path="integrations/payment" element={<AdminPaymentConfigPage />} />
+                  <Route path="integrations/sms" element={<AdminTwilioConfigPage />} />
+                  <Route path="integrations/email" element={<AdminEmailConfigPage />} />
+                  <Route path="integrations/ai" element={<AdminAiConfigPage />} />
+                  <Route path="integrations/pdf" element={<AdminPdfTemplatesPage />} />
+                  <Route path="integrations/storage" element={<AdminS3ConfigPage />} />
+                </Route>
+              </Route>
+              <Route path="/org/:city/admin/integrations" element={<LegacyOrganizationConfigurationRedirect section="integrations" />} />
+              <Route path="/org/:city/admin/integrations/*" element={<LegacyOrganizationConfigurationRedirect section="integrations" />} />
+              <Route path="/org/:city/admin/service-zones" element={<LegacyOrganizationConfigurationRedirect section="service-zones" />} />
+              <Route path="/org/:city/admin/service-zones/*" element={<LegacyOrganizationConfigurationRedirect section="service-zones" />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={[...LIVER_CARE_ROUTE_ROLES.technician]} />}>

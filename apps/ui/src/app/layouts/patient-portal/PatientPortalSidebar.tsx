@@ -25,7 +25,7 @@ export function PatientPortalSidebar({ patientName, onLogout }: PatientPortalSid
         aria-label="Go to patient dashboard"
         className="flex h-16 items-center border-b px-4 transition hover:bg-accent/50"
       >
-        <img src="/assets/livotale-logo.png" alt="Livotale" className="h-9 w-auto object-contain" />
+        <img src="/assets/livotale-logo.png" alt="LivoTale" className="h-9 w-auto object-contain" />
       </Link>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Patient portal">

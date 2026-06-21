@@ -5,6 +5,8 @@ import { useUserRole } from '@/store';
 export function useRealtimeNotifications(onUpdate: () => void) {
   const role = useUserRole();
   const clientRef = useRef<WsClient | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   useEffect(() => {
     if (!role) return undefined;
@@ -12,7 +14,7 @@ export function useRealtimeNotifications(onUpdate: () => void) {
     const client = new WsClient({
       path: '/ws/v1/notifications',
       query: { role: apiRoleForWs(role) },
-      onMessage: () => onUpdate(),
+      onMessage: () => onUpdateRef.current(),
       onClose: () => {
         /* fallback polling handled by caller */
       },
@@ -24,18 +26,20 @@ export function useRealtimeNotifications(onUpdate: () => void) {
       client.disconnect();
       clientRef.current = null;
     };
-  }, [role, onUpdate]);
+  }, [role]);
 }
 
 export function useOrderRealtime(orderId: string | undefined, channel: 'operations' | 'technician', onUpdate: () => void) {
   const clientRef = useRef<WsClient | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   useEffect(() => {
     if (!orderId) return undefined;
 
     const client = new WsClient({
       path: `/ws/v1/${channel}/orders/${orderId}`,
-      onMessage: () => onUpdate(),
+      onMessage: () => onUpdateRef.current(),
     });
     client.connect();
     clientRef.current = client;
@@ -44,11 +48,13 @@ export function useOrderRealtime(orderId: string | undefined, channel: 'operatio
       client.disconnect();
       clientRef.current = null;
     };
-  }, [orderId, channel, onUpdate]);
+  }, [orderId, channel]);
 }
 
 export function usePatientPortalRealtime(phone: string | undefined, onUpdate: () => void) {
   const clientRef = useRef<WsClient | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   useEffect(() => {
     if (!phone) return undefined;
@@ -57,7 +63,7 @@ export function usePatientPortalRealtime(phone: string | undefined, onUpdate: ()
       path: '/ws/v1/patient-portal',
       query: { phone },
       tokenOptional: true,
-      onMessage: () => onUpdate(),
+      onMessage: () => onUpdateRef.current(),
     });
     client.connect();
     clientRef.current = client;
@@ -66,5 +72,5 @@ export function usePatientPortalRealtime(phone: string | undefined, onUpdate: ()
       client.disconnect();
       clientRef.current = null;
     };
-  }, [phone, onUpdate]);
+  }, [phone]);
 }

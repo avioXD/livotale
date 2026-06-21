@@ -11,7 +11,7 @@ export function OnboardingShell() {
     <div className="flex min-h-[100dvh] flex-col bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex items-center gap-2">
-          <img src="/assets/livotale-logo.png" alt="Livotale" className="h-8 w-auto object-contain" />
+          <img src="/assets/livotale-logo.png" alt="LivoTale" className="h-8 w-auto object-contain" />
           <div>
             <p className="text-xs text-muted-foreground">Patient onboarding</p>
           </div>

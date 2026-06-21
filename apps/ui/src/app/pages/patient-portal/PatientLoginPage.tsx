@@ -42,7 +42,7 @@ function LoginFormPanel({
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="lg:hidden text-center">
-        <img src="/assets/livotale-logo.png" alt="Livotale" className="mx-auto mb-4 h-10 w-auto object-contain" />
+        <img src="/assets/livotale-logo.png" alt="LivoTale" className="mx-auto mb-4 h-10 w-auto object-contain" />
         <h1 className="text-2xl font-bold">Patient portal</h1>
         <p className="mt-1 text-sm text-muted-foreground">Sign in to view orders, reports, and payments</p>
       </div>
@@ -190,7 +190,7 @@ export function PatientLoginPage() {
   return (
     <div className="flex min-h-[100dvh] bg-background">
       <div className="hidden w-[45%] max-w-xl flex-col justify-between bg-gradient-to-br from-livotale-pink/10 via-white to-livotale-teal/10 p-10 lg:flex">
-        <img src="/assets/livotale-logo.png" alt="Livotale" className="h-10 w-auto object-contain" />
+        <img src="/assets/livotale-logo.png" alt="LivoTale" className="h-10 w-auto object-contain" />
         <div className="space-y-4">
           <h2 className="text-3xl font-bold leading-tight">Your liver care journey, in one place</h2>
           <p className="text-muted-foreground">{APP_TAGLINE}</p>

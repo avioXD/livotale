@@ -1,15 +1,23 @@
 import { BaseApiService } from '@/services/base';
 
+export type IntegrationConfigSource = 'database' | 'env';
+
 export interface PlatformSettings {
+  twilioConfigSource?: IntegrationConfigSource;
+  twilioMissingFields?: string[];
   twilioAccountSid?: string | null;
   twilioParentAccountSid?: string | null;
   twilioAuthToken?: string | null;
   twilioMessagingServiceSid?: string | null;
   twilioFromNumber?: string | null;
   twilioVerifyServiceSid?: string | null;
+  sendgridConfigSource?: IntegrationConfigSource;
+  sendgridMissingFields?: string[];
   sendgridApiKey?: string | null;
   sendgridFromEmail?: string | null;
   sendgridFromName?: string | null;
+  aiConfigSource?: IntegrationConfigSource;
+  aiMissingFields?: string[];
   aiProvider?: string | null;
   aiApiKey?: string | null;
   aiModel?: string | null;
@@ -29,6 +37,8 @@ export interface PlatformSettings {
   s3PublicEndpoint?: string | null;
   s3AccessKeyId?: string | null;
   s3SecretAccessKey?: string | null;
+  s3ConfigSource?: IntegrationConfigSource;
+  s3MissingFields?: string[];
   s3Configured?: boolean;
   updatedAt?: string | null;
 }
@@ -59,9 +69,17 @@ export interface IntegrationStatus {
   integrationsMode: string;
   otpMode: string;
   twilioConfigured: boolean;
+  twilioConfigSource: IntegrationConfigSource;
+  twilioMissingFields: string[];
   sendgridConfigured: boolean;
+  sendgridConfigSource: IntegrationConfigSource;
+  sendgridMissingFields: string[];
   aiConfigured: boolean;
+  aiConfigSource: IntegrationConfigSource;
+  aiMissingFields: string[];
   s3Configured: boolean;
+  s3ConfigSource: IntegrationConfigSource;
+  s3MissingFields: string[];
   whatsappEnabled: boolean;
   razorpayEnabled: boolean;
 }
@@ -129,7 +147,7 @@ class IntegrationsAdminService extends BaseApiService {
     });
   }
 
-  testEmail(email: string, templateCode: string): Promise<{ email: string; subject: string; body: string }> {
+  testEmail(email: string, templateCode: string): Promise<{ ok?: boolean; email: string; subject?: string; body?: string; error?: string }> {
     return this.post('/admin/integrations/settings/test-email', { email, templateCode });
   }
 

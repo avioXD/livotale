@@ -23,7 +23,7 @@ export function ProfileConsentSection({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Accepting a purpose records your consent in Livotale&apos;s audit database via the API.
+        Accepting a purpose records your consent in LivoTale&apos;s audit database via the API.
       </p>
       {consents.map((consent) => {
         const isAccepting = acceptingPurposeId === consent.purposeId;

@@ -10,7 +10,7 @@ export const SECTION_PATHOLOGY = 'cs-pathology';
 export const SECTION_CONSULT = 'cs-consult';
 
 export const ALWAYS_INCLUDED_DELIVERY_ITEMS = [
-  'Livotale letterhead final report',
+  'LivoTale letterhead final report',
   'Patient portal download',
   'WhatsApp report notification',
 ] as const;

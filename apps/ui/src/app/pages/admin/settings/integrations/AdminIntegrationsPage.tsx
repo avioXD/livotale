@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth/authStore';
 import { AppRole } from '@/types';
 import {
@@ -38,6 +37,7 @@ export function AdminIntegrationsPage() {
               href={getAdminIntegrationsPath(city, '/sms')}
               badge="Twilio"
               configured={status?.twilioConfigured}
+              source={status?.twilioConfigSource}
             />
             <IntegrationHubCard
               title="Email"
@@ -45,6 +45,7 @@ export function AdminIntegrationsPage() {
               href={getAdminIntegrationsPath(city, '/email')}
               badge="SendGrid"
               configured={status?.sendgridConfigured}
+              source={status?.sendgridConfigSource}
             />
             <IntegrationHubCard
               title="AI"
@@ -52,6 +53,7 @@ export function AdminIntegrationsPage() {
               href={getAdminIntegrationsPath(city, '/ai')}
               badge="AI"
               configured={status?.aiConfigured}
+              source={status?.aiConfigSource}
             />
             <IntegrationHubCard
               title="Object storage (S3)"
@@ -59,6 +61,7 @@ export function AdminIntegrationsPage() {
               href={getAdminIntegrationsPath(city, '/storage')}
               badge="S3"
               configured={status?.s3Configured}
+              source={status?.s3ConfigSource}
             />
           </>
         ) : null}
@@ -76,15 +79,12 @@ export function AdminIntegrationsPage() {
             badge="WeasyPrint"
           />
         ) : null}
-        <Card className="opacity-70">
-          <CardHeader>
-            <CardTitle className="text-base">Coming soon</CardTitle>
-            <CardDescription>WhatsApp and Razorpay remain blocked until their backend integrations are implemented.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            This release intentionally limits live channels to Twilio SMS/Verify, SendGrid email, in-app notifications, and PDF generation.
-          </CardContent>
-        </Card>
+        <IntegrationHubCard
+          title="WhatsApp & Razorpay"
+          description="Blocked until backend integrations are implemented."
+          href={getAdminIntegrationsPath(city)}
+          disabled
+        />
       </div>
     </AdminIntegrationsPageShell>
   );

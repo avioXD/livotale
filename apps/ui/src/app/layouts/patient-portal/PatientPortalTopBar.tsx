@@ -41,7 +41,7 @@ export function PatientPortalTopBar({
             </Button>
           )}
           <Link to="/patient" className="shrink-0 lg:hidden" aria-label="Home">
-            <img src="/assets/livotale-logo.png" alt="Livotale" className="h-7 w-auto object-contain" />
+            <img src="/assets/livotale-logo.png" alt="LivoTale" className="h-7 w-auto object-contain" />
           </Link>
           <div className="hidden min-w-0 lg:block">
             <PatientPortalBreadcrumbs orderNumber={orderNumber} />

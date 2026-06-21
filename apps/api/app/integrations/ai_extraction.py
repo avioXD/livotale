@@ -8,6 +8,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.exceptions import AppError
 from app.integrations.agents.orchestrator import ExtractionOrchestrator
 from app.integrations.extraction_types import ExtractedFieldResult
 from app.services.integration_settings_service import IntegrationSettingsService
@@ -45,7 +46,11 @@ class LiveAIExtractionService:
     async def _client_config(self) -> tuple[str, str, str]:
         creds = await self.settings_service.get_ai_credentials()
         if not creds:
-            raise NotImplementedError("Live AI extraction is not configured")
+            raise AppError(
+                "AI extraction is not configured. Ask an administrator to configure AI credentials.",
+                status_code=503,
+                error="not_configured",
+            )
         base = creds["base_url"] or "https://api.openai.com/v1"
         return base.rstrip("/"), creds["api_key"], creds["model"]
 
@@ -77,7 +82,14 @@ class LiveAIExtractionService:
                     "temperature": 0,
                 },
             )
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise AppError(
+                    f"AI provider request failed: {exc.response.status_code}",
+                    status_code=502,
+                    error="provider_error",
+                ) from exc
         orchestrator = ExtractionOrchestrator()
         return await orchestrator.process(
             job_id=job_id,
@@ -92,5 +104,9 @@ def get_ai_extraction_service(settings: Settings | None = None, db: AsyncSession
     if settings.effective_integrations_mode == "dummy":
         return DummyAIExtractionService()
     if db is None:
-        raise NotImplementedError("Live AI extraction requires a database session")
+        raise AppError(
+            "AI extraction requires database-backed integration settings.",
+            status_code=503,
+            error="not_configured",
+        )
     return LiveAIExtractionService(IntegrationSettingsService(db))

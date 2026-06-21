@@ -93,7 +93,7 @@ export function PackageChecklistEditor({
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p className="text-xs">Always included in every package.</p>
           <ul className="space-y-1">
-            <li>• Livotale letterhead final report</li>
+            <li>• LivoTale letterhead final report</li>
             <li>• Patient portal download</li>
             <li>• WhatsApp report notification</li>
           </ul>

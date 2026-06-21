@@ -112,7 +112,7 @@ export function AdminPaymentConfigPage() {
                 id="payee-name"
                 value={payeeName}
                 onChange={(e) => setPayeeName(e.target.value)}
-                placeholder="Livotale Health"
+                placeholder="LivoTale Health"
               />
             </div>
 

@@ -2,13 +2,12 @@
  * WebSocket client for Livotale realtime channels.
  */
 import { getStoredToken } from '@/rbac';
+import { resolveWsOrigin } from '@/utils/resolveWsOrigin';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4001/api/v1';
 
 function wsBaseUrl(): string {
-  const url = new URL(API_BASE);
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  return url.origin;
+  return resolveWsOrigin(API_BASE);
 }
 
 export type WsMessageHandler = (payload: unknown) => void;
@@ -31,6 +30,10 @@ export class WsClient {
   constructor(private readonly options: WsClientOptions) {}
 
   connect(): void {
+    if (this.reconnectTimer) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.closed = false;
     const params = new URLSearchParams(this.options.query ?? {});
     const token = getStoredToken();
@@ -41,13 +44,19 @@ export class WsClient {
     }
     const qs = params.toString();
     const url = `${wsBaseUrl()}${this.options.path}${qs ? `?${qs}` : ''}`;
-    this.socket = new WebSocket(url);
+    const socket = new WebSocket(url);
+    this.socket = socket;
 
-    this.socket.onopen = () => {
+    socket.onopen = () => {
+      if (this.socket !== socket) {
+        socket.close();
+        return;
+      }
       this.options.onOpen?.();
     };
 
-    this.socket.onmessage = (event) => {
+    socket.onmessage = (event) => {
+      if (this.socket !== socket) return;
       try {
         const payload = JSON.parse(String(event.data)) as unknown;
         this.options.onMessage?.(payload);
@@ -56,7 +65,9 @@ export class WsClient {
       }
     };
 
-    this.socket.onclose = () => {
+    socket.onclose = () => {
+      if (this.socket !== socket) return;
+      this.socket = null;
       this.options.onClose?.();
       if (!this.closed) {
         this.reconnectTimer = window.setTimeout(() => this.connect(), 5000);
@@ -70,8 +81,23 @@ export class WsClient {
       window.clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    this.socket?.close();
+    const socket = this.socket;
     this.socket = null;
+    if (!socket) return;
+
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onclose = null;
+
+    if (socket.readyState === WebSocket.CONNECTING) {
+      // Closing while CONNECTING triggers a noisy browser warning; close after open instead.
+      socket.addEventListener('open', () => socket.close(), { once: true });
+      return;
+    }
+
+    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CLOSING) {
+      socket.close();
+    }
   }
 }
 

@@ -3,8 +3,7 @@ import { FiCreditCard, FiSmartphone } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DemoPayMethod } from '@/types/adminOperations';
-
-const isDevMode = import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development';
+import { isDevMode } from '@/app/config/appMode';
 
 interface DemoPaymentGatewayProps {
   amount: number;
@@ -24,7 +23,7 @@ export function DemoPaymentGateway({
   const [method, setMethod] = useState<DemoPayMethod>('upi');
   const [step, setStep] = useState<'choose' | 'processing' | 'done'>('choose');
 
-  if (!isDevMode) {
+  if (!isDevMode()) {
     return null;
   }
 

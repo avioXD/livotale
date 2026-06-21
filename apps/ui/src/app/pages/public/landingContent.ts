@@ -172,7 +172,7 @@ export const WHY_LIVOTALE_FEATURES = [
   {
     title: 'Digital Health Record',
     description:
-      'All scan results securely stored in your Livotale dashboard, accessible anytime.',
+      'All scan results securely stored in your LivoTale dashboard, accessible anytime.',
   },
   {
     title: 'Doctor Consultation',

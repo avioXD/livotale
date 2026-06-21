@@ -280,7 +280,7 @@ export function OrderPathologyScheduleSection({
           <div className="space-y-3 rounded-md border bg-muted/20 px-3 py-3 text-sm">
             {!order.pathologyLabOrderRef ? (
               <div>
-                <p className="font-medium">Internal Livotale order ref</p>
+                <p className="font-medium">Internal LivoTale order ref</p>
                 <p className="mt-1 text-muted-foreground">
                   Generate an internal reference for {order.partnerLabName} / {order.patientName}, then
                   create the order on the lab partner&apos;s website using this ref.

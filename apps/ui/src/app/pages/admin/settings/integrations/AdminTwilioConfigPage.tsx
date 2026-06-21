@@ -25,7 +25,13 @@ import {
   type SmsTestLogEntry,
   type TwilioConfigTestResult,
 } from '@/services/admin/IntegrationsAdminService';
-import { AdminIntegrationsPageShell, SuperAdminOnlyNotice } from './shared';
+import {
+  AdminIntegrationsPageShell,
+  ConfigSourceSelect,
+  ManagedByEnvNotice,
+  MissingFieldsNotice,
+  SuperAdminOnlyNotice,
+} from './shared';
 import { countActiveFilters } from '@/utils/listFilters';
 import { useStorePaged } from '@/hooks/useStorePaged';
 
@@ -252,7 +258,11 @@ export function AdminTwilioConfigPage() {
       setSettings({
         twilioAccountSid: loaded.twilioAccountSid ?? '',
         twilioParentAccountSid: loaded.twilioParentAccountSid ?? '',
+        twilioMessagingServiceSid: loaded.twilioMessagingServiceSid ?? '',
         twilioFromNumber: loaded.twilioFromNumber ?? '',
+        twilioVerifyServiceSid: loaded.twilioVerifyServiceSid ?? '',
+        twilioConfigSource: loaded.twilioConfigSource ?? 'database',
+        twilioMissingFields: loaded.twilioMissingFields ?? [],
         twilioConfigured: loaded.twilioConfigured,
         sendgridConfigured: loaded.sendgridConfigured,
         aiConfigured: loaded.aiConfigured,
@@ -269,16 +279,27 @@ export function AdminTwilioConfigPage() {
   const saveSettings = async () => {
     setBusy('save');
     try {
+      const selectedSource = settings.twilioConfigSource ?? 'database';
+      const payload: Partial<PlatformSettings> = { twilioConfigSource: selectedSource };
+      if (selectedSource === 'database') {
+        payload.twilioAccountSid = settings.twilioAccountSid?.trim() || undefined;
+        payload.twilioParentAccountSid = settings.twilioParentAccountSid?.trim() || undefined;
+        payload.twilioAuthToken = authTokenDraft.trim() || undefined;
+        payload.twilioMessagingServiceSid = settings.twilioMessagingServiceSid?.trim() || undefined;
+        payload.twilioFromNumber = settings.twilioFromNumber?.trim() || undefined;
+        payload.twilioVerifyServiceSid = settings.twilioVerifyServiceSid?.trim() || undefined;
+      }
       const updated = await integrationsAdminService.updateSettings({
-        twilioAccountSid: settings.twilioAccountSid?.trim() || undefined,
-        twilioParentAccountSid: settings.twilioParentAccountSid?.trim() || undefined,
-        twilioAuthToken: authTokenDraft.trim() || undefined,
-        twilioFromNumber: settings.twilioFromNumber?.trim() || undefined,
+        ...payload,
       });
       setSettings({
         twilioAccountSid: updated.twilioAccountSid ?? '',
         twilioParentAccountSid: updated.twilioParentAccountSid ?? '',
+        twilioMessagingServiceSid: updated.twilioMessagingServiceSid ?? '',
         twilioFromNumber: updated.twilioFromNumber ?? '',
+        twilioVerifyServiceSid: updated.twilioVerifyServiceSid ?? '',
+        twilioConfigSource: updated.twilioConfigSource ?? 'database',
+        twilioMissingFields: updated.twilioMissingFields ?? [],
         twilioConfigured: updated.twilioConfigured,
         sendgridConfigured: updated.sendgridConfigured,
         aiConfigured: updated.aiConfigured,
@@ -328,6 +349,8 @@ export function AdminTwilioConfigPage() {
 
   const authTokenConfigured = Boolean(maskedAuthToken);
   const authTokenDisplay = isEditingAuthToken || !maskedAuthToken ? authTokenDraft : maskedAuthToken;
+  const source = settings.twilioConfigSource ?? 'database';
+  const managedByEnv = source === 'env';
 
   return (
     <AdminIntegrationsPageShell
@@ -335,12 +358,14 @@ export function AdminTwilioConfigPage() {
       title="Twilio SMS"
       description="Configure Twilio credentials, send test SMS, and review send history."
       badge={settings.twilioConfigured ? 'Configured' : 'Not configured'}
+      source={source}
     >
       {role !== AppRole.SUPER_ADMIN ? (
         <SuperAdminOnlyNotice />
       ) : (
         <>
           {message ? <div className="rounded-md border bg-muted/40 px-4 py-2 text-sm">{message}</div> : null}
+          <MissingFieldsNotice fields={settings.twilioMissingFields} />
 
           <Tabs value={pageTab} onValueChange={(value) => setPageTab(value as PageTab)} className="space-y-4">
             <TabsList className="inline-flex h-auto w-full justify-start gap-1 bg-muted p-1">
@@ -361,12 +386,27 @@ export function AdminTwilioConfigPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="twilio-source">Configuration source</Label>
+                      <ConfigSourceSelect
+                        id="twilio-source"
+                        value={source}
+                        onChange={(value) => setSettings((s) => ({ ...s, twilioConfigSource: value }))}
+                        disabled={busy === 'save'}
+                      />
+                    </div>
+                    {managedByEnv ? (
+                      <div className="md:col-span-2">
+                        <ManagedByEnvNotice provider="Twilio" />
+                      </div>
+                    ) : null}
                     <div className="space-y-2">
                       <Label htmlFor="twilio-account-sid">Account SID or API Key SID</Label>
                       <Input
                         id="twilio-account-sid"
                         placeholder="ACxxxxxxxx or SKxxxxxxxx"
                         value={settings.twilioAccountSid ?? ''}
+                        disabled={managedByEnv}
                         onChange={(e) => setSettings((s) => ({ ...s, twilioAccountSid: e.target.value }))}
                       />
                     </div>
@@ -381,6 +421,7 @@ export function AdminTwilioConfigPage() {
                         className={authTokenConfigured && !isEditingAuthToken ? 'font-mono text-muted-foreground' : undefined}
                         placeholder={authTokenConfigured ? 'Click to replace stored secret' : 'Enter token or secret to save'}
                         value={authTokenDisplay ?? ''}
+                        disabled={managedByEnv}
                         onFocus={() => {
                           if (authTokenConfigured && !isEditingAuthToken) {
                             setIsEditingAuthToken(true);
@@ -411,22 +452,47 @@ export function AdminTwilioConfigPage() {
                           placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                           value={settings.twilioParentAccountSid ?? ''}
                           onChange={(e) => setSettings((s) => ({ ...s, twilioParentAccountSid: e.target.value }))}
+                          disabled={managedByEnv}
                         />
                         <p className="text-xs text-muted-foreground">
                           Required when using an API Key SID (SK…). Find your Account SID on the Twilio Console home page.
                         </p>
                       </div>
                     ) : null}
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="twilio-messaging-service-sid">Messaging Service SID</Label>
+                      <Input
+                        id="twilio-messaging-service-sid"
+                        placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={settings.twilioMessagingServiceSid ?? ''}
+                        disabled={managedByEnv}
+                        onChange={(e) => setSettings((s) => ({ ...s, twilioMessagingServiceSid: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="twilio-from-number">From phone number</Label>
                       <Input
                         id="twilio-from-number"
                         placeholder="+12567805633"
                         value={settings.twilioFromNumber ?? ''}
+                        disabled={managedByEnv}
                         onChange={(e) => setSettings((s) => ({ ...s, twilioFromNumber: e.target.value }))}
                       />
                       <p className="text-xs text-muted-foreground">
-                        E.164 format. Used as the `from_` parameter when sending SMS via the Twilio Messages API.
+                        E.164 format. Used when a Messaging Service SID is not provided.
+                      </p>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="twilio-verify-service-sid">Verify Service SID</Label>
+                      <Input
+                        id="twilio-verify-service-sid"
+                        placeholder="VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={settings.twilioVerifyServiceSid ?? ''}
+                        disabled={managedByEnv}
+                        onChange={(e) => setSettings((s) => ({ ...s, twilioVerifyServiceSid: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Required for patient, technician, and operator OTP flows in live mode.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 md:col-span-2">

@@ -41,7 +41,7 @@ export function LandingSceneSection({
                 </span>
               </div>
               <div className="absolute bottom-4 right-4">
-                <span className="text-xs font-bold tracking-wider text-livotale-teal">Livotale</span>
+                <span className="text-xs font-bold tracking-wider text-livotale-teal">LivoTale</span>
               </div>
             </div>
             <div

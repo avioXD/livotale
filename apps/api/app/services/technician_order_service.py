@@ -144,7 +144,17 @@ class TechnicianOrderService:
         if settings.effective_otp_mode == "demo":
             await self._otp.verify_challenge(normalized, purpose, otp, status_code=400)
             return
-        if not await self._verify.check_verification(phone, otp):
+        try:
+            approved = await self._verify.check_verification(phone, otp)
+        except AppError as exc:
+            if exc.error == "not_configured":
+                raise AppError(
+                    "OTP service is not configured. Ask a Super Admin to configure Twilio Verify.",
+                    status_code=503,
+                    error="not_configured",
+                ) from exc
+            raise
+        if not approved:
             raise AppError("Invalid or expired OTP", status_code=400)
 
     async def _send_otp(
@@ -156,10 +166,23 @@ class TechnicianOrderService:
         if settings.effective_otp_mode == "demo":
             demo = OtpChallengeService.demo_code()
             if not demo:
-                raise AppError("OTP provider not configured", status_code=501, error="not_configured")
+                raise AppError(
+                    "OTP service is not configured. Ask a Super Admin to configure Twilio Verify.",
+                    status_code=503,
+                    error="not_configured",
+                )
             await self._otp.create_challenge(normalized, purpose, demo)
         else:
-            await self._verify.send_verification(phone)
+            try:
+                await self._verify.send_verification(phone)
+            except AppError as exc:
+                if exc.error == "not_configured":
+                    raise AppError(
+                        "OTP service is not configured. Ask a Super Admin to configure Twilio Verify.",
+                        status_code=503,
+                        error="not_configured",
+                    ) from exc
+                raise
             await self._otp.create_challenge(normalized, purpose, "twilio_verify")
         return self._otp.send_response_fields()
 

@@ -94,7 +94,11 @@ class TwilioVerifyService:
 
         creds = await self.settings.get_twilio_credentials()
         if not creds or not creds.get("verify_service_sid"):
-            raise AppError("Twilio Verify is not configured", status_code=503, error="not_configured")
+            raise AppError(
+                "SMS OTP is not configured. Ask an administrator to configure Twilio Verify.",
+                status_code=503,
+                error="not_configured",
+            )
 
         client = build_twilio_client(creds)
         try:
@@ -112,7 +116,11 @@ class TwilioVerifyService:
 
         creds = await self.settings.get_twilio_credentials()
         if not creds or not creds.get("verify_service_sid"):
-            raise AppError("Twilio Verify is not configured", status_code=503, error="not_configured")
+            raise AppError(
+                "SMS OTP is not configured. Ask an administrator to configure Twilio Verify.",
+                status_code=503,
+                error="not_configured",
+            )
 
         client = build_twilio_client(creds)
         try:

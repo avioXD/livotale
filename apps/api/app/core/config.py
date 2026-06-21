@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_env: str = "development"  # development | production
+    app_env: str = "dev"  # dev | production
     database_url: str = "postgresql+asyncpg://livotale_user:password@localhost:5432/livotale"
     redis_url: str = "redis://localhost:6379"
     jwt_secret: str = "livotale-development-jwt-secret-change-me"
@@ -22,8 +22,19 @@ class Settings(BaseSettings):
     s3_key_prefix: str = "livotale"
     aws_access_key_id: str = "test"
     aws_secret_access_key: str = "test"
-    integrations_mode: str = "dummy"
-    otp_mode: str = "demo"  # demo | live (honored only when app_env=development)
+    twilio_account_sid: str | None = None
+    twilio_parent_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_messaging_service_sid: str | None = None
+    twilio_from_number: str | None = None
+    twilio_verify_service_sid: str | None = None
+    sendgrid_api_key: str | None = None
+    sendgrid_from_email: str | None = None
+    sendgrid_from_name: str | None = None
+    ai_provider: str | None = None
+    ai_api_key: str | None = None
+    ai_model: str | None = None
+    ai_base_url: str | None = None
     integrations_encryption_key: str | None = None
     bank_details_encryption_key: str | None = None
     notification_test_phone_allowlist: str = "+917001638349"
@@ -40,19 +51,15 @@ class Settings(BaseSettings):
 
     @property
     def is_dev(self) -> bool:
-        return self.app_env != "production"
+        return self.app_env.strip().lower() == "dev"
 
     @property
     def effective_otp_mode(self) -> str:
-        if not self.is_dev:
-            return "live"
-        return self.otp_mode
+        return "demo" if self.is_dev else "live"
 
     @property
     def effective_integrations_mode(self) -> str:
-        if not self.is_dev:
-            return "live"
-        return self.integrations_mode
+        return "dummy" if self.is_dev else "live"
 
 
 @lru_cache

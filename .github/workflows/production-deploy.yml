@@ -1,0 +1,261 @@
+"name": Production Deploy
+
+"on":
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.12.1"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: livotale_user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: livotale_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U livotale_user -d livotale_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: python -m pip install --upgrade uv
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Run database migrations for API tests
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "postgresql://livotale_user:password@localhost:5432/livotale_test"
+        run: |
+          npm install pg dotenv
+          node scripts/run-migrations.js
+
+      - name: Run API tests
+        working-directory: apps/api
+        env:
+          APP_ENV: test
+          DATABASE_URL: "postgresql+asyncpg://livotale_user:password@localhost:5432/livotale_test"
+          REDIS_URL: "redis://localhost:6379"
+          JWT_SECRET: ci-test-jwt-secret
+          CORS_ORIGINS: "http://localhost:5174"
+          S3_BUCKET: ci-test-bucket
+          AWS_ACCESS_KEY_ID: ci
+          AWS_SECRET_ACCESS_KEY: ci
+          INTERNAL_NOTIFICATIONS_KEY: ci-internal-notifications
+        run: uv run pytest
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@${{ env.PNPM_VERSION }} --activate
+
+      - name: Install UI dependencies
+        working-directory: apps/ui
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint UI
+        working-directory: apps/ui
+        run: pnpm lint
+
+      - name: Test UI
+        working-directory: apps/ui
+        run: pnpm test -- --runInBand
+
+      - name: Build UI
+        working-directory: apps/ui
+        env:
+          VITE_API_BASE_URL: /api/v1
+          VITE_APP_ENV: production
+        run: pnpm build
+
+      - name: Validate Docker Compose
+        run: docker compose --env-file .env.production.example config
+
+      - name: Build production Docker images
+        run: docker compose --env-file .env.production.example build api worker ui nginx db-backup
+
+  deploy:
+    name: Publish To Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - build-check
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+        run: |
+          test -n "$PROD_SSH_HOST"
+          test -n "$PROD_SSH_PRIVATE_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/livotale_prod
+          chmod 600 ~/.ssh/livotale_prod
+          ssh-keyscan -H "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Create production deploy bundle
+        run: |
+          set -euo pipefail
+          mkdir -p deploy
+          tar -czf deploy/livotale-production.tar.gz \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='._*' \
+            --exclude='.DS_Store' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='coverage' \
+            --exclude='*.test.*' \
+            --exclude='*.spec.*' \
+            docker-compose.yml \
+            .env.production.example \
+            apps/api/app \
+            apps/api/scripts \
+            apps/api/pyproject.toml \
+            apps/api/README.md \
+            apps/api/package.json \
+            apps/api/uv.lock \
+            apps/ui/src \
+            apps/ui/public \
+            apps/ui/index.html \
+            apps/ui/package.json \
+            apps/ui/pnpm-lock.yaml \
+            apps/ui/tsconfig.json \
+            apps/ui/tsconfig.app.json \
+            apps/ui/tsconfig.node.json \
+            apps/ui/vite.config.ts \
+            apps/ui/tailwind.config.js \
+            apps/ui/postcss.config.js \
+            apps/ui/components.json \
+            packages/database/migrations \
+            docker/api/Dockerfile.prod \
+            docker/ui/Dockerfile.prod \
+            docker/ui/nginx.static.conf \
+            docker/nginx/Dockerfile.prod \
+            docker/nginx/nginx.prod.conf \
+            docker/db-backup
+          tar -tzf deploy/livotale-production.tar.gz
+
+      - name: Upload production deploy bundle
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_SSH_HOST"
+          REMOTE_USER="${PROD_SSH_USER:-root}"
+          REMOTE_APP_DIR="${PROD_APP_DIR:-/opt/livotale}"
+          ssh -i ~/.ssh/livotale_prod "$REMOTE_USER@$PROD_SSH_HOST" "mkdir -p '$REMOTE_APP_DIR/releases'"
+          scp -i ~/.ssh/livotale_prod deploy/livotale-production.tar.gz "$REMOTE_USER@$PROD_SSH_HOST:$REMOTE_APP_DIR/releases/livotale-production.tar.gz"
+
+      - name: Deploy over SSH
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_APP_DIR: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          test -n "$PROD_SSH_HOST"
+          REMOTE_USER="${PROD_SSH_USER:-root}"
+          REMOTE_APP_DIR="${PROD_APP_DIR:-/opt/livotale}"
+
+          ssh -i ~/.ssh/livotale_prod "$REMOTE_USER@$PROD_SSH_HOST" \
+            "APP_DIR='$REMOTE_APP_DIR' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          if [ -z "${APP_DIR:-}" ] || [ "$APP_DIR" = "/" ]; then
+            echo "Refusing to deploy: APP_DIR is unsafe."
+            exit 1
+          fi
+
+          RELEASE_ARCHIVE="$APP_DIR/releases/livotale-production.tar.gz"
+          ENV_BACKUP=""
+
+          if [ ! -f "$RELEASE_ARCHIVE" ]; then
+            echo "Missing deploy bundle: $RELEASE_ARCHIVE"
+            exit 1
+          fi
+
+          if [ -f "$APP_DIR/.env.production" ]; then
+            ENV_BACKUP="$(mktemp)"
+            cp "$APP_DIR/.env.production" "$ENV_BACKUP"
+          fi
+
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 \
+            ! -name '.env.production' \
+            ! -name 'backups' \
+            ! -name 'releases' \
+            -exec rm -rf {} +
+          cd "$APP_DIR"
+          tar -xzf "$RELEASE_ARCHIVE" -C "$APP_DIR"
+
+          if [ -n "$ENV_BACKUP" ]; then
+            cp "$ENV_BACKUP" .env.production
+            rm -f "$ENV_BACKUP"
+          fi
+
+          if [ ! -f .env.production ]; then
+            echo "Missing $APP_DIR/.env.production. Create it before deploying."
+            exit 1
+          fi
+
+          find . -name '._*' -type f -delete
+
+          docker compose --env-file .env.production --profile init run --rm db-init
+          docker compose --env-file .env.production up -d --build
+          docker compose --env-file .env.production ps
+
+          curl -fsS -I http://127.0.0.1/ >/dev/null
+          curl -fsS http://127.0.0.1/api/v1/public/packages >/dev/null
+          REMOTE

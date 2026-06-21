@@ -170,7 +170,7 @@ export function AdminServiceZonesPage() {
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`${orgPath('/admin/service-zones')}/${z.id}?tab=edit`);
+                      navigate(`${orgPath('/admin/organization-configuration/service-zones')}/${z.id}?tab=edit`);
                     }}
                   >
                     Edit
@@ -213,7 +213,7 @@ export function AdminServiceZonesPage() {
           description="The org operates by city + pincode. These zones are the single source of truth for booking validation and city-wise filtering across the platform. Super Admin controlled."
         />
         {canManage && (
-          <Button onClick={() => navigate(`${orgPath('/admin/service-zones')}/new?tab=edit`)}>
+          <Button onClick={() => navigate(`${orgPath('/admin/organization-configuration/service-zones')}/new?tab=edit`)}>
             <FiPlus className="mr-2 h-4 w-4" />
             Add service zone
           </Button>
@@ -257,7 +257,7 @@ export function AdminServiceZonesPage() {
         isLoading={isLoading}
         emptyMessage="No service zones configured yet."
         getRowKey={(z) => z.id}
-        onRowClick={(z) => navigate(`${orgPath('/admin/service-zones')}/${z.id}?tab=view`)}
+        onRowClick={(z) => navigate(`${orgPath('/admin/organization-configuration/service-zones')}/${z.id}?tab=view`)}
       />
 
       <PaginationControls

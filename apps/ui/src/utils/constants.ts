@@ -8,7 +8,7 @@ export const BRAND = {
   teal: '#1EABB3',
 } as const;
 
-export const APP_NAME = 'Livotale';
+export const APP_NAME = 'LivoTale';
 
 /** Product name for liver stiffness elastography — use in all user-facing copy. */
 export const LIVER_FIBROSIS_SCAN_LABEL = 'Liver Fibrosis Scan';

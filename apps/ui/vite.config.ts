@@ -1,7 +1,7 @@
 import path from 'path';
 import { createRequire } from 'module';
 import { transform } from 'esbuild';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const require = createRequire(import.meta.url);
@@ -31,36 +31,43 @@ function innoplexusJsx(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [
-    innoplexusJsx(),
-    react({
-      include: [/src\/.*\.[jt]sx?$/, /human-body-organs-mapping-library\/.*\.js$/],
-    }),
-  ],
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
+    define: {
+      __APP_ENV__: JSON.stringify(env.VITE_APP_ENV || 'production'),
+    },
+    plugins: [
+      innoplexusJsx(),
+      react({
+        include: [/src\/.*\.[jt]sx?$/, /human-body-organs-mapping-library\/.*\.js$/],
+      }),
+    ],
+    optimizeDeps: {
+      esbuildOptions: {
+        loader: {
+          '.js': 'jsx',
+        },
+      },
+      include: [
+        'human-body-organs-mapping-library/src/SVGs/MaleSVG/index.js',
+        'human-body-organs-mapping-library/src/SVGs/OrgansData/data.js',
+      ],
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+        'human-body-organs-mapping-library': innoplexusRoot,
       },
     },
-    include: [
-      'human-body-organs-mapping-library/src/SVGs/MaleSVG/index.js',
-      'human-body-organs-mapping-library/src/SVGs/OrgansData/data.js',
-    ],
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      'human-body-organs-mapping-library': innoplexusRoot,
-    },
-  },
     server: {
-    port: 5174,
-    host: true,
-    hmr: process.env.VITE_HMR_CLIENT_PORT
-      ? { clientPort: Number(process.env.VITE_HMR_CLIENT_PORT) }
-      : undefined,
-    open: !process.env.VITE_HMR_CLIENT_PORT,
-  },
+      port: 5174,
+      host: true,
+      hmr: env.VITE_HMR_CLIENT_PORT
+        ? { clientPort: Number(env.VITE_HMR_CLIENT_PORT) }
+        : undefined,
+      open: !env.VITE_HMR_CLIENT_PORT,
+    },
+  };
 });

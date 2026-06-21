@@ -60,7 +60,7 @@ export function OrderStepLockedSummary({
         {stepId === 'lab' && (
           <>
             <p>Lab partner: {order.partnerLabName ?? '—'}</p>
-            <p>Lab PDF processed, AI parameters verified, and Livotale letterhead report available.</p>
+            <p>Lab PDF processed, AI parameters verified, and LivoTale letterhead report available.</p>
           </>
         )}
         {stepId === 'report' && (

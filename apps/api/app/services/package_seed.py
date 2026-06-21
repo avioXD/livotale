@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.package_content import create_includes_from_input
 from app.models.commerce import LiverCarePackage
-from app.repositories.package_repo import PackageRepository
 
 SEED_PACKAGES = [
     {
@@ -40,11 +40,11 @@ SEED_PACKAGES = [
     {
         "code": "PKG-2",
         "name": "Liver Fibrosis Scan + Pathological Test",
-        "subtitle": "Scan plus comprehensive blood panel",
-        "tagline": "Complete liver picture — imaging and lab together",
-        "description": "Full liver assessment combining fibrosis scan with partner-lab pathology and a merged Livotale final report.",
-        "price": 8000,
-        "discountPrice": 7500,
+        "subtitle": None,
+        "tagline": None,
+        "description": "Fibrosis scan with blood pathology panel.",
+        "price": 8560,
+        "discountPrice": None,
         "fibrosisScanIncluded": True,
         "pathologyIncluded": True,
         "consultationIncluded": False,
@@ -53,15 +53,15 @@ SEED_PACKAGES = [
         "active": True,
         "sortOrder": 2,
         "termsConditions": "Includes home blood sample collection. Combined report within 5–7 business days after lab processing.",
-        "recommendedTag": True,
-        "testCountTotal": 56,
+        "recommendedTag": False,
+        "testCountTotal": None,
     },
     {
         "code": "PKG-3",
-        "name": "Liver Fibrosis Scan + Pathological Test + Doctor Consultation",
-        "subtitle": "Full care pathway with specialist review",
-        "tagline": "Scan, labs, and expert guidance in one package",
-        "description": "End-to-end liver care: home scan, pathology panel, merged report, specialist video consultation, and digital prescription.",
+        "name": "LivoTale Executive",
+        "subtitle": None,
+        "tagline": None,
+        "description": "Full liver care package with consultation and prescription.",
         "price": 9500,
         "discountPrice": None,
         "fibrosisScanIncluded": True,
@@ -72,36 +72,44 @@ SEED_PACKAGES = [
         "active": True,
         "sortOrder": 3,
         "termsConditions": "Consultation scheduled after reports are ready.",
-        "recommendedTag": False,
-        "testCountTotal": 56,
+        "recommendedTag": True,
+        "testCountTotal": None,
     },
 ]
 
 
-async def seed_packages_if_empty(session: AsyncSession) -> int:
-    repo = PackageRepository(session)
-    if await repo.count_all() > 0:
-        return 0
+async def sync_seed_packages(session: AsyncSession) -> int:
+    seed_codes = [payload["code"] for payload in SEED_PACKAGES]
+    await session.execute(
+        delete(LiverCarePackage).where(LiverCarePackage.code.not_in(seed_codes))
+    )
 
-    inserted = 0
     for payload in SEED_PACKAGES:
         includes = create_includes_from_input(payload)
-        package = LiverCarePackage(
-            code=payload["code"],
-            name=payload["name"],
-            description=payload["description"],
-            price=Decimal(str(payload["price"])),
-            discount_price=Decimal(str(payload["discountPrice"])) if payload.get("discountPrice") else None,
-            includes=includes,
-            fibrosis_scan_included=payload["fibrosisScanIncluded"],
-            pathology_included=payload["pathologyIncluded"],
-            consultation_included=payload["consultationIncluded"],
-            visibility_web=payload["visibilityWeb"],
-            active=payload["active"],
-            sort_order=payload["sortOrder"],
-            terms_conditions=payload.get("termsConditions"),
-            recommended_tag=payload.get("recommendedTag", False),
+        package = (
+            await session.execute(
+                select(LiverCarePackage).where(LiverCarePackage.code == payload["code"])
+            )
+        ).scalar_one_or_none()
+        if package is None:
+            package = LiverCarePackage(code=payload["code"])
+            session.add(package)
+
+        package.name = payload["name"]
+        package.description = payload["description"]
+        package.price = Decimal(str(payload["price"]))
+        package.discount_price = (
+            Decimal(str(payload["discountPrice"])) if payload.get("discountPrice") else None
         )
-        await repo.add(package)
-        inserted += 1
-    return inserted
+        package.includes = includes
+        package.fibrosis_scan_included = payload["fibrosisScanIncluded"]
+        package.pathology_included = payload["pathologyIncluded"]
+        package.consultation_included = payload["consultationIncluded"]
+        package.visibility_web = payload["visibilityWeb"]
+        package.active = payload["active"]
+        package.sort_order = payload["sortOrder"]
+        package.terms_conditions = payload.get("termsConditions")
+        package.recommended_tag = payload.get("recommendedTag", False)
+        package.deleted_at = None
+
+    return len(SEED_PACKAGES)

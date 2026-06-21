@@ -1,4 +1,5 @@
 import type { ApiRoleCode } from '@/types';
+import { isDevMode } from '@/app/config/appMode';
 
 export interface DevStaffLoginShortcut {
   label: string;
@@ -7,24 +8,24 @@ export interface DevStaffLoginShortcut {
   activeRole?: ApiRoleCode;
 }
 
-/** Local bootstrap accounts — only exposed when `import.meta.env.DEV` is true. */
-export const DEV_STAFF_LOGIN_SHORTCUTS: DevStaffLoginShortcut[] = import.meta.env.DEV
+/** Local bootstrap accounts — only exposed when VITE_APP_ENV=dev. */
+export const DEV_STAFF_LOGIN_SHORTCUTS: DevStaffLoginShortcut[] = isDevMode()
   ? [
       {
         label: 'Super Admin',
-        identifier: 'admin@livotale.com',
+        identifier: 'abhishek@livotale.com',
         password: 'Admin@123',
         activeRole: 'admin',
       },
       {
-        label: 'Operations',
-        identifier: 'operations@livotale.com',
+        label: 'Assigned Ops',
+        identifier: 'dipten@livotale.com',
         password: 'Ops@123',
         activeRole: 'support',
       },
       {
-        label: 'Doctor',
-        identifier: 'doctor@livotale.com',
+        label: 'Dr. Vijay',
+        identifier: 'dr.vijay@livotale.com',
         password: 'Doctor@123',
         activeRole: 'doctor',
       },
@@ -35,10 +36,10 @@ export const DEV_STAFF_LOGIN_SHORTCUTS: DevStaffLoginShortcut[] = import.meta.en
         activeRole: 'technician',
       },
       {
-        label: 'Lab Partner',
-        identifier: 'labpartner@livotale.com',
-        password: 'Lab@123',
-        activeRole: 'lab_partner',
+        label: 'Operator',
+        identifier: 'vivek',
+        password: 'Ops@123',
+        activeRole: 'support',
       },
     ]
   : [];

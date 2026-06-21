@@ -3,8 +3,7 @@ import { DemoPaymentGateway } from '@/app/pages/admin/operations/components/Demo
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DemoPayMethod } from '@/types/adminOperations';
-
-const isDevMode = import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development';
+import { isDevMode } from '@/app/config/appMode';
 
 interface PaymentStepProps {
   amount: number;
@@ -18,11 +17,12 @@ export function PaymentStep({ amount, typeName, appointmentId, onBack, onNext }:
   const [showGateway, setShowGateway] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paid, setPaid] = useState(false);
+  const devMode = isDevMode();
 
   const handlePay = async (_method: DemoPayMethod) => {
     setIsProcessing(true);
     try {
-      if (isDevMode && appointmentId) {
+      if (devMode && appointmentId) {
         // Legacy appointment demo-pay removed with Fastify; dev mode simulates success locally.
         await new Promise((resolve) => setTimeout(resolve, 400));
       }
@@ -36,7 +36,7 @@ export function PaymentStep({ amount, typeName, appointmentId, onBack, onNext }:
     }
   };
 
-  if (isDevMode && (showGateway || paid)) {
+  if (devMode && (showGateway || paid)) {
     return (
       <DemoPaymentGateway
         amount={amount}
@@ -53,7 +53,7 @@ export function PaymentStep({ amount, typeName, appointmentId, onBack, onNext }:
       <CardHeader>
         <CardTitle>Payment</CardTitle>
         <CardDescription>
-          {isDevMode
+          {devMode
             ? 'Pay now with our demo gateway (UPI / card) or continue — clinic may collect at visit.'
             : 'Continue — clinic will collect payment at visit or via patient portal checkout.'}
         </CardDescription>
@@ -68,13 +68,13 @@ export function PaymentStep({ amount, typeName, appointmentId, onBack, onNext }:
           <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
             Back
           </Button>
-          {isDevMode && (
+          {devMode && (
             <Button type="button" variant="outline" className="flex-1" onClick={() => setShowGateway(true)}>
               Pay online (demo)
             </Button>
           )}
           <Button className="flex-1" onClick={onNext}>
-            {isDevMode ? 'Pay at clinic' : 'Continue'}
+            {devMode ? 'Pay at clinic' : 'Continue'}
           </Button>
         </div>
       </CardContent>

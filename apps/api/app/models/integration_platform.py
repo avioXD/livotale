@@ -40,15 +40,18 @@ class PlatformSettings(Base):
     __table_args__ = {"schema": "integrations"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    twilio_config_source: Mapped[str] = mapped_column(Text, server_default="database")
     twilio_account_sid: Mapped[str | None] = mapped_column(Text)
     twilio_parent_account_sid: Mapped[str | None] = mapped_column(Text)
     twilio_auth_token_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     twilio_messaging_service_sid: Mapped[str | None] = mapped_column(Text)
     twilio_from_number: Mapped[str | None] = mapped_column(Text)
     twilio_verify_service_sid: Mapped[str | None] = mapped_column(Text)
+    sendgrid_config_source: Mapped[str] = mapped_column(Text, server_default="database")
     sendgrid_api_key_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     sendgrid_from_email: Mapped[str | None] = mapped_column(Text)
     sendgrid_from_name: Mapped[str | None] = mapped_column(Text)
+    ai_config_source: Mapped[str] = mapped_column(Text, server_default="database")
     ai_provider: Mapped[str | None] = mapped_column(Text)
     ai_api_key_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
     ai_model: Mapped[str | None] = mapped_column(Text)
@@ -65,6 +68,7 @@ class PlatformSettings(Base):
     s3_public_endpoint: Mapped[str | None] = mapped_column(Text)
     s3_access_key_id: Mapped[str | None] = mapped_column(Text)
     s3_secret_access_key_enc: Mapped[bytes | None] = mapped_column(LargeBinary)
+    s3_config_source: Mapped[str] = mapped_column(Text, server_default="env")
     updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("identity.users.id"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

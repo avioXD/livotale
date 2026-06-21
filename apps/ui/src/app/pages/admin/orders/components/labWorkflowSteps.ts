@@ -11,9 +11,9 @@ export const LAB_WORKFLOW_STEP_LABELS = [
   'Sample collected (from lab portal)',
   'Lab processing at partner',
   'Awaiting report on lab portal',
-  'Upload lab PDF to Livotale',
+  'Upload lab PDF to LivoTale',
   'AI extraction review',
-  'Livotale letterhead PDF',
+  'LivoTale letterhead PDF',
 ] as const;
 
 export type LabWorkflowStepState = 'done' | 'current' | 'pending';

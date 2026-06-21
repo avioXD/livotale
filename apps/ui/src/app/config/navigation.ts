@@ -5,7 +5,6 @@ import {
   FiClipboard,
   FiCreditCard,
   FiHome,
-  FiMapPin,
   FiSettings,
   FiShield,
   FiTruck,
@@ -267,17 +266,9 @@ export const navigationItems: NavItem[] = [
 
   // ── Settings ──
   {
-    id: 'admin-service-zones',
-    label: 'Service zones',
-    path: orgPath('/admin/service-zones'),
-    icon: FiMapPin,
-    roles: [...ADMIN_ROLES],
-    group: 'account',
-  },
-  {
-    id: 'admin-integrations',
-    label: 'Integrations',
-    path: orgPath('/admin/integrations'),
+    id: 'admin-organization-configuration',
+    label: 'Organization',
+    path: orgPath('/admin/organization-configuration'),
     icon: FiSettings,
     roles: [...ADMIN_ROLES],
     group: 'account',

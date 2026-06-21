@@ -162,7 +162,7 @@ export function FinalReportSection({
   if (embeddedInLab) {
     return (
       <section className="rounded-md border p-4">
-        <h3 className="mb-3 text-sm font-semibold">Livotale letterhead PDF</h3>
+        <h3 className="mb-3 text-sm font-semibold">LivoTale letterhead PDF</h3>
         {content}
       </section>
     );

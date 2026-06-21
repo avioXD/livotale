@@ -52,15 +52,15 @@ async def test_twilio_sms_prefers_messaging_service() -> None:
             "from_number": "+12567805633",
         }
     )
-    app_settings = MagicMock(integrations_mode="live")
+    app_settings = MagicMock(effective_integrations_mode="live")
     service = TwilioSmsService(settings, app_settings=app_settings)
 
-    with patch("twilio.rest.Client") as client_cls:
+    with patch("app.integrations.twilio_service.build_twilio_client") as build_client:
         message = MagicMock(sid="SM123", status="queued")
-        client_cls.return_value.messages.create.return_value = message
+        build_client.return_value.messages.create.return_value = message
         result = await service.send_sms("+917001638349", "Hello")
 
-    create_kwargs = client_cls.return_value.messages.create.call_args.kwargs
+    create_kwargs = build_client.return_value.messages.create.call_args.kwargs
     assert create_kwargs["messaging_service_sid"] == "MG123"
     assert "from_" not in create_kwargs
     assert result["senderMode"] == "messaging_service"
@@ -76,16 +76,15 @@ async def test_twilio_sms_falls_back_to_from_number() -> None:
             "from_number": "+12567805633",
         }
     )
-    app_settings = MagicMock(integrations_mode="live")
+    app_settings = MagicMock(effective_integrations_mode="live")
     service = TwilioSmsService(settings, app_settings=app_settings)
 
-    with patch("twilio.rest.Client") as client_cls:
+    with patch("app.integrations.twilio_service.build_twilio_client") as build_client:
         message = MagicMock(sid="SM456", status="queued")
-        client_cls.return_value.messages.create.return_value = message
+        build_client.return_value.messages.create.return_value = message
         result = await service.send_sms("+917001638349", "Hello")
 
-    create_kwargs = client_cls.return_value.messages.create.call_args.kwargs
+    create_kwargs = build_client.return_value.messages.create.call_args.kwargs
     assert create_kwargs["from_"] == "+12567805633"
     assert "messaging_service_sid" not in create_kwargs
     assert result["senderMode"] == "from_number"
-

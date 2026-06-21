@@ -36,11 +36,11 @@ def admin_token(client: TestClient) -> str:
 
 @pytest.fixture
 def live_otp_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Rate limits apply only when otp_mode is live; tests opt in explicitly."""
+    """Rate limits apply only outside APP_ENV=dev; tests opt in explicitly."""
     from app.core.config import get_settings
 
     settings = get_settings()
-    monkeypatch.setattr(settings, "otp_mode", "live")
+    monkeypatch.setattr(settings, "app_env", "production")
 
 
 @pytest.fixture

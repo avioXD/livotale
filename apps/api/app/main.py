@@ -20,7 +20,7 @@ from app.core.exceptions import AppError, app_error_handler, http_exception_hand
 from app.core.redis import connect_redis, disconnect_redis
 from app.middleware.api_audit import ApiAuditMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
-from app.services.package_seed import seed_packages_if_empty
+from app.services.package_seed import sync_seed_packages
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
     if os.getenv("SEED_PACKAGES_ON_STARTUP", "true").lower() == "true":
         try:
             async with SessionLocal() as session:
-                await seed_packages_if_empty(session)
+                await sync_seed_packages(session)
                 await session.commit()
         except Exception:
             pass  # DB may be unavailable in tests
