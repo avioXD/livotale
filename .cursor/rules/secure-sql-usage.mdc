@@ -1,0 +1,11 @@
+---
+description: SQL injection prevention — parameterized queries only
+globs: api/app/**/*.py
+alwaysApply: false
+---
+
+# Secure SQL Usage
+
+- Never concatenate user input into SQL strings
+- Use SQLAlchemy ORM or `text()` with named bind parameters
+- Validate UUIDs and enums before queries

@@ -1,0 +1,13 @@
+{
+  "name": "livotale-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "migrate": "node scripts/run-migrations.js",
+    "seed:doctors": "node scripts/seed-doctor-booking-data.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "description": "Migration and seed scripts for the Livotale FastAPI backend."
+}

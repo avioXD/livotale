@@ -1,0 +1,39 @@
+[project]
+name = "livotale-api"
+version = "0.1.0"
+description = "Livotale FastAPI backend"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiobotocore>=3.7.0",
+    "alembic>=1.18.4",
+    "arq>=0.28.0",
+    "asyncpg>=0.31.0",
+    "boto3>=1.43.0",
+    "fastapi>=0.138.0",
+    "httpx>=0.28.1",
+    "pydantic-settings>=2.14.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "python-jose[cryptography]>=3.5.0",
+    "cryptography>=44.0.0",
+    "python-multipart>=0.0.32",
+    "redis>=5.3.1",
+    "ruff>=0.15.18",
+    "sqlalchemy[asyncio]>=2.0.51",
+    "uvicorn[standard]>=0.49.0",
+    "websockets>=16.0",
+    "twilio>=9.0.0",
+    "sendgrid>=6.11.0",
+    "weasyprint>=63.0",
+    "jinja2>=3.1.0",
+]
+
+[project.scripts]
+dev = "app.cli:dev"
+appointment-reminders = "app.cli:appointment_reminders"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

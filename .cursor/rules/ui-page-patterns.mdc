@@ -1,6 +1,6 @@
 ---
 description: Standard list and detail page layout for livotale-ui admin screens
-globs: livotale-ui/src/app/pages/**/*.tsx
+globs: apps/ui/src/app/pages/**/*.tsx
 alwaysApply: false
 ---
 

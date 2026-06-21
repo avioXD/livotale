@@ -1,0 +1,11 @@
+---
+description: Block dangerous shell and destructive operations without explicit user consent
+globs: "**/*"
+alwaysApply: true
+---
+
+# Dangerous Flows
+
+- Do not run DROP, TRUNCATE, or broad DELETE without explicit user approval
+- Do not commit secrets (.env, credentials) to git
+- Do not disable auth checks on production routes

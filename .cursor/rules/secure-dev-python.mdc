@@ -1,0 +1,41 @@
+---
+description: Python/FastAPI security standards (cursor-security-rules inspired)
+globs: api/app/**/*.py
+alwaysApply: true
+---
+
+# Secure Python / FastAPI Development
+
+## Authentication & authorization
+
+- Every admin/clinical route MUST use `get_current_user` and role checks via `require_roles` or domain RBAC helpers
+- Public write endpoints (e.g. `/public/enquiries`) MUST be rate-limited and input-validated; never expose internal fields
+- WebSocket connections MUST validate JWT before accept
+
+## SQL & data
+
+- Use SQLAlchemy ORM or parameterized `text()` with bound params — never f-string SQL with user input
+- Validate UUIDs and enums at schema layer before DB access
+
+## Secrets
+
+- No hardcoded credentials, API keys, or JWT secrets in source
+- Use `get_settings()` from config; document in `.env.example` only
+
+## Input validation
+
+- All request bodies via Pydantic schemas with field constraints
+- Normalize phone numbers via `normalize_phone()` before storage
+
+## Error handling
+
+- Use `AppError` with safe messages; do not leak stack traces or SQL in responses
+
+## File & path operations
+
+- Presigned uploads only via `/storage/presign`; validate content-type and size
+- Reject path traversal in any user-supplied file paths
+
+## External HTTP
+
+- SSRF: whitelist outbound URLs for integrations; no arbitrary fetch from user input

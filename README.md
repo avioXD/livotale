@@ -1,88 +1,85 @@
-# Livotale UI
+# Livotale — Liver Care Platform (Monorepo)
 
-Frontend for **Livotale** — liver care platform: enquiries, orders, fibrosis scan, partner lab pathology, AI reports, doctor consultations, and patient portal.
+Single repository for the Livotale UI, FastAPI backend, and database migrations.
 
-Built with React 19, Vite, TypeScript, Tailwind CSS, Zustand, and shadcn/Radix UI.
+## Structure
 
-## Requirements
-
-- Node.js **20+**
-- [pnpm](https://pnpm.io/) **9+**
-
-## Quick start
-
-```bash
-pnpm install
-cp .env.example .env
-# Point VITE_API_BASE_URL at the running FastAPI server
-pnpm dev
+```
+apps/ui/                 React + Vite frontend (port 5174)
+apps/api/                FastAPI backend (port 4001)
+packages/database/       SQL migrations
+docs/specs/              Product and platform specs
+docs/superpowers/        Design specs and plans
+docker/                  Dockerfiles and postgres init
 ```
 
-App runs at **http://localhost:5173**.
+## Quick start (Docker)
+
+```bash
+# Fresh Postgres volume (first time or reset)
+docker compose down -v
+
+docker compose up -d postgres redis localstack
+docker compose run --rm api node scripts/run-migrations.js
+docker compose up api ui
+
+# UI:  http://localhost:5174
+# API: http://localhost:4001/docs
+```
+
+Optional background worker:
+
+```bash
+docker compose --profile full up worker
+```
+
+## Local development (without Docker for app code)
+
+```bash
+# Terminal 1 — infrastructure
+docker compose up -d postgres redis localstack
+
+# Terminal 2 — API
+cd apps/api
+cp .env.example .env   # set DATABASE_URL to localhost:5433
+uv sync
+uv run dev             # http://localhost:4001
+
+# Terminal 3 — UI
+cd apps/ui
+cp .env.example .env
+pnpm install
+pnpm dev               # http://localhost:5174
+```
+
+## Tests
+
+```bash
+cd apps/api && uv run pytest
+cd apps/ui && pnpm test
+cd apps/ui && pnpm test:e2e
+```
+
+## Migrations
+
+```bash
+cd apps/api
+DATABASE_URL=postgresql://livotale_user:password@localhost:5433/livotale node scripts/run-migrations.js
+```
 
 ## Environment
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_BASE_URL` | REST API base URL (default `http://localhost:4000/api/v1`) |
-| `VITE_EXTERNAL_SERVICES_MODE` | `dummy` or `live` for client-side integration stubs |
+| Variable | Location | Notes |
+|----------|----------|-------|
+| `APP_ENV` | `apps/api/.env` | `development` or `production` |
+| `VITE_API_BASE_URL` | `apps/ui/.env` | Default `http://localhost:4001/api/v1` |
+| `DATABASE_URL` | `apps/api/.env` | Host port **5433** for Docker Postgres |
 
-## Scripts
+See `LOCAL_CREDENTIALS.md` for demo accounts (gitignored).
 
-```bash
-pnpm dev      # Vite dev server
-pnpm build    # Production build
-pnpm test     # Jest unit tests
-pnpm lint     # ESLint
-```
+## Git branches
 
-## Roles & navigation
+- `main` — stable UI history
+- `development` — monorepo with API + UI
 
-Route guards: `src/app/config/liverCareRouteRoles.ts` · Sidebar: `src/app/config/navigation.ts`
-
-| Role | Username | Password | Home |
-|------|----------|----------|------|
-| **Administration** | `administration` | `Admin@123` | `/dashboard` |
-| **Operations** | `operations` | `Ops@123` | `/dashboard` |
-| **Technician** | `technician` | `Tech@123` | `/dashboard` |
-| **Doctor** | `doctor` | `Doctor@123` | `/dashboard` |
-| **Patient** | phone on order | OTP `123456` | `/patient/login` |
-
-**Demo phones**: `9988776655` (Anita, PKG-3) · `9900000001` (Rohan, payment pending)
-
-## Key routes
-
-| Area | Routes |
-|------|--------|
-| Public | `/packages`, `/enquire` |
-| Ops | `/admin/operations`, `/admin/orders/:id` |
-| Partner lab | `/admin/operations?tab=partner-lab` |
-| Notifications | `/notifications` (staff), `/patient/notifications` |
-| Doctor | `/doctor/consultations/:id` |
-| Technician | `/technician/orders/:id` |
-| Patient portal | `/patient`, `/patient/orders/:id/report` |
-
-## Project structure
-
-| Layer | Path |
-|-------|------|
-| Pages | `src/app/pages/<feature>/` |
-| Liver care domain | `src/services/liverCare/` |
-| External dummies | `src/services/external/` |
-| RBAC | `src/app/config/liverCareRouteRoles.ts` |
-| **Specs** | `specs/` — [README](specs/README.md), [TASKS](specs/TASKS.md) |
-
-## Specifications
-
-All product requirements live under **`specs/`**:
-
-- **[specs/README.md](specs/README.md)** — index
-- **[specs/TASKS.md](specs/TASKS.md)** — global task tracker
-- **[specs/features/](specs/features/)** — feature requirements (16 modules)
-- **[specs/platform/](specs/platform/)** — architecture, mock mode
-- **[specs/contracts/](specs/contracts/)** — API contracts
-- **[specs/_archive/](specs/_archive/)** — superseded legacy specs
-
-## License
-
-Private — Livotale.
+API history was merged from `bibeksh9/livotale_app` into this repository.

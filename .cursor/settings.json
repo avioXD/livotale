@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "superpowers": {
+      "enabled": true
+    },
+    "twilio-developer-kit": {
+      "enabled": true
+    },
+    "snyk-secure-development": {
+      "enabled": true
+    }
+  }
+}

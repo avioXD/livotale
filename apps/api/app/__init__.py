@@ -1,0 +1,1 @@
+"""Livotale FastAPI backend."""
