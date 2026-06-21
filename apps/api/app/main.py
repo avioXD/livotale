@@ -12,6 +12,7 @@ from sqlalchemy import text
 from starlette.requests import Request
 
 from app.api.v1 import API_V1_PREFIX, api_router
+from app.api.v1.routers import websocket as websocket_router
 from app.api.v1.routers.websocket import ws_hub
 from app.core.config import get_settings
 from app.core.database import SessionLocal
@@ -111,6 +112,8 @@ def create_app() -> FastAPI:
 
     # Versioned API — /api/v1/{category}/...
     app.include_router(api_router, prefix=API_V1_PREFIX)
+    # WebSockets at /ws/v1/... (nginx proxies /ws/ without /api prefix)
+    app.include_router(websocket_router.router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

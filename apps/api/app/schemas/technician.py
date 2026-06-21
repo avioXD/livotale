@@ -151,6 +151,8 @@ class ScanPatientIntake(BaseSchema):
     operator_entered_at: datetime | None = Field(default=None, alias="operatorEnteredAt")
     operator_entered_by: str | None = Field(default=None, alias="operatorEnteredBy")
     phone_otp_verified: bool = Field(default=False, alias="phoneOtpVerified")
+    verified_phone: str | None = Field(default=None, alias="verifiedPhone")
+    operator_phone_verified_at: datetime | None = Field(default=None, alias="operatorPhoneVerifiedAt")
     technician_verified_at: datetime | None = Field(default=None, alias="technicianVerifiedAt")
     technician_verified_by: str | None = Field(default=None, alias="technicianVerifiedBy")
     machine_patient_name: str | None = Field(default=None, alias="machinePatientName")
@@ -184,6 +186,12 @@ class ScanPatientIntakeInput(BaseModel):
     weight_kg: Decimal | None = Field(default=None, alias="weightKg")
     height_meters: Decimal | None = Field(default=None, alias="heightMeters")
     comorbidities: ComorbidityFlags
+
+
+class SendPatientIntakeOtpRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    phone: str
 
 
 class VerifyPatientIntakeRequest(ScanPatientIntakeInput):

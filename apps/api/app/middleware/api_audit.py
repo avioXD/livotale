@@ -41,6 +41,8 @@ def _extract_user_id(request: Request) -> UUID | None:
 
 class ApiAuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.scope.get("type") != "http":
+            return await call_next(request)
         settings = get_settings()
         if not settings.api_audit_logging:
             return await call_next(request)

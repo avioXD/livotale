@@ -131,6 +131,27 @@ def patient_request_scan_slot(
     return response.json()["data"]
 
 
+def ensure_patient_visit_address(client: TestClient, admin_token: str, order_id: str) -> None:
+    """Ensure patient has line1 + pincode before confirm-scan-schedule."""
+    headers = auth_headers(admin_token)
+    order_resp = client.get(f"/api/v1/admin/orders/{order_id}", headers=headers)
+    assert order_resp.status_code == 200, order_resp.text
+    order = order_resp.json()["data"]
+    if order.get("visitLocation", {}).get("isComplete"):
+        return
+    patient_id = order["patientId"]
+    patch = client.patch(
+        f"/api/v1/patients/{patient_id}/demographics",
+        headers=headers,
+        json={
+            "addressLine1": "123 Integration Test Street",
+            "addressLine2": "Test Area",
+            "pincode": "700001",
+        },
+    )
+    assert patch.status_code == 200, patch.text
+
+
 def confirm_scan_with_technician(
     client: TestClient,
     admin_token: str,
@@ -139,6 +160,7 @@ def confirm_scan_with_technician(
     scheduled_at: str | None = None,
     time_slot: str | None = None,
 ) -> dict[str, Any]:
+    ensure_patient_visit_address(client, admin_token, order_id)
     slot = _first_available_slot(client, admin_token, order_id)
     scheduled = scheduled_at or slot["scheduledAt"]
     label = time_slot or slot["label"]
@@ -220,6 +242,7 @@ def technician_complete_scan(
     intake_otp = client.post(
         f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
         headers=headers,
+        json={"phone": patient_phone or "9876543210"},
     )
     assert intake_otp.status_code == 200, intake_otp.text
 

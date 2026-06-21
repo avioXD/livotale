@@ -39,13 +39,6 @@ class PatientPortalService extends BaseApiService {
     return this.post<PatientPortalSession>('/patient-portal/onboarding/complete', payload);
   }
 
-  async loginWithPassword(identifier: string, password: string): Promise<PatientPortalSession> {
-    return this.post<PatientPortalSession>('/auth/patient/login', {
-      identifier: identifier.trim(),
-      password,
-    });
-  }
-
   async listMyOrders(phone: string): Promise<LiverCareOrder[]> {
     return this.get<LiverCareOrder[]>('/patient-portal/orders', { params: { phone } });
   }

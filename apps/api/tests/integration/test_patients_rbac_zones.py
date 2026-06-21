@@ -182,6 +182,32 @@ def test_ops_sees_only_zone_patients(client: TestClient, admin_token: str, ops_t
     assert str(out_zone["patientId"]) not in ids
 
 
+def test_ops_can_save_address_for_order_patient_without_default_address(
+    client: TestClient, admin_token: str, ops_token: str
+):
+    in_pincode, _ = _assign_ops_zones(client, admin_token)
+    order = _create_patient_via_order(client, admin_token)
+
+    blocked = client.get(
+        f"/api/v1/patients/{order['patientId']}",
+        headers=auth_headers(ops_token),
+    )
+    assert blocked.status_code == 403, blocked.text
+
+    saved = client.patch(
+        f"/api/v1/patients/{order['patientId']}/demographics",
+        headers=auth_headers(ops_token),
+        json={"addressLine1": "42 Park Street", "pincode": in_pincode},
+    )
+    assert saved.status_code == 200, saved.text
+
+    visible = client.get(
+        f"/api/v1/patients/{order['patientId']}",
+        headers=auth_headers(ops_token),
+    )
+    assert visible.status_code == 200, visible.text
+
+
 def test_ops_out_of_zone_detail_403(client: TestClient, admin_token: str, ops_token: str):
     _, out_pincode = _assign_ops_zones(client, admin_token)
     order = _create_patient_via_order(client, admin_token)

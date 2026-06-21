@@ -34,6 +34,16 @@ export type LiverCarePaymentStatus =
   | 'refunded'
   | 'cancelled';
 
+export type VisitLocationSource = 'patient_address' | 'enquiry' | 'none';
+
+export interface VisitLocation {
+  address: string | null;
+  city: string | null;
+  pincode: string | null;
+  source: VisitLocationSource;
+  isComplete: boolean;
+}
+
 export interface LiverCareOrder {
   id: string;
   orderNumber: string;
@@ -79,6 +89,7 @@ export interface LiverCareOrder {
   consultationPatientPreferredAt?: string | null;
   consultationTimeSlot?: string | null;
   consultationScheduledAt?: string | null;
+  visitLocation?: VisitLocation | null;
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;

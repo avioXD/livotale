@@ -162,7 +162,11 @@ def test_complete_requires_report_upload(client: TestClient, admin_token: str, t
 
     client.post(f"/api/v1/technician/orders/{order_id}/visit-started", headers=headers)
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
-    client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+    client.post(
+        f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+        headers=headers,
+        json={"phone": phone},
+    )
     client.post(
         f"/api/v1/technician/orders/{order_id}/patient-intake/verify",
         headers=headers,

@@ -12,6 +12,9 @@ from app.core.rate_limit import enforce_request_rate_limits
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # BaseHTTPMiddleware must not run rate limits on WebSocket handshakes.
+        if request.scope.get("type") != "http":
+            return await call_next(request)
         try:
             await enforce_request_rate_limits(request)
         except HTTPException as exc:

@@ -71,6 +71,11 @@ export function TechnicianPatientIntakePanel({
     void load();
   }, [order.id, intakeOtpSent]);
 
+  useEffect(() => {
+    setOtpSent(false);
+    setOtp('');
+  }, [form.phone]);
+
   const run = async (action: () => Promise<unknown>) => {
     setSaving(true);
     setError(null);
@@ -231,7 +236,7 @@ export function TechnicianPatientIntakePanel({
                 disabled={saving || !form.phone.trim() || !canResend}
                 onClick={() =>
                   run(async () => {
-                    const visit = await technicianOrderService.sendPatientIntakeOtp(order.id);
+                    const visit = await technicianOrderService.sendPatientIntakeOtp(order.id, form.phone);
                     applyOtpSendMeta(visit, startCooldown);
                     setOtpSent(true);
                   })
@@ -272,7 +277,7 @@ export function TechnicianPatientIntakePanel({
                 disabled={saving || !canResend}
                 onClick={() =>
                   run(async () => {
-                    const visit = await technicianOrderService.sendPatientIntakeOtp(order.id);
+                    const visit = await technicianOrderService.sendPatientIntakeOtp(order.id, form.phone);
                     applyOtpSendMeta(visit, startCooldown);
                   })
                 }

@@ -46,7 +46,7 @@ UI splits the list into **Pending scan** and **Completed scans** tabs using visi
 
 | Step | When | API |
 |------|------|-----|
-| Patient intake | Before submitting demographics at home | `POST .../patient-intake/otp` then `POST .../patient-intake/verify` |
+| Patient intake | Before submitting demographics at home | `POST .../patient-intake/otp` `{ phone }` then `POST .../patient-intake/verify` |
 | Visit completion | After scan captured + report uploaded | `POST .../visit-completion-otp` then `POST .../complete` |
 
 Demo OTP: `123456` — validated via `identity.otp_challenges` (see [otp-security.md](../platform/otp-security.md))
@@ -93,8 +93,11 @@ See [scan-report-upload-design.md](../../../docs/superpowers/specs/2026-06-20-sc
 | Order detail | GET | `/technician/orders/{id}` | technician (assigned) |
 | Visit state | GET | `/technician/orders/{id}/visit` | technician |
 | Patient intake | GET | `/technician/orders/{id}/patient-intake` | technician |
-| Send intake OTP | POST | `/technician/orders/{id}/patient-intake/otp` | technician |
-| Verify intake | POST | `/technician/orders/{id}/patient-intake/verify` | technician (auto-approved; no ops review) |
+| Send intake OTP | POST | `/technician/orders/{id}/patient-intake/otp` `{ phone }` | technician |
+| Verify intake | POST | `/technician/orders/{id}/patient-intake/verify` | technician (commits phone + patient account) |
+| Ops save intake draft | PUT | `/admin/orders/{id}/patient-intake` | admin, support, city_manager |
+| Ops send intake OTP | POST | `/admin/orders/{id}/patient-intake/otp` `{ phone }` | admin, support, city_manager |
+| Ops verify intake | POST | `/admin/orders/{id}/patient-intake/verify` | admin, support, city_manager |
 | FibroScan intake | POST | `/technician/orders/{id}/fibroscan-intake` | technician |
 | Ops validate FibroScan intake | PATCH | `/admin/orders/{id}/fibroscan-intake/verify` | admin, support, city_manager |
 | Start visit | POST | `/technician/orders/{id}/visit-started` | technician |

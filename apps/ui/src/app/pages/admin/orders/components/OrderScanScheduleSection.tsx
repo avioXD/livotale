@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { liverCareOrderService } from '@/services/liverCare';
 import type { AssignableTechnician } from '@/services/liverCare/OrderService';
 import type { ScanTimeSlotOption } from '@/services/liverCare/SlotService';
@@ -94,9 +101,17 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
     };
   }, [order, slotCode, slotLabel, scheduleDate, selectedTechId, technicians]);
 
-  const prerequisites = useMemo(() => getScanSchedulePrerequisites(draftOrder), [draftOrder]);
+  const prerequisites = useMemo(
+    () =>
+      getScanSchedulePrerequisites(draftOrder, {
+        hasAddress: order.visitLocation?.isComplete === true,
+      }),
+    [draftOrder, order.visitLocation?.isComplete],
+  );
   const canSchedule =
-    canOpsConfirmScanSchedule(draftOrder) &&
+    canOpsConfirmScanSchedule(draftOrder, {
+      hasAddress: order.visitLocation?.isComplete === true,
+    }) &&
     Boolean(slotCode) &&
     Boolean(selectedTechId) &&
     isPaymentReadyForScan(order);
@@ -138,7 +153,9 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
   }, [canEdit, scheduledAtIso, order.id]);
 
   if (readOnly) {
-    const readOnlyPrereqs = getScanSchedulePrerequisites(order);
+    const readOnlyPrereqs = getScanSchedulePrerequisites(order, {
+      hasAddress: order.visitLocation?.isComplete === true,
+    });
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -238,8 +255,20 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
         )}
 
         <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{FIBROSCAN_VISIT_LABEL}</span> — technician visits the
-          patient&apos;s registered address.
+          <span className="font-medium text-foreground">{FIBROSCAN_VISIT_LABEL}</span>
+          {order.visitLocation?.isComplete && order.visitLocation.address ? (
+            <>
+              {' '}
+              — technician visits{' '}
+              <span className="text-foreground">
+                {order.visitLocation.address}
+                {order.visitLocation.pincode ? ` (${order.visitLocation.pincode})` : ''}
+              </span>
+              .
+            </>
+          ) : (
+            <> — technician visits the patient&apos;s registered address.</>
+          )}
         </p>
 
         {canEdit && !order.scanScheduledAt && (
@@ -283,29 +312,27 @@ export function OrderScanScheduleSection({ order, onUpdated, readOnly = false }:
 
             {slotCode && (
               <div className="space-y-2">
-                <Label>Available technician for this slot</Label>
+                <Label htmlFor="scan-technician">Available technician for this slot</Label>
                 {loadingTechs ? (
                   <p className="text-sm text-muted-foreground">Loading technicians…</p>
                 ) : technicians.length === 0 ? (
                   <p className="text-sm text-amber-700">No technicians available for this slot.</p>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {technicians.map((tech) => (
-                      <button
-                        key={tech.id}
-                        type="button"
-                        className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                          selectedTechId === tech.id
-                            ? 'border-primary bg-primary/5'
-                            : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => setSelectedTechId(tech.id)}
-                      >
-                        <p className="font-medium">{tech.name}</p>
-                        <p className="text-xs text-muted-foreground">{tech.zone}</p>
-                      </button>
-                    ))}
-                  </div>
+                  <Select
+                    value={selectedTechId || undefined}
+                    onValueChange={setSelectedTechId}
+                  >
+                    <SelectTrigger id="scan-technician">
+                      <SelectValue placeholder="Select technician" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {technicians.map((tech) => (
+                        <SelectItem key={tech.id} value={tech.id}>
+                          {tech.name} · {tech.zone}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
             )}

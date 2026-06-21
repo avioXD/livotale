@@ -1,7 +1,7 @@
 # Spec: Patient Portal
 
 **Module**: Patient-facing app (OTP login, orders, assets)  
-**Auth**: Phone OTP + optional password login (separate from staff login)
+**Auth**: Phone OTP only (separate from staff login)
 
 ## Shell & navigation (2026-06-21 redesign)
 
@@ -18,7 +18,7 @@ Layout: `src/app/layouts/patient-portal/*`
 
 - Route: `/patient/login`
 - Enter phone → `POST /patient-portal/otp/send` → enter OTP → session
-- Optional password tab → `POST /auth/patient/login`
+- Password login removed (`POST /auth/patient/login` returns 410)
 - Phone must match existing patient on an order
 - Mock OTP: `123456` (dev hint on screen); resend cooldown (disabled in demo `otp_mode`)
 - See [otp-security.md](../platform/otp-security.md) for rate limits and table validation
@@ -53,7 +53,7 @@ Nav handles profile, notifications, downloads — no duplicate KPI shortcut tile
 
 | Route | Purpose |
 |-------|---------|
-| `/patient/login` | OTP + password auth |
+| `/patient/login` | OTP auth |
 | `/patient/onboarding` | First-time profile |
 | `/patient` | Dashboard overview |
 | `/patient/orders` | All orders with progress stepper |

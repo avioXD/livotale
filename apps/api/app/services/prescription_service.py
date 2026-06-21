@@ -13,6 +13,7 @@ from app.domain.pdf_templates import PRESCRIPTION_LETTERHEAD_CODE
 from app.integrations.pdf_generation import DummyPDFGenerationService, get_pdf_generation_service
 from app.models.clinical import ConsultationVisitLog, LiverCarePrescription, OrderConsultation
 from app.services.order_helpers import append_timeline, iso, load_order_row, require_doctor_order, transition_order
+from app.services.order_workflow_notifications import notify_order_trigger
 
 
 def prescription_to_api(row: LiverCarePrescription) -> dict[str, Any]:
@@ -328,6 +329,8 @@ class PrescriptionService:
             performed_by=user_id,
             metadata={"visitLogId": str(visit_log_id), "visitNumber": str(visit.visit_number)},
         )
+        refreshed = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "prescription_published", refreshed)
         await self.db.flush()
         return await self._to_api(rx)
 

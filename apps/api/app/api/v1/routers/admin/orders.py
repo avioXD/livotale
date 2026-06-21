@@ -34,6 +34,8 @@ from app.schemas.technician import (
     OpsScanReviewInput,
     ScanPatientIntake,
     ScanPatientIntakeInput,
+    SendPatientIntakeOtpRequest,
+    VerifyPatientIntakeRequest,
 )
 from app.services.order_service import OrderService
 from app.services.patient_portal_service import PatientPortalService
@@ -274,6 +276,28 @@ async def save_patient_intake(
     service: TechnicianOrderService = Depends(_technician_service),
 ) -> DataEnvelope[ScanPatientIntake]:
     data = await service.save_operator_intake(order_id, user.user_id, body)
+    return DataEnvelope(data=data)
+
+
+@router.post("/{order_id}/patient-intake/otp", response_model=DataEnvelope[dict])
+async def send_operator_patient_intake_otp(
+    order_id: UUID,
+    body: SendPatientIntakeOtpRequest,
+    user: CurrentUser = Depends(_require_ops),
+    service: TechnicianOrderService = Depends(_technician_service),
+) -> DataEnvelope[dict]:
+    data = await service.send_operator_intake_otp(order_id, user.user_id, body.phone)
+    return DataEnvelope(data=data)
+
+
+@router.post("/{order_id}/patient-intake/verify", response_model=DataEnvelope[ScanPatientIntake])
+async def verify_operator_patient_intake(
+    order_id: UUID,
+    body: VerifyPatientIntakeRequest,
+    user: CurrentUser = Depends(_require_ops),
+    service: TechnicianOrderService = Depends(_technician_service),
+) -> DataEnvelope[ScanPatientIntake]:
+    data = await service.verify_operator_patient_intake(order_id, user.user_id, body)
     return DataEnvelope(data=data)
 
 

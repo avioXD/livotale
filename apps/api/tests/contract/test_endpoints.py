@@ -72,37 +72,12 @@ def test_patient_portal_bank_details_requires_portal_access(client):
     assert response.status_code == 403
 
 
-def test_patient_password_login_with_registered_account(client):
-    register = client.post(
-        f"{API}/patient/register",
-        json={
-            "username": "patient.pwdtest",
-            "password": "Patient@123",
-            "fullName": "Password Test Patient",
-            "mobile": "9876501234",
-            "email": "pwdtest@livotale.test",
-        },
-    )
-    assert register.status_code == 200, register.text
-
+def test_patient_password_login_returns_gone(client):
     response = client.post(
         f"{API}/auth/patient/login",
         json={"identifier": "patient.pwdtest", "password": "Patient@123"},
     )
-    assert response.status_code == 200, response.text
-    data = response.json()["data"]
-    assert data["phone"] == "9876501234"
-    assert data["patientId"]
-    assert data["patientName"]
-    assert "needsOnboarding" in data
-
-
-def test_patient_password_login_rejects_staff(client):
-    response = client.post(
-        f"{API}/auth/patient/login",
-        json={"identifier": "doctor.iyer", "password": "Doctor@123"},
-    )
-    assert response.status_code == 401
+    assert response.status_code == 410
 
 
 def test_patient_portal_order_requires_phone(client):

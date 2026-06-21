@@ -101,7 +101,27 @@ def test_visit_notifications_through_complete(
     triggers = _trigger_events(client, admin_token, order_id)
     assert "visit_started" in triggers
     assert "visit_reached" in triggers
+    assert "scan_started" in triggers
     assert "scan_completed" in triggers
+
+
+def test_sample_dispatch_pending_after_scan_on_pathology_package(
+    client: TestClient, admin_token: str, tech_token: str
+) -> None:
+    order, phone = create_order(client, admin_token, package_code="PKG-3")
+    order_id = order["id"]
+    pay_offline(client, admin_token, order)
+    schedule_scan(client, admin_token, order_id)
+    technician_complete_scan(
+        client,
+        tech_token,
+        order_id,
+        admin_token=admin_token,
+        patient_phone=phone,
+    )
+
+    triggers = _trigger_events(client, admin_token, order_id)
+    assert "sample_dispatch_pending" in triggers
 
 
 def test_technician_intake_without_ops_prefill(client: TestClient, admin_token: str, tech_token: str) -> None:
@@ -122,7 +142,11 @@ def test_technician_intake_without_ops_prefill(client: TestClient, admin_token: 
 
     client.post(f"/api/v1/technician/orders/{order_id}/visit-started", headers=headers)
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
-    client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+    client.post(
+        f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+        headers=headers,
+        json={"phone": phone},
+    )
     verify = client.post(
         f"/api/v1/technician/orders/{order_id}/patient-intake/verify",
         headers=headers,

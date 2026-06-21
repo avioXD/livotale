@@ -18,6 +18,7 @@ from app.schemas.technician import (
     FibrosisScanRecord,
     MarkSampleCollectedRequest,
     ScanPatientIntake,
+    SendPatientIntakeOtpRequest,
     SubmitSampleToLabRequest,
     TechnicianOrder,
     TechnicianOrderDetail,
@@ -88,10 +89,13 @@ async def get_patient_intake(
 @router.post("/{order_id}/patient-intake/otp", response_model=DataEnvelope[VisitStep])
 async def send_patient_intake_otp(
     order_id: UUID,
+    body: SendPatientIntakeOtpRequest,
     current_user: CurrentUser = Depends(require_roles(RoleCode.TECHNICIAN)),
     service: TechnicianOrderService = Depends(_service),
 ) -> DataEnvelope[VisitStep]:
-    data = await service.send_patient_intake_otp(order_id, current_user.user_id, current_user.roles)
+    data = await service.send_patient_intake_otp(
+        order_id, current_user.user_id, current_user.roles, body.phone
+    )
     return DataEnvelope(data=data)
 
 

@@ -140,6 +140,22 @@ export function PatientScanScheduleSection({ order, phone, onUpdated }: PatientS
 
         {canSubmit && (
           <>
+            {order.visitLocation?.isComplete ? (
+              <div className="rounded-md border bg-muted/20 px-3 py-2 text-sm">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Visit address</p>
+                <p className="mt-1 font-medium">{order.visitLocation.address}</p>
+                {(order.visitLocation.city || order.visitLocation.pincode) && (
+                  <p className="text-xs text-muted-foreground">
+                    {[order.visitLocation.city, order.visitLocation.pincode].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
+                Our team will contact you to confirm your home address before the visit.
+              </p>
+            )}
+
             <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{FIBROSCAN_VISIT_LABEL}</span> at your registered
               address. Fasting 3 hours before the scan is recommended. Clinic walk-in is not available.

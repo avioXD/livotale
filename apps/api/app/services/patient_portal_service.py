@@ -22,6 +22,7 @@ from app.services.otp_challenge_service import (
 )
 from app.services.auth_service import AuthService
 from app.services.bank_details_service import BankDetailsService
+from app.services.order_helpers import load_order_visit_location, visit_location_for_order
 from app.services.patient_registry_service import PatientRegistryService
 from app.services.storage_service import StorageService
 from app.services.workflow_notifications import WorkflowNotificationService
@@ -265,6 +266,26 @@ class PatientPortalService:
                 """
             ),
             {"order_id": order_id, "phone": normalized},
+        )
+        row = result.mappings().first()
+        if not row:
+            return None
+        order = _order_row_to_dict(dict(row))
+        location = await load_order_visit_location(self.db, order_id, order["patientId"])
+        order["visitLocation"] = visit_location_for_order(location)
+        return order
+
+    async def _get_order_by_id(self, order_id: UUID) -> dict[str, Any] | None:
+        """Ops/admin lookup — not scoped to portal phone."""
+        result = await self.db.execute(
+            text(
+                f"""
+                {_ORDER_SELECT}
+                  AND o.id = :order_id
+                LIMIT 1
+                """
+            ),
+            {"order_id": order_id},
         )
         row = result.mappings().first()
         return _order_row_to_dict(dict(row)) if row else None
@@ -603,7 +624,10 @@ class PatientPortalService:
         return items
 
     async def get_invoice(self, order_id: UUID, phone: str | None) -> dict[str, Any] | None:
-        order = await self.get_order(phone, order_id)
+        if phone:
+            order = await self.get_order(phone, order_id)
+        else:
+            order = await self._get_order_by_id(order_id)
         if not order or order["paymentStatus"] != "success":
             return None
 

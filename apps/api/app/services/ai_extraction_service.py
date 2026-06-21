@@ -12,7 +12,12 @@ from app.core.exceptions import AppError
 from app.domain.order_workflow import OrderWorkflowEvent
 from app.integrations.ai_extraction import get_ai_extraction_service
 from app.models.integrations import AIExtractionJob, ExtractedField, LabReportUpload
-from app.services.order_helpers import append_timeline, iso, transition_order
+from app.services.order_helpers import append_timeline, iso, load_order_row, transition_order
+from app.services.order_workflow_notifications import (
+    notify_doctor_if_consultation,
+    notify_order_trigger,
+    notify_technician_user,
+)
 
 
 def job_to_api(job: AIExtractionJob, fields: list[ExtractedField]) -> dict[str, Any]:
@@ -134,6 +139,8 @@ class AIExtractionService:
             performed_by=user_id,
             metadata={"fieldCount": str(len(fields)), "jobId": str(job.id)},
         )
+        order = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "ai_extraction_ready", order)
         await self.db.flush()
         return job_to_api(job, fields)
 
@@ -188,6 +195,8 @@ class AIExtractionService:
             "Previous PDF could not be processed — upload a clearer lab report",
             performed_by=user_id,
         )
+        order = await load_order_row(self.db, order_id)
+        await notify_technician_user(self.db, "ai_reupload_required", order)
         await self.db.flush()
         return job_to_api(job, fields)
 
@@ -236,6 +245,9 @@ class AIExtractionService:
             performed_by=user_id,
             metadata={"fieldCount": str(len(fields)), "verifiedBy": actor},
         )
+        order = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "ai_verified", order)
+        await notify_doctor_if_consultation(self.db, "ai_verified", order)
         await self.db.flush()
         return job_to_api(job, fields)
 

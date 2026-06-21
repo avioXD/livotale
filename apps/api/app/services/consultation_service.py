@@ -20,6 +20,7 @@ from app.services.order_helpers import (
     require_doctor_order,
     transition_order,
 )
+from app.services.order_workflow_notifications import notify_order_trigger
 from app.services.pathology_service import PathologyService
 from app.services.technician_order_service import TechnicianOrderService
 
@@ -385,6 +386,8 @@ class ConsultationService:
             "Visit completed · prescription draft pending",
             performed_by=user_id,
         )
+        refreshed = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "consultation_completed", refreshed)
         await self.db.flush()
         return consultation_to_api(consultation)
 
@@ -513,6 +516,8 @@ class ConsultationService:
             performed_by=user_id,
             metadata={"visitLogId": str(visit.id), "visitNumber": str(visit.visit_number)},
         )
+        refreshed = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "consultation_completed", refreshed)
         await self.db.flush()
         return visit_log_to_api(visit)
 

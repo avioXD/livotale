@@ -14,7 +14,9 @@ from tests.integration.order_flow_helpers import (
     login,
     patient_request_consult_slot,
     pay_offline,
+    sample_rx_payload,
     schedule_scan,
+    setup_pkg3_prescription_ready,
     assign_first_technician,
     technician_complete_scan,
 )
@@ -70,3 +72,63 @@ def test_consult_schedule_confirmed_notification(client: TestClient, admin_token
     assert logs.status_code == 200, logs.text
     triggers = {row.get("triggerAction") for row in logs.json()["data"]}
     assert "consultation_schedule_confirmed" in triggers or "consultation_scheduled" in triggers
+
+
+@pytest.fixture
+def doctor_token(client: TestClient) -> str:
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"identifier": "doctor@livotale.com", "password": "Doctor@123"},
+    )
+    if response.status_code != 200:
+        pytest.skip("doctor@livotale.com not available in test database")
+    return response.json()["data"]["accessToken"]
+
+
+def _order_triggers(client: TestClient, admin_token: str, order_id: str) -> set[str]:
+    logs = client.get(
+        "/api/v1/admin/notifications/log",
+        headers=auth_headers(admin_token),
+        params={"orderId": order_id, "limit": 500},
+    )
+    assert logs.status_code == 200, logs.text
+    return {
+        row.get("triggerEvent") or row.get("triggerAction")
+        for row in logs.json()["data"]
+        if str(row.get("orderId")) == order_id
+    }
+
+
+def test_consultation_completed_notification(
+    client: TestClient, admin_token: str, tech_token: str, doctor_token: str
+) -> None:
+    order_id, _phone, _visit_log_id = setup_pkg3_prescription_ready(
+        client, admin_token, tech_token, doctor_token
+    )
+    triggers = _order_triggers(client, admin_token, order_id)
+    assert "consultation_completed" in triggers
+
+
+def test_prescription_published_notification(
+    client: TestClient, admin_token: str, tech_token: str, doctor_token: str
+) -> None:
+    order_id, _phone, visit_log_id = setup_pkg3_prescription_ready(
+        client, admin_token, tech_token, doctor_token
+    )
+    doctor_headers = auth_headers(doctor_token)
+
+    draft = client.put(
+        f"/api/v1/doctor/orders/{order_id}/org/prescriptions/{visit_log_id}",
+        headers=doctor_headers,
+        json=sample_rx_payload(),
+    )
+    assert draft.status_code == 200, draft.text
+
+    published = client.post(
+        f"/api/v1/doctor/orders/{order_id}/org/prescriptions/{visit_log_id}/publish",
+        headers=doctor_headers,
+    )
+    assert published.status_code == 200, published.text
+
+    triggers = _order_triggers(client, admin_token, order_id)
+    assert "prescription_published" in triggers

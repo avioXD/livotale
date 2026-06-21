@@ -135,9 +135,14 @@ def _mock_s3_for_uploads(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
             del key
             return {"ContentLength": 1234}
 
-    fake = _FakeS3()
-    monkeypatch.setattr("app.services.storage_service.S3Service", lambda *args, **kwargs: fake)
-    monkeypatch.setattr("app.integrations.s3.S3Service", lambda *args, **kwargs: fake)
+    class _FakeS3Service:
+        @classmethod
+        async def from_db(cls, db: Any) -> _FakeS3:
+            del db
+            return _FakeS3()
+
+    monkeypatch.setattr("app.services.storage_service.S3Service", _FakeS3Service)
+    monkeypatch.setattr("app.integrations.s3.S3Service", _FakeS3Service)
     yield
 
 

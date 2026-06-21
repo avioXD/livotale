@@ -35,6 +35,7 @@ from app.schemas.orders import (
     ScheduleScanInput,
 )
 from app.services.doctor_availability_service import DoctorAvailabilityService
+from app.services.order_helpers import load_order_visit_location, visit_location_for_order
 from app.services.slot_availability_service import SlotAvailabilityService
 
 TIMELINE_CATALOG: dict[str, dict[str, str]] = {
@@ -71,6 +72,7 @@ TIMELINE_CATALOG: dict[str, dict[str, str]] = {
 EVENT_NOTIFICATION_MAP: dict[str, str] = {
     "submit": "order_created",
     "order_created": "order_created",
+    "enquiry_converted": "enquiry_converted",
     "payment_completed": "payment_completed",
     "payment_submitted": "payment_submitted",
     "payment_rejected": "payment_rejected",
@@ -489,6 +491,14 @@ class OrderService:
             "scan_scheduled",
         }:
             raise AppError("Payment must be completed before confirming scan", status_code=400, error="validation_error")
+
+        location = await load_order_visit_location(self.repo.session, order_id, order.patient_id)
+        if not location.get("isComplete"):
+            raise AppError(
+                "Patient home address and pincode are required before confirming schedule",
+                status_code=400,
+                error="validation_error",
+            )
 
         slot_service = SlotAvailabilityService(self.repo.session)
         if not await slot_service.is_slot_available(
@@ -1025,6 +1035,7 @@ class OrderService:
     async def _to_dict(self, order: ServiceOrder) -> dict:
         patient = await self.repo.get_patient_profile(order.patient_id)
         package = await self.repo.get_package(order.package_id)
+        location = await load_order_visit_location(self.repo.session, order.id, order.patient_id)
         return {
             "id": order.id,
             "orderNumber": order.order_number,
@@ -1064,6 +1075,7 @@ class OrderService:
             "consultationPatientPreferredAt": order.consultation_patient_preferred_at,
             "consultationTimeSlot": order.consultation_time_slot,
             "consultationScheduledAt": order.consultation_scheduled_at,
+            "visitLocation": visit_location_for_order(location),
             "createdBy": order.created_by,
             "createdAt": order.created_at,
             "updatedAt": order.updated_at,

@@ -7,6 +7,7 @@ Cross-cutting rules for patient portal login OTP and technician field OTP checkp
 | Flow | Send API | Verify API | `otp_challenges.purpose` |
 |------|----------|------------|--------------------------|
 | Patient portal login | `POST /patient-portal/otp/send` | `POST /patient-portal/otp/verify` | `patient_portal` |
+| Operator intake | `POST /admin/orders/{id}/patient-intake/otp` | `POST /admin/orders/{id}/patient-intake/verify` | `operator_intake` |
 | Technician intake | `POST /technician/orders/{id}/patient-intake/otp` | `POST .../patient-intake/verify` | `technician_intake` |
 | Technician completion | `POST /technician/orders/{id}/visit-completion-otp` | `POST .../complete` | `technician_completion` |
 

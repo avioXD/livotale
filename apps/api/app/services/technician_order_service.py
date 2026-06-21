@@ -15,6 +15,7 @@ from app.integrations.twilio_service import TwilioVerifyService
 from app.services.integration_settings_service import IntegrationSettingsService
 from app.services.otp_challenge_service import (
     OtpChallengeService,
+    PURPOSE_OPERATOR_INTAKE,
     PURPOSE_TECHNICIAN_COMPLETION,
     PURPOSE_TECHNICIAN_INTAKE,
 )
@@ -44,6 +45,13 @@ from app.services.order_helpers import (
     transition_order,
 )
 from app.services.storage_service import StorageService
+from app.services.patient_registry_service import PatientRegistryService
+from app.services.order_workflow_notifications import (
+    notify_doctor_if_consultation,
+    notify_order_trigger,
+    notify_technician_user,
+    order_has_pathology,
+)
 from app.services.workflow_notifications import WorkflowNotificationService
 from app.utils.phone import normalize_phone
 
@@ -155,6 +163,64 @@ class TechnicianOrderService:
             await self._otp.create_challenge(normalized, purpose, "twilio_verify")
         return self._otp.send_response_fields()
 
+    async def _verify_and_commit_intake(
+        self,
+        order_id: UUID,
+        order: dict[str, Any],
+        user_id: UUID,
+        body: VerifyPatientIntakeRequest,
+        *,
+        purpose: str,
+        actor: str,
+    ) -> dict[str, Any]:
+        normalized = normalize_phone(body.phone)
+        if not normalized:
+            raise AppError("Phone number is required", status_code=400, error="validation_error")
+
+        await self._verify_otp(normalized, body.otp, purpose)
+
+        intake_fields = body.model_dump(by_alias=True, exclude={"otp"})
+        registry = PatientRegistryService(self.db)
+        await registry.commit_verified_phone_for_order(
+            order_id=order_id,
+            order_patient_id=order["patient_id"],
+            name=body.name,
+            phone=normalized,
+            intake=intake_fields,
+        )
+
+        existing = await self.get_patient_intake(order_id)
+        payload = intake_fields
+        if existing:
+            payload = {**existing, **payload}
+        payload["phoneOtpVerified"] = True
+        payload["verifiedPhone"] = normalized
+        payload["operatorVerificationStatus"] = "approved"
+        if actor == "technician":
+            payload["technicianVerifiedAt"] = datetime.now(UTC).isoformat()
+            payload["technicianVerifiedBy"] = str(user_id)
+        else:
+            payload["operatorPhoneVerifiedAt"] = datetime.now(UTC).isoformat()
+            payload["operatorEnteredAt"] = datetime.now(UTC).isoformat()
+            payload["operatorEnteredBy"] = str(user_id)
+
+        await self._upsert_intake(order_id, payload, patient_verified=True)
+        await append_timeline(
+            self.db,
+            order_id,
+            "patient_intake_verified",
+            f"Patient intake submitted · Phone OTP verified · {body.name}",
+            performed_by=user_id,
+        )
+        refreshed_order = await load_order_row(self.db, order_id)
+        workflow = WorkflowNotificationService(self.db)
+        await workflow.order_event(
+            "patient_intake_verified",
+            order=refreshed_order,
+            extra={"verifiedPhone": normalized},
+        )
+        return await self.get_patient_intake(order_id)  # type: ignore[return-value]
+
     async def list_assigned(self, technician_id: UUID) -> list[dict[str, Any]]:
         from sqlalchemy import text
 
@@ -247,29 +313,21 @@ class TechnicianOrderService:
     ) -> dict[str, Any]:
         order = await load_order_row(self.db, order_id)
         require_technician_order(order, user_id, roles)
-        await self._verify_otp(order["patient_phone"], body.otp, PURPOSE_TECHNICIAN_INTAKE)
-
-        existing = await self.get_patient_intake(order_id)
-        payload = body.model_dump(by_alias=True, exclude={"otp"})
-        if existing:
-            payload = {**existing, **payload}
-        payload["phoneOtpVerified"] = True
-        payload["technicianVerifiedAt"] = datetime.now(UTC).isoformat()
-        payload["technicianVerifiedBy"] = str(user_id)
-        payload["operatorVerificationStatus"] = "approved"
-
-        await self._upsert_intake(order_id, payload, patient_verified=True)
-        await append_timeline(
-            self.db,
+        return await self._verify_and_commit_intake(
             order_id,
-            "patient_intake_verified",
-            f"Patient intake submitted · Phone OTP verified · {body.name}",
-            performed_by=user_id,
+            order,
+            user_id,
+            body,
+            purpose=PURPOSE_TECHNICIAN_INTAKE,
+            actor="technician",
         )
-        return await self.get_patient_intake(order_id)  # type: ignore[return-value]
 
     async def send_patient_intake_otp(
-        self, order_id: UUID, user_id: UUID, roles: list[str]
+        self,
+        order_id: UUID,
+        user_id: UUID,
+        roles: list[str],
+        phone: str,
     ) -> dict[str, Any]:
         order = await load_order_row(self.db, order_id)
         require_technician_order(order, user_id, roles)
@@ -277,15 +335,20 @@ class TechnicianOrderService:
         if visit.visit_step not in {"reached_location", "scan_in_progress"}:
             raise AppError("Mark yourself at the patient location before sending intake OTP")
 
-        otp_meta = await self._send_otp(order["patient_phone"], PURPOSE_TECHNICIAN_INTAKE)
+        normalized = normalize_phone(phone)
+        if not normalized:
+            raise AppError("Phone number is required", status_code=400, error="validation_error")
+
+        otp_meta = await self._send_otp(normalized, PURPOSE_TECHNICIAN_INTAKE)
         extra = _visit_extra(visit)
         extra["patientIntakeOtpSentAt"] = datetime.now(UTC).isoformat()
+        extra["patientIntakeOtpPhone"] = normalized
         visit.extra = extra
         await append_timeline(
             self.db,
             order_id,
             "patient_intake_otp_sent",
-            f"Intake OTP sent to {order['patient_phone']}",
+            f"Intake OTP sent to {normalized}",
             performed_by=user_id,
         )
         await self.db.flush()
@@ -354,6 +417,8 @@ class TechnicianOrderService:
                 performed_by=user_id,
                 timeline_label="Scan session started",
             )
+            refreshed = await load_order_row(self.db, order_id)
+            await notify_order_trigger(self.db, "scan_started", refreshed)
         except AppError:
             pass
         await append_timeline(self.db, order_id, "reached_location", "Scan session started", performed_by=user_id)
@@ -613,7 +678,10 @@ class TechnicianOrderService:
             performed_by=user_id,
         )
         workflow = WorkflowNotificationService(self.db)
-        await workflow.order_event("scan_completed", order=updated_order if isinstance(updated_order, dict) else order)
+        notify_order = updated_order if isinstance(updated_order, dict) else order
+        await workflow.order_event("scan_completed", order=notify_order)
+        if await order_has_pathology(self.db, notify_order):
+            await notify_technician_user(self.db, "sample_dispatch_pending", notify_order)
         location = await self._visit_location(order_id, order["patient_id"])
         return {"visit": visit_to_api(visit, location), "order": order_to_api(updated_order)}
 
@@ -696,7 +764,7 @@ class TechnicianOrderService:
         user_id: UUID,
         body: ScanPatientIntakeInput,
     ) -> dict[str, Any]:
-        await load_order_row(self.db, order_id)
+        order = await load_order_row(self.db, order_id)
         payload = body.model_dump(by_alias=True)
         existing = await self.get_patient_intake(order_id)
         if existing:
@@ -705,7 +773,61 @@ class TechnicianOrderService:
         payload["operatorEnteredBy"] = str(user_id)
         payload["operatorVerificationStatus"] = "approved"
         await self._upsert_intake(order_id, payload)
+
+        normalized = normalize_phone(body.phone)
+        verified_phone = existing.get("verifiedPhone") if existing else None
+        phone_verified = bool(existing and existing.get("phoneOtpVerified"))
+        if (
+            phone_verified
+            and verified_phone
+            and normalized
+            and normalize_phone(str(verified_phone)) == normalized
+        ):
+            registry = PatientRegistryService(self.db)
+            await registry.update_patient_profile_from_intake(
+                order["patient_id"],
+                name=body.name,
+                phone=normalized,
+                intake=payload,
+            )
+
         return await self.get_patient_intake(order_id)  # type: ignore[return-value]
+
+    async def send_operator_intake_otp(
+        self,
+        order_id: UUID,
+        user_id: UUID,
+        phone: str,
+    ) -> dict[str, Any]:
+        await load_order_row(self.db, order_id)
+        normalized = normalize_phone(phone)
+        if not normalized:
+            raise AppError("Phone number is required", status_code=400, error="validation_error")
+        otp_meta = await self._send_otp(normalized, PURPOSE_OPERATOR_INTAKE)
+        await append_timeline(
+            self.db,
+            order_id,
+            "patient_intake_otp_sent",
+            f"Operator intake OTP sent to {normalized}",
+            performed_by=user_id,
+        )
+        return {"sent": True, **otp_meta}
+
+    async def verify_operator_patient_intake(
+        self,
+        order_id: UUID,
+        user_id: UUID,
+        body: VerifyPatientIntakeRequest,
+    ) -> dict[str, Any]:
+        order = await load_order_row(self.db, order_id)
+        return await self._verify_and_commit_intake(
+            order_id,
+            order,
+            user_id,
+            body,
+            purpose=PURPOSE_OPERATOR_INTAKE,
+            actor="operator",
+        )
 
     async def operator_verify_intake(
         self,
@@ -824,6 +946,7 @@ class TechnicianOrderService:
             f"Ops reviewed scan · {updates.get('fibrosisStage', existing['fibrosisStage'])}",
             performed_by=user_id,
         )
+        await notify_doctor_if_consultation(self.db, "scan_reviewed", order)
         return scan_to_api(record, order_id, order["patient_id"])
 
     async def _upsert_intake(

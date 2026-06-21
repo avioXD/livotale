@@ -270,6 +270,17 @@ def require_doctor_order(row: dict[str, Any], doctor_id: UUID, roles: list[str])
         raise AppError("Forbidden", status_code=403, error="forbidden")
 
 
+def visit_location_for_order(location: dict[str, Any]) -> dict[str, Any]:
+    """Nested visitLocation shape for admin/patient order APIs."""
+    return {
+        "address": location.get("address"),
+        "city": location.get("city"),
+        "pincode": location.get("pincode"),
+        "source": location.get("source", "none"),
+        "isComplete": bool(location.get("isComplete")),
+    }
+
+
 async def load_order_visit_location(
     db: AsyncSession, order_id: UUID, patient_id: UUID
 ) -> dict[str, Any]:
@@ -297,11 +308,16 @@ async def load_order_visit_location(
     row = result.mappings().first()
     if row:
         parts = [row["line1"], row.get("line2")]
+        pincode = row.get("pincode")
+        line1 = row.get("line1")
+        is_complete = bool(line1 and pincode)
         return {
             "address": ", ".join(p for p in parts if p),
             "city": row.get("city_name"),
-            "pincode": row.get("pincode"),
+            "pincode": pincode,
             "patientEmail": row.get("patient_email"),
+            "source": "patient_address",
+            "isComplete": is_complete,
         }
 
     enquiry_result = await db.execute(
@@ -325,6 +341,8 @@ async def load_order_visit_location(
             "city": enquiry.get("city"),
             "pincode": None,
             "patientEmail": enquiry.get("patient_email"),
+            "source": "enquiry",
+            "isComplete": False,
         }
 
     email_result = await db.execute(
@@ -344,4 +362,6 @@ async def load_order_visit_location(
         "city": None,
         "pincode": None,
         "patientEmail": email_row.get("patient_email") if email_row else None,
+        "source": "none",
+        "isComplete": False,
     }

@@ -55,6 +55,15 @@ OrderTimelineCategory = Literal[
     "system",
 ]
 OfflinePaymentMethod = Literal["cash", "upi", "bank_transfer", "card"]
+VisitLocationSource = Literal["patient_address", "enquiry", "none"]
+
+
+class VisitLocation(BaseSchema):
+    address: str | None = None
+    city: str | None = None
+    pincode: str | None = None
+    source: VisitLocationSource = "none"
+    is_complete: bool = Field(default=False, alias="isComplete")
 
 
 class LiverCareOrder(BaseSchema):
@@ -96,6 +105,7 @@ class LiverCareOrder(BaseSchema):
     )
     consultation_time_slot: str | None = Field(default=None, alias="consultationTimeSlot")
     consultation_scheduled_at: datetime | None = Field(default=None, alias="consultationScheduledAt")
+    visit_location: VisitLocation | None = Field(default=None, alias="visitLocation")
     created_by: UUID | None = Field(default=None, alias="createdBy")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")

@@ -104,6 +104,7 @@ def _verify_ws_token(token: str | None) -> dict[str, Any]:
 
 
 async def _reject_ws(websocket: WebSocket, reason: str = "Unauthorized") -> None:
+    await websocket.accept()
     await websocket.close(code=1008, reason=reason)
 
 

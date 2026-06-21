@@ -115,7 +115,11 @@ def _prepare_field_visit(
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
 
     if verify_patient:
-        client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+        client.post(
+            f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+            headers=headers,
+            json={"phone": phone},
+        )
         client.post(
             f"/api/v1/technician/orders/{order_id}/patient-intake/verify",
             headers=headers,

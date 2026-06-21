@@ -16,6 +16,26 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PhoneField({ label, phone }: { label: string; phone: string }) {
+  const dialNumber = phone.replace(/\s/g, '');
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      {phone ? (
+        <a
+          href={`tel:${dialNumber}`}
+          className="block rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium text-primary hover:underline"
+        >
+          {phone}
+        </a>
+      ) : (
+        <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm">—</p>
+      )}
+    </div>
+  );
+}
+
 interface PatientIntakeSummaryProps {
   intake: Pick<
     ScanPatientIntake,
@@ -32,7 +52,7 @@ export function PatientIntakeSummary({ intake, title }: PatientIntakeSummaryProp
         <Field label="Name" value={intake.name} />
         <Field label="Sex" value={SEX_LABELS[intake.sex]} />
         <Field label="Age" value={`${intake.age} years`} />
-        <Field label="Phone" value={intake.phone} />
+        <PhoneField label="Contact number" phone={intake.phone} />
         <Field label="Weight" value={intake.weightKg != null ? `${intake.weightKg} kg` : '—'} />
         <Field label="Height" value={intake.heightMeters != null ? `${intake.heightMeters} m` : '—'} />
       </div>

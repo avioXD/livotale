@@ -22,6 +22,8 @@ export interface ScanPatientIntake {
   operatorEnteredBy?: string | null;
   /** Technician field verification */
   phoneOtpVerified?: boolean;
+  verifiedPhone?: string | null;
+  operatorPhoneVerifiedAt?: string | null;
   technicianVerifiedAt?: string | null;
   technicianVerifiedBy?: string | null;
   /** Demographics entered on the FibroScan machine at session start */
@@ -52,6 +54,8 @@ export type ScanPatientIntakeInput = Omit<
   | 'operatorEnteredAt'
   | 'operatorEnteredBy'
   | 'phoneOtpVerified'
+  | 'verifiedPhone'
+  | 'operatorPhoneVerifiedAt'
   | 'technicianVerifiedAt'
   | 'technicianVerifiedBy'
   | 'machinePatientName'

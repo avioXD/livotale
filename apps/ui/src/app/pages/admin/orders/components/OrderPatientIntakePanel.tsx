@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { isPatientIntakeValid, PatientIntakeForm } from '@/app/pages/shared/components/PatientIntakeForm';
+import { intakePhoneNeedsOtp } from '@/app/pages/shared/components/patientIntakePhoneUtils';
 import { patientIntakeFromOrder } from '@/app/pages/shared/components/patientIntakeUtils';
+import { applyOtpSendMeta, useOtpResendCooldown } from '@/hooks/useOtpResendCooldown';
 import { technicianOrderService } from '@/services/liverCare';
 import type { LiverCareOrder } from '@/types/serviceOrder';
 import type { ScanPatientIntake, ScanPatientIntakeInput } from '@/types/scanPatientIntake';
@@ -16,6 +20,7 @@ interface OrderPatientIntakePanelProps {
 
 function intakeStatusLabel(intake: ScanPatientIntake | null): string {
   if (intake?.technicianVerifiedAt) return 'Verified by technician';
+  if (intake?.phoneOtpVerified && intake?.operatorPhoneVerifiedAt) return 'Phone verified by operations';
   if (intake?.operatorEnteredAt) return 'Saved by operations';
   return 'Not saved';
 }
@@ -23,8 +28,11 @@ function intakeStatusLabel(intake: ScanPatientIntake | null): string {
 export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: OrderPatientIntakePanelProps) {
   const [intake, setIntake] = useState<ScanPatientIntake | null>(null);
   const [form, setForm] = useState<ScanPatientIntakeInput>(patientIntakeFromOrder(order));
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { remaining, canResend, startCooldown } = useOtpResendCooldown();
 
   const load = async () => {
     const row = await technicianOrderService.getPatientIntake(order.id);
@@ -39,6 +47,7 @@ export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: 
         heightMeters: row.heightMeters ?? null,
         comorbidities: row.comorbidities,
       });
+      setOtpSent(Boolean(row.phoneOtpVerified));
     } else {
       setForm(patientIntakeFromOrder(order));
     }
@@ -47,6 +56,11 @@ export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: 
   useEffect(() => {
     void load();
   }, [order.id]);
+
+  useEffect(() => {
+    setOtpSent(false);
+    setOtp('');
+  }, [form.phone]);
 
   const run = async (action: () => Promise<unknown>) => {
     setSaving(true);
@@ -63,6 +77,7 @@ export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: 
   };
 
   const operatorCanEdit = !readOnly;
+  const phoneNeedsOtp = intakePhoneNeedsOtp(intake, form.phone);
 
   return (
     <Card>
@@ -72,8 +87,8 @@ export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: 
           <Badge variant="outline">{intakeStatusLabel(intake)}</Badge>
         </div>
         <CardDescription>
-          Optionally pre-fill patient details before the home visit. The technician can verify and update these at
-          the location with phone OTP — no operator approval is required.
+          Pre-fill patient details before the home visit. Phone changes require OTP verification before the patient
+          account is updated.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -86,7 +101,69 @@ export function OrderPatientIntakePanel({ order, onUpdated, readOnly = false }: 
           disabled={!operatorCanEdit}
         />
 
-        {operatorCanEdit && (
+        {operatorCanEdit && phoneNeedsOtp && (
+          <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+            <p className="text-sm font-medium">Phone OTP verification</p>
+            {!otpSent ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={saving || !form.phone.trim() || !canResend || !isPatientIntakeValid(form)}
+                onClick={() =>
+                  run(async () => {
+                    const meta = await technicianOrderService.sendOperatorIntakeOtp(order.id, form.phone);
+                    applyOtpSendMeta(meta, startCooldown);
+                    setOtpSent(true);
+                  })
+                }
+              >
+                {canResend ? `Send OTP to ${form.phone}` : `Resend in ${remaining}s`}
+              </Button>
+            ) : (
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    Enter OTP{import.meta.env.DEV ? ' (demo: 123456)' : ''}
+                  </Label>
+                  <Input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="w-32"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  disabled={saving || otp.length < 4 || !isPatientIntakeValid(form)}
+                  onClick={() =>
+                    run(() => technicianOrderService.verifyOperatorPatientIntake(order.id, form, otp))
+                  }
+                >
+                  Verify & save
+                </Button>
+              </div>
+            )}
+            {otpSent && (
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-xs"
+                disabled={saving || !canResend}
+                onClick={() =>
+                  run(async () => {
+                    const meta = await technicianOrderService.sendOperatorIntakeOtp(order.id, form.phone);
+                    applyOtpSendMeta(meta, startCooldown);
+                  })
+                }
+              >
+                {canResend ? 'Resend OTP' : `Resend in ${remaining}s`}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {operatorCanEdit && !phoneNeedsOtp && (
           <Button
             size="sm"
             disabled={saving || !isPatientIntakeValid(form)}

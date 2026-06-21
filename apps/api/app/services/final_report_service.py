@@ -17,6 +17,7 @@ from app.models.commerce import ServiceOrder
 from app.models.integrations import AIExtractionJob
 from app.services.ai_extraction_service import AIExtractionService
 from app.services.order_helpers import append_timeline, iso, load_order_row, load_package_flags, transition_order
+from app.services.order_workflow_notifications import notify_order_trigger
 from app.services.technician_order_service import scan_to_api
 from app.services.workflow_notifications import WorkflowNotificationService
 
@@ -200,6 +201,8 @@ class FinalReportService:
             performed_by=user_id,
             metadata={"reportNumber": report.report_number, "version": str(version)},
         )
+        refreshed = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "final_report_generated", refreshed)
         await self.db.flush()
         return report_to_api(report)
 

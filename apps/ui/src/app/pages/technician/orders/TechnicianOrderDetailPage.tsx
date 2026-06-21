@@ -167,7 +167,12 @@ export function TechnicianOrderDetailPage() {
             />
             <StatusBadge status={order.paymentStatus} domain="payment" />
             <Badge variant="secondary">{STEP_LABELS[currentStep]}</Badge>
-            <span className="text-muted-foreground">{order.patientPhone}</span>
+            <a
+              href={`tel:${order.patientPhone.replace(/\s/g, '')}`}
+              className="text-muted-foreground hover:text-primary hover:underline"
+            >
+              {order.patientPhone}
+            </a>
           </div>
         </div>
       </div>
@@ -179,8 +184,8 @@ export function TechnicianOrderDetailPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <TechnicianOrderIdBanner order={order} packageCode={order.packageCode} />
-        <TechnicianPatientInfoCard order={order} visit={visit} patientEmail={patientEmail} intake={intake} />
+        <TechnicianOrderIdBanner order={order} packageCode={order.packageCode} intake={intake} />
+        <TechnicianPatientInfoCard order={order} visit={visit} patientEmail={patientEmail} />
       </div>
 
       <div className="space-y-4">

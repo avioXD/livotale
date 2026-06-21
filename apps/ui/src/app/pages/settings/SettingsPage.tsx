@@ -16,6 +16,7 @@ import { authService } from '@/services';
 import { ROLE_LABELS } from '@/rbac';
 import { AppRole, type LoginLogEntry, type UserConsent, type UserSession } from '@/types';
 import { formatLoginFailureReason, formatLoginMethod } from '@/utils/authMappers';
+import { useUrlTabState } from '@/hooks/useUrlTabState';
 
 const SETTINGS_TABS = [
   'my-profile',

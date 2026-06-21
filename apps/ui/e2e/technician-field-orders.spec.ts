@@ -107,7 +107,9 @@ test.describe('Technician field orders', () => {
     await expect(page.getByText('Patient & visit')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('1. Patient details intake')).toBeVisible();
     await expect(page.getByText(/blood sample/i)).toHaveCount(0);
-    await expect(page.getByText('Source of truth — order ID')).toBeVisible();
+    await expect(page.getByText('Order ID')).toBeVisible();
+    await expect(page.getByText('Basic details')).toBeVisible();
+    await expect(page.getByText('Comorbidities')).toBeVisible();
   });
 
   test('patient intake OTP send and verify when visit is at location', async ({ page }) => {

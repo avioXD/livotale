@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuthStore } from '@/store/auth/authStore';
+import { AppRole } from '@/types';
 import { integrationsAdminService, type PlatformSettings } from '@/services/admin/IntegrationsAdminService';
 import { storageService } from '@/services/storage/StorageService';
 import { toastSuccess, toastError } from '@/store/toast/toastStore';
+import { AdminIntegrationsPageShell, SuperAdminOnlyNotice } from './shared';
 
 const UPI_RE = /^[\w.\-]{2,256}@[\w]{2,64}$/;
 
 const PLATFORM_PAYMENT_QR_ENTITY_ID = '00000000-0000-4000-8000-000000000001';
 
 export function AdminPaymentConfigPage() {
+  const role = useAuthStore((s) => s.user?.role ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [settings, setSettings] = useState<Partial<PlatformSettings>>({});
   const [upiId, setUpiId] = useState('');
@@ -24,6 +27,7 @@ export function AdminPaymentConfigPage() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (role !== AppRole.SUPER_ADMIN) return;
     setLoading(true);
     try {
       const data = await integrationsAdminService.getSettings();
@@ -35,7 +39,7 @@ export function AdminPaymentConfigPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     void load();
@@ -84,71 +88,73 @@ export function AdminPaymentConfigPage() {
     }
   };
 
-  if (loading) {
-    return <p className="text-muted-foreground">Loading payment settings…</p>;
-  }
-
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader
-        title="Payment collection"
-        description="Platform-wide UPI ID and QR code shown to patients on the pay page."
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>UPI details</CardTitle>
-          <CardDescription>Patients pay to this UPI ID and upload a screenshot for verification.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="payee-name">Payee name</Label>
-            <Input
-              id="payee-name"
-              value={payeeName}
-              onChange={(e) => setPayeeName(e.target.value)}
-              placeholder="Livotale Health"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="upi-id">UPI ID</Label>
-            <Input
-              id="upi-id"
-              value={upiId}
-              onChange={(e) => setUpiId(e.target.value)}
-              placeholder="livotale@upi"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Payment QR code</Label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => setQrFile(e.target.files?.[0] ?? null)}
-            />
-            <div className="flex flex-wrap items-start gap-4">
-              {displayQr && (
-                <img
-                  src={displayQr}
-                  alt="Payment QR preview"
-                  className="h-40 w-40 rounded-md border bg-white object-contain p-2"
-                />
-              )}
-              <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
-                {displayQr ? 'Replace QR image' : 'Upload QR image'}
-              </Button>
+    <AdminIntegrationsPageShell
+      role={role}
+      title="Payment collection"
+      description="Platform-wide UPI ID and QR code shown to patients on the pay page."
+      badge={settings.paymentConfigured ? 'Configured' : 'Not configured'}
+    >
+      {role !== AppRole.SUPER_ADMIN ? (
+        <SuperAdminOnlyNotice />
+      ) : loading ? (
+        <p className="text-muted-foreground">Loading payment settings…</p>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">UPI details</CardTitle>
+            <CardDescription>Patients pay to this UPI ID and upload a screenshot for verification.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="payee-name">Payee name</Label>
+              <Input
+                id="payee-name"
+                value={payeeName}
+                onChange={(e) => setPayeeName(e.target.value)}
+                placeholder="Livotale Health"
+              />
             </div>
-          </div>
 
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save payment settings'}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="upi-id">UPI ID</Label>
+              <Input
+                id="upi-id"
+                value={upiId}
+                onChange={(e) => setUpiId(e.target.value)}
+                placeholder="livotale@upi"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Payment QR code</Label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setQrFile(e.target.files?.[0] ?? null)}
+              />
+              <div className="flex flex-wrap items-start gap-4">
+                {displayQr && (
+                  <img
+                    src={displayQr}
+                    alt="Payment QR preview"
+                    className="h-40 w-40 rounded-md border bg-white object-contain p-2"
+                  />
+                )}
+                <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+                  {displayQr ? 'Replace QR image' : 'Upload QR image'}
+                </Button>
+              </div>
+            </div>
+
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : 'Save payment settings'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </AdminIntegrationsPageShell>
   );
 }

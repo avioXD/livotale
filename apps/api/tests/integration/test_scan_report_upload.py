@@ -92,7 +92,11 @@ def _prepare_scan_ready_order(
     headers = auth_headers(tech_token)
     client.post(f"/api/v1/technician/orders/{order_id}/visit-started", headers=headers)
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
-    client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+    client.post(
+        f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+        headers=headers,
+        json={"phone": phone},
+    )
     client.post(
         f"/api/v1/technician/orders/{order_id}/patient-intake/verify",
         headers=headers,

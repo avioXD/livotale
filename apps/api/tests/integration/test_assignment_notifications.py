@@ -132,6 +132,27 @@ def test_enquiry_reassign_same_executive_is_noop(
     assert count_after_repeat == count_after_first
 
 
+def test_order_from_enquiry_emits_converted_notification(
+    client: TestClient,
+    admin_token: str,
+) -> None:
+    order, _phone = create_order(client, admin_token, package_code="PKG-1", patient_name="Enquiry Convert")
+    order_id = order["id"]
+    logs = client.get(
+        "/api/v1/admin/notifications/log",
+        headers=auth_headers(admin_token),
+        params={"orderId": order_id, "limit": 100},
+    )
+    assert logs.status_code == 200, logs.text
+    triggers = {
+        row.get("triggerEvent")
+        for row in logs.json()["data"]
+        if str(row.get("orderId")) == order_id
+    }
+    assert "enquiry_converted" in triggers
+    assert "order_created" in triggers
+
+
 def test_scan_confirm_notifies_assigned_technician_user(
     client: TestClient,
     admin_token: str,

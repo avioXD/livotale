@@ -18,6 +18,7 @@ test.describe('S6 — Patient portal', () => {
     await page.goto('/patient/login');
     await expect(page.getByRole('heading', { name: /sign in|patient portal/i })).toBeVisible();
     await expect(page.getByLabel(/phone number/i)).toBeVisible();
+    await expect(page.getByRole('tab', { name: /username/i })).toHaveCount(0);
   });
 
   test('OTP send, wrong code error, and successful login', async ({ page }) => {

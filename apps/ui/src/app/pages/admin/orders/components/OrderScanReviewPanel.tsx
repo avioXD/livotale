@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { technicianOrderService } from '@/services/liverCare';
 import type { FibrosisScanRecord, TechnicianOrderVisit } from '@/types/fibrosisScan';
 import { OrderScanScheduleSection } from '@/app/pages/admin/orders/components/OrderScanScheduleSection';
+import { OrderVisitAddressSection } from '@/app/pages/admin/orders/components/OrderVisitAddressSection';
 import { OrderPatientIntakePanel } from '@/app/pages/admin/orders/components/OrderPatientIntakePanel';
 import { OrderFibroScanIntakePanel } from '@/app/pages/admin/orders/components/OrderFibroScanIntakePanel';
 import { OrderVisitTrackerCard } from '@/app/pages/admin/orders/components/OrderVisitTrackerCard';
@@ -105,6 +106,7 @@ export function OrderScanReviewPanel({ order, onUpdated, readOnly = false }: Ord
   return (
     <div className="space-y-4">
       <OrderPatientIntakePanel order={order} onUpdated={onUpdated} readOnly={readOnly} />
+      <OrderVisitAddressSection order={order} onUpdated={onUpdated} />
       <OrderScanScheduleSection order={order} onUpdated={onUpdated} readOnly={readOnly} />
       <OrderFibroScanIntakePanel order={order} onUpdated={onUpdated} readOnly={readOnly} />
 

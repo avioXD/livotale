@@ -42,8 +42,23 @@ class TechnicianOrderService extends BaseApiService {
     return this.post<ScanPatientIntake>(`/technician/orders/${orderId}/patient-intake/verify`, { ...input, otp })
   }
 
-  async sendPatientIntakeOtp(orderId: string): Promise<TechnicianOrderVisit> {
-    return this.post<TechnicianOrderVisit>(`/technician/orders/${orderId}/patient-intake/otp`, {})
+  async sendPatientIntakeOtp(orderId: string, phone: string): Promise<TechnicianOrderVisit> {
+    return this.post<TechnicianOrderVisit>(`/technician/orders/${orderId}/patient-intake/otp`, { phone })
+  }
+
+  async sendOperatorIntakeOtp(
+    orderId: string,
+    phone: string,
+  ): Promise<{ sent: boolean; retryAfterSeconds?: number; demoOtp?: string }> {
+    return this.post(`/admin/orders/${orderId}/patient-intake/otp`, { phone })
+  }
+
+  async verifyOperatorPatientIntake(
+    orderId: string,
+    input: ScanPatientIntakeInput,
+    otp: string,
+  ): Promise<ScanPatientIntake> {
+    return this.post<ScanPatientIntake>(`/admin/orders/${orderId}/patient-intake/verify`, { ...input, otp })
   }
 
   async submitFibroScanIntake(orderId: string, input: FibroScanIntakeInput): Promise<ScanPatientIntake> {

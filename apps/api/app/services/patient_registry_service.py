@@ -35,6 +35,7 @@ PATIENT_EDIT_ROLES = {
     RoleCode.SUPPORT.value,
     RoleCode.CITY_MANAGER.value,
 }
+ADDRESS_ONLY_KEYS = frozenset({"addressLine1", "addressLine2", "pincode"})
 
 
 def _snake_to_camel(key: str) -> str:
@@ -149,8 +150,20 @@ class PatientRegistryService:
             "totalPages": total_pages,
         }
 
-    async def get_detail(self, patient_id: UUID, *, user_id: UUID | None, roles: list[str]) -> dict[str, Any]:
-        await self._assert_patient_access(user_id, roles, patient_id)
+    async def get_detail(
+        self,
+        patient_id: UUID,
+        *,
+        user_id: UUID | None,
+        roles: list[str],
+        allow_order_linked: bool = False,
+    ) -> dict[str, Any]:
+        await self._assert_patient_access(
+            user_id,
+            roles,
+            patient_id,
+            allow_order_linked=allow_order_linked,
+        )
         core = await self._get_patient_core(patient_id)
         dashboard_result = await self.session.execute(
             text("SELECT * FROM clinical.patient_dashboard_summary WHERE patient_id = :patient_id"),
@@ -162,9 +175,11 @@ class PatientRegistryService:
         addresses_result = await self.session.execute(
             text(
                 """
-                SELECT * FROM clinical.patient_addresses
-                WHERE patient_id = :patient_id
-                ORDER BY is_default DESC
+                SELECT pa.*, c.name AS city_name
+                FROM clinical.patient_addresses pa
+                LEFT JOIN core.cities c ON c.id = pa.city_id
+                WHERE pa.patient_id = :patient_id
+                ORDER BY pa.is_default DESC
                 """
             ),
             {"patient_id": patient_id},
@@ -221,7 +236,13 @@ class PatientRegistryService:
     ) -> dict[str, Any]:
         if not set(roles or []).intersection(PATIENT_EDIT_ROLES):
             raise AppError("Only operations can edit demographics", status_code=403, error="forbidden")
-        await self._assert_patient_access(user_id, roles, patient_id)
+        address_only = self._is_address_only_payload(payload)
+        await self._assert_patient_access(
+            user_id,
+            roles,
+            patient_id,
+            allow_order_linked=address_only,
+        )
         core = await self._get_patient_core(patient_id)
         user_updates: dict[str, Any] = {}
         field_map = {
@@ -260,8 +281,70 @@ class PatientRegistryService:
                 text(f"UPDATE clinical.patients SET {sets}, updated_at = now() WHERE id = :patient_id"),
                 {**patient_updates, "patient_id": patient_id},
             )
+
+        address_keys = {"addressLine1", "addressLine2", "pincode"}
+        if address_keys.intersection(payload.keys()):
+            line1 = str(payload.get("addressLine1") or "").strip()
+            line2 = str(payload.get("addressLine2") or "").strip() or None
+            pincode = str(payload.get("pincode") or "").strip()
+            if not line1 or not pincode:
+                raise AppError(
+                    "Address line 1 and pincode are required",
+                    status_code=400,
+                    error="validation_error",
+                )
+            existing = await self.session.execute(
+                text(
+                    """
+                    SELECT id FROM clinical.patient_addresses
+                    WHERE patient_id = :patient_id AND is_default = true
+                    LIMIT 1
+                    """
+                ),
+                {"patient_id": patient_id},
+            )
+            existing_row = existing.mappings().first()
+            if existing_row:
+                await self.session.execute(
+                    text(
+                        """
+                        UPDATE clinical.patient_addresses
+                        SET line1 = :line1, line2 = :line2, pincode = :pincode, updated_at = now()
+                        WHERE id = :address_id
+                        """
+                    ),
+                    {
+                        "line1": line1,
+                        "line2": line2,
+                        "pincode": pincode,
+                        "address_id": existing_row["id"],
+                    },
+                )
+            else:
+                await self.session.execute(
+                    text(
+                        """
+                        INSERT INTO clinical.patient_addresses (
+                          patient_id, address_type, line1, line2, pincode, is_default
+                        )
+                        VALUES (:patient_id, 'home', :line1, :line2, :pincode, true)
+                        """
+                    ),
+                    {
+                        "patient_id": patient_id,
+                        "line1": line1,
+                        "line2": line2,
+                        "pincode": pincode,
+                    },
+                )
+
         await self.session.flush()
-        return await self.get_detail(patient_id, user_id=user_id, roles=roles)
+        return await self.get_detail(
+            patient_id,
+            user_id=user_id,
+            roles=roles,
+            allow_order_linked=address_only,
+        )
 
     async def update_history_section(
         self,
@@ -704,6 +787,121 @@ class PatientRegistryService:
             updates,
         )
 
+    @staticmethod
+    def _intake_vitals_from_form(intake: dict[str, Any] | None) -> dict[str, Any] | None:
+        if not intake:
+            return None
+        out: dict[str, Any] = {}
+        if intake.get("weightKg") is not None:
+            out["weight"] = intake["weightKg"]
+        if intake.get("heightMeters") is not None:
+            out["height"] = intake["heightMeters"]
+        return out or None
+
+    async def update_patient_profile_from_intake(
+        self,
+        patient_id: UUID,
+        *,
+        name: str,
+        phone: str,
+        intake: dict[str, Any] | None = None,
+    ) -> None:
+        normalized = normalize_phone(phone)
+        params: dict[str, Any] = {
+            "patient_id": patient_id,
+            "full_name": name.strip(),
+            "mobile": normalized,
+        }
+        gender_sql = ""
+        sex = (intake or {}).get("sex")
+        if sex in {"male", "female", "other"}:
+            gender_sql = "gender = CAST(:gender AS identity.gender_enum),"
+            params["gender"] = sex
+        await self.session.execute(
+            text(
+                f"""
+                UPDATE identity.users u
+                SET
+                  full_name = :full_name,
+                  mobile = :mobile,
+                  {gender_sql}
+                  updated_at = now()
+                FROM clinical.patients p
+                WHERE p.user_id = u.id AND p.id = :patient_id
+                """
+            ),
+            params,
+        )
+        await self._apply_intake_vitals(patient_id, self._intake_vitals_from_form(intake))
+        await self.session.flush()
+
+    async def commit_verified_phone_for_order(
+        self,
+        *,
+        order_id: UUID,
+        order_patient_id: UUID,
+        name: str,
+        phone: str,
+        intake: dict[str, Any] | None = None,
+    ) -> UUID:
+        normalized = normalize_phone(phone)
+        if not normalized:
+            raise AppError("Phone number is required", status_code=400, error="validation_error")
+
+        existing = await self._find_patient_by_phone(normalized)
+        if existing and existing["id"] != order_patient_id:
+            raise AppError("This phone number is already in use", status_code=409, error="phone_in_use")
+
+        vitals_intake = self._intake_vitals_from_form(intake)
+
+        if existing and existing["id"] == order_patient_id:
+            await self.update_patient_profile_from_intake(
+                order_patient_id,
+                name=name,
+                phone=normalized,
+                intake=intake,
+            )
+            return order_patient_id
+
+        new_patient_id = await self.create_patient_from_intake(
+            name=name,
+            phone=normalized,
+            intake=vitals_intake,
+        )
+        if new_patient_id != order_patient_id:
+            await self._reassign_order_patient(order_id, new_patient_id)
+        else:
+            await self.update_patient_profile_from_intake(
+                order_patient_id,
+                name=name,
+                phone=normalized,
+                intake=intake,
+            )
+        return new_patient_id
+
+    async def _reassign_order_patient(self, order_id: UUID, new_patient_id: UUID) -> None:
+        await self.session.execute(
+            text(
+                """
+                UPDATE commerce.service_orders
+                SET patient_id = :patient_id, updated_at = now()
+                WHERE id = :order_id
+                """
+            ),
+            {"order_id": order_id, "patient_id": new_patient_id},
+        )
+        await self.session.execute(
+            text(
+                """
+                UPDATE operations.enquiries
+                SET patient_id = :patient_id, updated_at = now()
+                WHERE order_id = :order_id
+                """
+            ),
+            {"order_id": order_id, "patient_id": new_patient_id},
+        )
+        await self.session.flush()
+
     async def _find_patient_by_phone(self, normalized_phone: str) -> dict[str, Any] | None:
         result = await self.session.execute(
             text(
@@ -756,10 +954,43 @@ class PatientRegistryService:
         if not set(roles).intersection(CLINICAL_READ_ROLES):
             raise AppError("Insufficient permissions", status_code=403, error="forbidden")
 
-    async def _assert_patient_access(self, user_id: UUID | None, roles: list[str], patient_id: UUID) -> None:
+    @staticmethod
+    def _is_address_only_payload(payload: dict[str, Any]) -> bool:
+        keys = set(payload.keys())
+        return bool(keys) and keys.issubset(ADDRESS_ONLY_KEYS)
+
+    async def _patient_has_active_order(self, patient_id: UUID) -> bool:
+        result = await self.session.execute(
+            text(
+                """
+                SELECT 1
+                FROM commerce.service_orders
+                WHERE patient_id = :patient_id
+                  AND deleted_at IS NULL
+                LIMIT 1
+                """
+            ),
+            {"patient_id": patient_id},
+        )
+        return result.first() is not None
+
+    async def _assert_patient_access(
+        self,
+        user_id: UUID | None,
+        roles: list[str],
+        patient_id: UUID,
+        *,
+        allow_order_linked: bool = False,
+    ) -> None:
         await self._assert_clinical_read(user_id, roles)
         scope = await resolve_patient_access_scope(self.session, user_id=user_id, roles=roles)
         if await patient_matches_scope(self.session, patient_id=patient_id, scope=scope):
+            return
+        if (
+            allow_order_linked
+            and set(roles or []).intersection(PATIENT_EDIT_ROLES)
+            and await self._patient_has_active_order(patient_id)
+        ):
             return
         raise AppError("Patient not accessible for your role", status_code=403, error="forbidden")
 

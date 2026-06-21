@@ -234,7 +234,11 @@ def test_technician_intake_otp_table_flow(
     client.post(f"/api/v1/technician/orders/{order_id}/visit-started", headers=headers)
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
 
-    send = client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+    send = client.post(
+        f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+        headers=headers,
+        json={"phone": phone},
+    )
     assert send.status_code == 200, send.text
     assert send.json()["data"].get("demoOtp") == DEMO_OTP_CODE
 
@@ -272,7 +276,11 @@ def test_technician_completion_wrong_otp(
 
     client.post(f"/api/v1/technician/orders/{order_id}/visit-started", headers=headers)
     client.post(f"/api/v1/technician/orders/{order_id}/reached", headers=headers)
-    client.post(f"/api/v1/technician/orders/{order_id}/patient-intake/otp", headers=headers)
+    client.post(
+        f"/api/v1/technician/orders/{order_id}/patient-intake/otp",
+        headers=headers,
+        json={"phone": phone},
+    )
     client.post(
         f"/api/v1/technician/orders/{order_id}/patient-intake/verify",
         headers=headers,

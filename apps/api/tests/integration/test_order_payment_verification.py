@@ -75,7 +75,7 @@ def test_patient_submit_verify_and_reject_resubmit(client: TestClient, admin_tok
     config = client.get("/api/v1/patient-portal/payment-config")
     assert config.status_code == 200, config.text
 
-    receipt_file_id = _patient_upload_receipt(client, phone, order_id)
+    receipt_file_id = _patient_presign_receipt(client, phone, order_id)
 
     submitted = client.post(
         f"/api/v1/patient-portal/orders/{order_id}/pay",
@@ -109,7 +109,7 @@ def test_patient_submit_verify_and_reject_resubmit(client: TestClient, admin_tok
     assert rejected.status_code == 200, rejected.text
     assert rejected.json()["data"]["paymentStatus"] == "pending"
 
-    receipt_file_id_2 = _patient_upload_receipt(client, phone, order_id)
+    receipt_file_id_2 = _patient_presign_receipt(client, phone, order_id)
     resubmitted = client.post(
         f"/api/v1/patient-portal/orders/{order_id}/pay",
         json={
@@ -130,6 +130,13 @@ def test_patient_submit_verify_and_reject_resubmit(client: TestClient, admin_tok
     verified_body = verified.json()["data"]
     assert verified_body["paymentStatus"] == "success"
     assert verified_body["orderStatus"] == "payment_completed"
+
+    invoice = client.get(
+        f"/api/v1/admin/orders/{order_id}/invoice",
+        headers=auth_headers(admin_token),
+    )
+    assert invoice.status_code == 200, invoice.text
+    assert invoice.json()["data"] is not None
 
     payments = client.get(
         f"/api/v1/admin/orders/{order_id}/offline-payments",

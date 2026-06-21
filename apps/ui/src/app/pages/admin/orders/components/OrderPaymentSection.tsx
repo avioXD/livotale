@@ -38,7 +38,7 @@ export function OrderPaymentSection({ order, onUpdated, readOnly = false }: Orde
   useEffect(() => {
     void liverCareOrderService.listOfflinePayments(order.id).then(setOfflineRecords);
     if (order.paymentStatus === 'success') {
-      void liverCareOrderService.getInvoice(order.id).then(setInvoice);
+      void liverCareOrderService.getInvoice(order.id).then(setInvoice).catch(() => setInvoice(null));
     } else {
       setInvoice(null);
     }

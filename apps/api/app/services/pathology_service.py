@@ -29,6 +29,10 @@ from app.schemas.pathology import (
 )
 from app.schemas.technician import CollectionProofRequest, MarkSampleCollectedRequest, SubmitSampleToLabRequest
 from app.services.order_helpers import append_timeline, iso, load_order_row, order_to_api, transition_order
+from app.services.order_workflow_notifications import (
+    notify_doctor_if_consultation,
+    notify_order_trigger,
+)
 from app.services.workflow_notifications import WorkflowNotificationService
 
 logger = logging.getLogger(__name__)
@@ -603,6 +607,8 @@ class PathologyService:
             performed_by=user_id,
             metadata={"partnerLabId": str(lab.id), "courierRef": body.courier_ref or ""},
         )
+        order = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "sample_dispatched", order)
         return dispatch_to_api(dispatch, lab.name)
 
     async def dispatch_sample(
@@ -632,6 +638,7 @@ class PathologyService:
             f"Courier to {order.get('partner_lab_name')}",
             performed_by=user_id,
         )
+        await notify_order_trigger(self.db, "sample_dispatched", order)
         return dispatch_to_api(dispatch, order.get("partner_lab_name"))
 
     async def mark_received_at_lab(self, order_id: UUID, user_id: UUID) -> dict[str, Any]:
@@ -649,6 +656,7 @@ class PathologyService:
             f"{order.get('partner_lab_name')} confirmed receipt",
             performed_by=user_id,
         )
+        await notify_order_trigger(self.db, "sample_received_at_lab", order)
         return dispatch_to_api(dispatch, order.get("partner_lab_name"))
 
     async def mark_awaiting_report(self, order_id: UUID, user_id: UUID) -> dict[str, Any]:
@@ -666,6 +674,7 @@ class PathologyService:
             "Watch inbox for partner lab PDF",
             performed_by=user_id,
         )
+        await notify_order_trigger(self.db, "awaiting_lab_report", order)
         return dispatch_to_api(dispatch, order.get("partner_lab_name"))
 
     async def upload_lab_report_multipart(
@@ -730,6 +739,9 @@ class PathologyService:
             f"{upload['fileName']} from lab email · AI extraction queued",
             performed_by=user_id,
         )
+        refreshed = await load_order_row(self.db, order_id)
+        await notify_order_trigger(self.db, "lab_report_uploaded", refreshed)
+        await notify_doctor_if_consultation(self.db, "lab_report_uploaded", refreshed)
         await self.db.flush()
         return lab_report_to_api(report, order.get("partner_lab_name"))
 
